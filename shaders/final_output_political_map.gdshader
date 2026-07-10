@@ -4,6 +4,7 @@ uniform sampler2D subview_image : source_color, filter_linear;
 uniform sampler2D ocean_texture : source_color, filter_linear;
 uniform sampler2D terrain_class_map : filter_nearest;
 uniform sampler2D biome_map : source_color, filter_nearest;
+uniform sampler2D height_map : filter_linear;
 uniform sampler2D lookup_map : filter_nearest;
 uniform vec4 deep_ocean_color : source_color = vec4(0.018, 0.075, 0.14, 1.0);
 uniform float owned_terrain_strength : hint_range(0.0, 0.5, 0.01) = 0.16;
@@ -13,11 +14,12 @@ uniform float impassable_biome_brightness : hint_range(0.5, 1.25, 0.01) = 0.88;
 uniform float wasteland_desaturation : hint_range(0.0, 1.0, 0.01) = 0.22;
 uniform float wasteland_hatch_strength : hint_range(0.0, 0.3, 0.01) = 0.06;
 uniform float wasteland_hatch_period : hint_range(4.0, 64.0, 1.0) = 22.0;
-// Hillshade emboss derived from the terrain colormap's brightness gradients.
-// This is what makes mountain ranges read as raised 3D relief.
-uniform float relief_strength : hint_range(0.0, 12.0, 0.1) = 5.0;
-uniform float relief_owned_factor : hint_range(0.0, 1.0, 0.01) = 0.55;
-uniform float relief_max : hint_range(0.0, 0.5, 0.01) = 0.22;
+// Hillshade emboss derived from the baked elevation texture. This is what
+// makes mountain ranges read as raised 3D relief.
+uniform float relief_strength : hint_range(0.0, 16.0, 0.1) = 7.0;
+uniform float relief_owned_factor : hint_range(0.0, 1.0, 0.01) = 0.65;
+uniform float relief_max : hint_range(0.0, 0.5, 0.01) = 0.26;
+uniform float relief_elevation_lift : hint_range(0.0, 0.5, 0.01) = 0.14;
 uniform bool hover_enabled = false;
 uniform bool selection_enabled = false;
 uniform vec2 hovered_province = vec2(-1.0);
@@ -103,17 +105,20 @@ void fragment()
 	float terrain_luma = dot(terrain_rgb, vec3(0.2126, 0.7152, 0.0722));
 	float terrain_detail = smoothstep(0.12, 0.82, terrain_luma);
 
-	// Central-difference slope of the terrain colormap, lit from the northwest.
-	// The colormap encodes elevation as brightness, so its gradient works as a
-	// cheap normal map and gives ridges and valleys a hillshaded 3D relief.
-	const vec3 luma_weights = vec3(0.2126, 0.7152, 0.0722);
-	vec2 terrain_texel = 1.0 / vec2(textureSize(ocean_texture, 0));
-	float height_east = dot(texture(ocean_texture, UV + vec2(terrain_texel.x, 0.0)).rgb, luma_weights);
-	float height_west = dot(texture(ocean_texture, UV - vec2(terrain_texel.x, 0.0)).rgb, luma_weights);
-	float height_south = dot(texture(ocean_texture, UV + vec2(0.0, terrain_texel.y)).rgb, luma_weights);
-	float height_north = dot(texture(ocean_texture, UV - vec2(0.0, terrain_texel.y)).rgb, luma_weights);
-	vec2 slope = vec2(height_east - height_west, height_south - height_north);
-	float relief_shade = clamp(dot(slope, normalize(vec2(-1.0, -1.0))) * relief_strength, -relief_max, relief_max);
+	// Hillshade from the baked elevation texture, lit from the northwest.
+	// Two slope scales combine crisp ridge lines with the broad swell of a
+	// mountain range, like classic hand-shaded strategy maps.
+	vec2 height_texel = 1.0 / vec2(textureSize(height_map, 0));
+	vec2 light_dir = normalize(vec2(-1.0, -1.0));
+	float elevation = texture(height_map, UV).r;
+	vec2 slope_fine = vec2(
+		texture(height_map, UV + vec2(height_texel.x, 0.0)).r - texture(height_map, UV - vec2(height_texel.x, 0.0)).r,
+		texture(height_map, UV + vec2(0.0, height_texel.y)).r - texture(height_map, UV - vec2(0.0, height_texel.y)).r);
+	vec2 slope_broad = vec2(
+		texture(height_map, UV + vec2(height_texel.x * 3.0, 0.0)).r - texture(height_map, UV - vec2(height_texel.x * 3.0, 0.0)).r,
+		texture(height_map, UV + vec2(0.0, height_texel.y * 3.0)).r - texture(height_map, UV - vec2(0.0, height_texel.y * 3.0)).r);
+	float directional = dot(slope_fine, light_dir) * 0.62 + dot(slope_broad, light_dir) * 0.38;
+	float relief_shade = clamp(directional * relief_strength, -relief_max, relief_max);
 
 	if (terrain_class < 0.17)
 	{
@@ -126,7 +131,7 @@ void fragment()
 		float terrain_shade = mix(0.86, 1.10, terrain_detail);
 		s.rgb = mix(s.rgb, biome_rgb, owned_biome_strength);
 		s.rgb = mix(s.rgb, s.rgb * terrain_shade, owned_terrain_strength);
-		s.rgb *= 1.0 + relief_shade * relief_owned_factor;
+		s.rgb *= 1.0 + (relief_shade + elevation * relief_elevation_lift) * relief_owned_factor;
 		s.a = 1.0;
 
 		float df_province = texture(distance_field, UV).r;
@@ -144,7 +149,7 @@ void fragment()
 	else if (terrain_class < 0.83)
 	{
 		float terrain_shade = mix(0.82, 1.10, terrain_detail);
-		s = vec4(biome_rgb * terrain_shade * unowned_biome_brightness * (1.0 + relief_shade), 1.0);
+		s = vec4(biome_rgb * terrain_shade * unowned_biome_brightness * (1.0 + relief_shade + elevation * relief_elevation_lift), 1.0);
 	}
 	else
 	{
@@ -152,7 +157,7 @@ void fragment()
 		// mountains stay rocky) but mark it as non-playable with a slight
 		// desaturation and a faint diagonal hatch.
 		float terrain_shade = mix(0.76, 1.08, terrain_detail);
-		vec3 wasteland = biome_rgb * terrain_shade * impassable_biome_brightness * (1.0 + relief_shade);
+		vec3 wasteland = biome_rgb * terrain_shade * impassable_biome_brightness * (1.0 + relief_shade + elevation * relief_elevation_lift);
 		float wasteland_luma = dot(wasteland, vec3(0.2126, 0.7152, 0.0722));
 		wasteland = mix(wasteland, vec3(wasteland_luma), wasteland_desaturation);
 		float hatch_wave = sin((ip.x + ip.y) * 6.2831853 / wasteland_hatch_period);

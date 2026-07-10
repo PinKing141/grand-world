@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3 uid="uid://cgoxd520waiho"]
+[gd_scene load_steps=28 format=3 uid="uid://cgoxd520waiho"]
 
 [ext_resource type="Texture2D" uid="uid://c7x6n8v5pq0qm" path="res://assets/provinces.bmp" id="1_o5qli"]
 [ext_resource type="Shader" uid="uid://huxgtaoxjfut" path="res://shaders/final_output_political_map.gdshader" id="1_tipki"]
@@ -16,6 +16,7 @@
 [ext_resource type="Script" path="res://scripts/strategy_camera_controller.gd" id="14_camera"]
 [ext_resource type="Texture2D" path="res://assets/terrain_class_map.png" id="15_terrain"]
 [ext_resource type="Texture2D" path="res://assets/biome_map.png" id="16_biome"]
+[ext_resource type="Texture2D" path="res://assets/heightmap.png" id="17_height"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_eb6dy"]
 viewport_path = NodePath("Map/Subviewports/CountryDistanceField")
@@ -31,6 +32,7 @@ shader_parameter/subview_image = SubResource("ViewportTexture_tipki")
 shader_parameter/ocean_texture = ExtResource("5_ya4ey")
 shader_parameter/terrain_class_map = ExtResource("15_terrain")
 shader_parameter/biome_map = ExtResource("16_biome")
+shader_parameter/height_map = ExtResource("17_height")
 shader_parameter/lookup_map = ExtResource("6_85g3d")
 shader_parameter/distance_field = SubResource("ViewportTexture_eb6dy")
 shader_parameter/noise_texture = ExtResource("12_eb6dy")
