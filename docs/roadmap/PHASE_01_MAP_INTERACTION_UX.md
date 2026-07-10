@@ -33,9 +33,21 @@ Remaining before the full Map UX Gate:
 - Selected-country territory highlighting and country panel.
 - Controller, terrain, region, and coastal-status data.
 - Search and camera focus.
-- Terrain and debug province-ID map modes.
+- Terrain and debug province-ID map modes (the shader-side layer split below is the groundwork; the mode-switching UI and colour providers remain).
 - Mouse-drag camera movement, zoom-limit review, and horizontal wrapping decision.
 - UI scale and tiny-island QA across target resolutions.
+
+## Map Presentation Layer Status
+
+Implemented in the current build (July 2026):
+
+- **True 3D terrain.** The map plane is a 703×255-subdivided `PlaneMesh` whose vertices are displaced in the vertex shader by a baked elevation texture (`terrain_height_scale` uniform). Mountains physically rise off the map plane with real parallax and silhouettes. Province picking still raycasts the flat collision slab and reads x/z only, so selection behaviour is unchanged.
+- **Own-data heightmap pipeline.** `tools/terrain/build_heightmap.py` bakes `assets/heightmap.png` from the public-domain NASA/GEBCO global elevation raster, reprojected through the map's calibrated cropped-Mercator transform and verified against the map's coastlines. No third-party game assets (for example EU4 bitmaps) are used anywhere in the pipeline.
+- **Physical terrain base layer.** `tools/terrain/build_terrain_base.py` combines the province biome colours with the elevation bake into `assets/terrain_base_map.png`: soft ecotone transitions, lusher lowlands, rocky highlands, snow above the snowline, and hand-painted variation. This is the permanent ground layer under every colour mapmode.
+- **Swappable mapmode overlay architecture.** `final_output_political_map.gdshader` composes all land from the terrain base, then applies the active colour layer as a tunable wash (`overlay_strength`). The political mask is simply the current overlay; planned religion, ideology, and other mapmodes swap the colours feeding the subviewport (the 256×256 colour LUT in `map_render.gd`) while the terrain underneath stays identical. `overlay_strength = 0` already acts as a terrain mapmode.
+- **Relief shading.** A two-scale northwest hillshade plus an elevation brightness lift is derived from the heightmap and applied to every land class, at reduced strength through owned-land colours (`relief_strength`, `relief_owned_factor`, `relief_elevation_lift`).
+- **Wasteland legibility.** Excluded mega-provinces (Alaska, Northwest Territories, Nunavut, Québec, Rocky Mountains, Jotenheimen, Scandes, Greenland) render as desaturated, faintly hatched terrain so they read as deliberate non-playable land; Greenland renders as ice, and the "Greenland tip" projection artifact is reclassified as ocean in the ownership overrides.
+- **Rebake workflow.** After data changes run, in order as needed: `build_heightmap.py`, `build_biome_map.py`, `build_terrain_base.py` (all in `tools/terrain/`), and `tools/historical_ownership/bake_political_textures.py`.
 
 ## Player Outcome
 
