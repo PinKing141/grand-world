@@ -1,0 +1,19 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Territorial authority slot for Sakha communities.
+government = tribal
+add_government_reform = siberian_tribe
+government_rank = 1
+primary_culture = yakut
+religion = tengri_pagan_reformed
+technology_group = chinese
+capital = 1045
+
+1444.11.11 = {
+	monarch = {
+		name = "Community Council"
+		adm = 3
+		dip = 3
+		mil = 3
+		regent = yes
+	}
+}

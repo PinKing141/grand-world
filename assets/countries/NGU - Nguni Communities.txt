@@ -1,0 +1,19 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Represents 1444 Nguni-speaking communities without projecting the nineteenth-century Zulu kingdom backward.
+government = tribal
+add_government_reform = tribal_federation
+government_rank = 1
+primary_culture = nguni
+religion = shamanism
+technology_group = central_african
+capital = 789
+
+1444.11.11 = {
+	monarch = {
+		name = "Community Council"
+		adm = 3
+		dip = 3
+		mil = 3
+		regent = yes
+	}
+}

@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Corrects the imported Polynesian culture label for Taiwan and represents diverse Formosan Indigenous peoples.
+graphical_culture = asiangfx
+
+color = { 214 101 71 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

@@ -1,0 +1,362 @@
+[
+  {
+    "tag": "TEH",
+    "name": "Tehuelche Confederacies",
+    "color": [
+      54,
+      108,
+      173
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "PNG",
+    "name": "Papuan Communities",
+    "color": [
+      87,
+      189,
+      173
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "HET",
+    "name": "Pampas Peoples",
+    "color": [
+      230,
+      185,
+      110
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "KSN",
+    "name": "Khoisan Communities",
+    "color": [
+      64,
+      135,
+      194
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "SKH",
+    "name": "Sakha Communities",
+    "color": [
+      150,
+      61,
+      204
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "NNT",
+    "name": "Samoyedic Communities",
+    "color": [
+      186,
+      60,
+      154
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "EVK",
+    "name": "Evenki Communities",
+    "color": [
+      196,
+      92,
+      82
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "HRP",
+    "name": "Huarpe Confederacies",
+    "color": [
+      79,
+      219,
+      113
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "LST",
+    "name": "Lesser Sunda Polities",
+    "color": [
+      98,
+      217,
+      214
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "GCH",
+    "name": "Gran Chaco Peoples",
+    "color": [
+      58,
+      222,
+      200
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "NCN",
+    "name": "Nuu-chah-nulth Communities",
+    "color": [
+      195,
+      69,
+      204
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "KWK",
+    "name": "Kwakwaka'wakw Communities",
+    "color": [
+      85,
+      230,
+      229
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "LGT",
+    "name": "Tlingit Communities",
+    "color": [
+      227,
+      43,
+      123
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "ALU",
+    "name": "Unangan Communities",
+    "color": [
+      196,
+      140,
+      67
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "ALQ",
+    "name": "Alutiiq Communities",
+    "color": [
+      98,
+      209,
+      166
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "DNE",
+    "name": "Dene Nations",
+    "color": [
+      104,
+      222,
+      211
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "BEM",
+    "name": "Bemba Plateau Communities",
+    "color": [
+      180,
+      230,
+      44
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "JVR",
+    "name": "Jivaroan Peoples",
+    "color": [
+      73,
+      227,
+      155
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "INU",
+    "name": "Inuit Communities",
+    "color": [
+      75,
+      222,
+      166
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "KHN",
+    "name": "Khanty Principalities",
+    "color": [
+      201,
+      46,
+      230
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "DUA",
+    "name": "Duala Coastal Communities",
+    "color": [
+      155,
+      57,
+      173
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "JUK",
+    "name": "Jukun Polities",
+    "color": [
+      86,
+      196,
+      43
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "KYU",
+    "name": "Kikuyu Communities",
+    "color": [
+      191,
+      119,
+      71
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "SHC",
+    "name": "Southern Highlands Communities",
+    "color": [
+      43,
+      39,
+      207
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "TZI",
+    "name": "Tanzanian Interior Communities",
+    "color": [
+      64,
+      92,
+      219
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "NIL",
+    "name": "Nilotic Communities",
+    "color": [
+      93,
+      194,
+      142
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "GLC",
+    "name": "Great Lakes Communities",
+    "color": [
+      41,
+      119,
+      217
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "TSW",
+    "name": "Tswana Communities",
+    "color": [
+      174,
+      204,
+      45
+    ],
+    "status": "existing"
+  },
+  {
+    "tag": "FMC",
+    "name": "Formosan Indigenous Communities",
+    "color": [
+      214,
+      101,
+      71
+    ],
+    "status": "generated"
+  },
+  {
+    "tag": "CMR",
+    "name": "Chamorro Communities",
+    "color": [
+      78,
+      224,
+      65
+    ],
+    "status": "generated"
+  },
+  {
+    "tag": "MIC",
+    "name": "Micronesian Communities",
+    "color": [
+      43,
+      186,
+      102
+    ],
+    "status": "generated"
+  },
+  {
+    "tag": "THT",
+    "name": "Tahitian Polities",
+    "color": [
+      138,
+      181,
+      36
+    ],
+    "status": "generated"
+  },
+  {
+    "tag": "RPN",
+    "name": "Rapa Nui Communities",
+    "color": [
+      220,
+      103,
+      224
+    ],
+    "status": "generated"
+  },
+  {
+    "tag": "OGE",
+    "name": "Andamanese Communities",
+    "color": [
+      104,
+      227,
+      217
+    ],
+    "status": "generated"
+  },
+  {
+    "tag": "NGU",
+    "name": "Nguni Communities",
+    "color": [
+      201,
+      136,
+      85
+    ],
+    "status": "generated"
+  },
+  {
+    "tag": "SWZ",
+    "name": "Swazi Communities",
+    "color": [
+      117,
+      209,
+      73
+    ],
+    "status": "generated"
+  }
+]

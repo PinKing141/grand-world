@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Territorial authority slot for Evenki and related Tungusic communities.
+graphical_culture = asiangfx
+
+color = { 196 92 82 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

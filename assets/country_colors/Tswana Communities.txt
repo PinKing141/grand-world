@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Corrects the imported Khoisan culture label for the Tswana province while retaining a separate territorial authority.
+graphical_culture = africangfx
+
+color = { 174 204 45 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

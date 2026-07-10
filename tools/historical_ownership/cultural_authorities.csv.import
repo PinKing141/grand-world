@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://bqv8lge0dfv61"
+
+[deps]
+
+files=["res://tools/historical_ownership/cultural_authorities.name.translation", "res://tools/historical_ownership/cultural_authorities.primary.translation", "res://tools/historical_ownership/cultural_authorities.capital.translation", "res://tools/historical_ownership/cultural_authorities.religion.translation", "res://tools/historical_ownership/cultural_authorities.technology.translation", "res://tools/historical_ownership/cultural_authorities.government.translation", "res://tools/historical_ownership/cultural_authorities.reform.translation", "res://tools/historical_ownership/cultural_authorities.graphical.translation", "res://tools/historical_ownership/cultural_authorities.scope.translation"]
+
+source_file="res://tools/historical_ownership/cultural_authorities.csv"
+dest_files=["res://tools/historical_ownership/cultural_authorities.name.translation", "res://tools/historical_ownership/cultural_authorities.primary.translation", "res://tools/historical_ownership/cultural_authorities.capital.translation", "res://tools/historical_ownership/cultural_authorities.religion.translation", "res://tools/historical_ownership/cultural_authorities.technology.translation", "res://tools/historical_ownership/cultural_authorities.government.translation", "res://tools/historical_ownership/cultural_authorities.reform.translation", "res://tools/historical_ownership/cultural_authorities.graphical.translation", "res://tools/historical_ownership/cultural_authorities.scope.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

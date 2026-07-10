@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Gameplay umbrella for Nenets Selkup and related Samoyedic communities.
+graphical_culture = asiangfx
+
+color = { 186 60 154 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Territorial authority slot for Chamorro communities on Guam.
+graphical_culture = asiangfx
+
+color = { 78 224 65 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

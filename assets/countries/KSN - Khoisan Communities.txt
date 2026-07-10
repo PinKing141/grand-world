@@ -1,0 +1,19 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Gameplay umbrella for Khoekhoe and San communities; not a claim of unified sovereignty.
+government = tribal
+add_government_reform = tribal_federation
+government_rank = 1
+primary_culture = khoisan
+religion = shamanism
+technology_group = central_african
+capital = 1175
+
+1444.11.11 = {
+	monarch = {
+		name = "Community Council"
+		adm = 3
+		dip = 3
+		mil = 3
+		regent = yes
+	}
+}

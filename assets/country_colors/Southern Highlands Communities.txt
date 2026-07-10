@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Gameplay umbrella for Bena Hehe and neighbouring southern highland communities.
+graphical_culture = africangfx
+
+color = { 43 39 207 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

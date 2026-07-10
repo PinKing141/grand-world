@@ -1,0 +1,255 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/map_hud.gd" id="1_hud"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tooltip"]
+bg_color = Color(0.055, 0.065, 0.078, 0.96)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.39, 0.48, 0.59, 0.9)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.043, 0.052, 0.065, 0.97)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.19, 0.31, 0.42, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.55)
+shadow_size = 8
+
+[node name="MapHUD" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_hud")
+
+[node name="ProvinceTooltip" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+offset_right = 230.0
+offset_bottom = 91.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_tooltip")
+
+[node name="Margin" type="MarginContainer" parent="ProvinceTooltip"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 9
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 9
+
+[node name="Content" type="VBoxContainer" parent="ProvinceTooltip/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="TooltipTitle" type="Label" parent="ProvinceTooltip/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93, 0.96, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "Province"
+
+[node name="TooltipId" type="Label" parent="ProvinceTooltip/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.58, 0.68, 0.77, 1)
+theme_override_font_sizes/font_size = 12
+text = "Province 0"
+
+[node name="TooltipOwner" type="Label" parent="ProvinceTooltip/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.84, 0.87, 0.91, 1)
+text = "Owner"
+
+[node name="ProvincePanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -358.0
+offset_top = 18.0
+offset_right = -18.0
+offset_bottom = -62.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="Margin" type="MarginContainer" parent="ProvincePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 18
+
+[node name="Content" type="VBoxContainer" parent="ProvincePanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="HBoxContainer" parent="ProvincePanel/Margin/Content"]
+layout_mode = 2
+
+[node name="ProvinceTitle" type="Label" parent="ProvincePanel/Margin/Content/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.94, 0.97, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "Province"
+text_overrun_behavior = 3
+
+[node name="CloseButton" type="Button" parent="ProvincePanel/Margin/Content/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 2
+focus_mode = 0
+text = "×"
+tooltip_text = "Close province panel"
+
+[node name="ProvinceId" type="Label" parent="ProvincePanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.51, 0.63, 0.73, 1)
+text = "Province ID  0"
+
+[node name="ProvinceStatus" type="Label" parent="ProvincePanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.53, 0.85, 0.63, 1)
+theme_override_font_sizes/font_size = 11
+text = "PLAYABLE COUNTRY PROVINCE"
+
+[node name="Separator" type="HSeparator" parent="ProvincePanel/Margin/Content"]
+layout_mode = 2
+
+[node name="OwnerHeading" type="Label" parent="ProvincePanel/Margin/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.48, 0.68, 0.85, 1)
+theme_override_font_sizes/font_size = 12
+text = "POLITICAL CONTROL"
+
+[node name="OwnerValue" type="Label" parent="ProvincePanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.9, 0.69, 1)
+theme_override_font_sizes/font_size = 18
+text = "Owner"
+autowrap_mode = 2
+
+[node name="Separator2" type="HSeparator" parent="ProvincePanel/Margin/Content"]
+layout_mode = 2
+
+[node name="MetadataHeading" type="Label" parent="ProvincePanel/Margin/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.48, 0.68, 0.85, 1)
+theme_override_font_sizes/font_size = 12
+text = "PROVINCE DETAILS"
+
+[node name="Metadata" type="GridContainer" parent="ProvincePanel/Margin/Content"]
+layout_mode = 2
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 9
+columns = 2
+
+[node name="CapitalLabel" type="Label" parent="ProvincePanel/Margin/Content/Metadata"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.63, 0.7, 1)
+text = "Capital"
+
+[node name="CapitalValue" type="Label" parent="ProvincePanel/Margin/Content/Metadata"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Not yet classified"
+text_overrun_behavior = 3
+
+[node name="CultureLabel" type="Label" parent="ProvincePanel/Margin/Content/Metadata"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.63, 0.7, 1)
+text = "Culture"
+
+[node name="CultureValue" type="Label" parent="ProvincePanel/Margin/Content/Metadata"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Not yet classified"
+text_overrun_behavior = 3
+
+[node name="ReligionLabel" type="Label" parent="ProvincePanel/Margin/Content/Metadata"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.63, 0.7, 1)
+text = "Religion"
+
+[node name="ReligionValue" type="Label" parent="ProvincePanel/Margin/Content/Metadata"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Not yet classified"
+text_overrun_behavior = 3
+
+[node name="TradeGoodsLabel" type="Label" parent="ProvincePanel/Margin/Content/Metadata"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.63, 0.7, 1)
+text = "Trade goods"
+
+[node name="TradeGoodsValue" type="Label" parent="ProvincePanel/Margin/Content/Metadata"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Not yet classified"
+text_overrun_behavior = 3
+
+[node name="Spacer" type="Control" parent="ProvincePanel/Margin/Content"]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="PhaseNote" type="Label" parent="ProvincePanel/Margin/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.42, 0.5, 0.57, 1)
+theme_override_font_sizes/font_size = 11
+text = "Economy, population, buildings and unrest arrive in later phases."
+autowrap_mode = 2
+
+[node name="HintBar" type="PanelContainer" parent="."]
+layout_mode = 1
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 22.0
+offset_top = -44.0
+offset_right = -22.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_tooltip")
+
+[node name="Hint" type="Label" parent="HintBar"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.71, 0.77, 0.82, 1)
+theme_override_font_sizes/font_size = 12
+text = "Click: select     Drag: pan     Wheel: zoom     WASD / arrows: move     Home: reset     Right click / Esc: clear"
+horizontal_alignment = 1

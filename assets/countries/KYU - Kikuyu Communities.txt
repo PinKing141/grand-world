@@ -1,0 +1,19 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Territorial authority slot for central Kenyan communities represented by the imported Bantu culture label.
+government = tribal
+add_government_reform = tribal_federation
+government_rank = 1
+primary_culture = bantu
+religion = shamanism
+technology_group = central_african
+capital = 4060
+
+1444.11.11 = {
+	monarch = {
+		name = "Community Council"
+		adm = 3
+		dip = 3
+		mil = 3
+		regent = yes
+	}
+}

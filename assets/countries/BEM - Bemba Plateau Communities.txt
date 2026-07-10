@@ -1,0 +1,19 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Gameplay territorial authority; does not project the later centralized Bemba state backward into 1444.
+government = tribal
+add_government_reform = tribal_federation
+government_rank = 1
+primary_culture = bemba
+religion = shamanism
+technology_group = central_african
+capital = 4102
+
+1444.11.11 = {
+	monarch = {
+		name = "Community Council"
+		adm = 3
+		dip = 3
+		mil = 3
+		regent = yes
+	}
+}

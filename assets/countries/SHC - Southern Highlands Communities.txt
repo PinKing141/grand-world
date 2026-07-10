@@ -1,0 +1,19 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Gameplay umbrella for Bena Hehe and neighbouring southern highland communities.
+government = tribal
+add_government_reform = tribal_federation
+government_rank = 1
+primary_culture = bena
+religion = shamanism
+technology_group = central_african
+capital = 4073
+
+1444.11.11 = {
+	monarch = {
+		name = "Community Council"
+		adm = 3
+		dip = 3
+		mil = 3
+		regent = yes
+	}
+}

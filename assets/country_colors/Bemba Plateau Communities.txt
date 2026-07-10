@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Gameplay territorial authority; does not project the later centralized Bemba state backward into 1444.
+graphical_culture = africangfx
+
+color = { 180 230 44 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

@@ -1,0 +1,28 @@
+# Keresan Pueblo communities. The country slot is a gameplay abstraction.
+graphical_culture = northamericagfx
+
+color = { 183 76 132 }
+
+revolutionary_colors = { 8 5 8 }
+
+historical_idea_groups = {
+	religious_ideas
+	defensive_ideas
+	economic_ideas
+	trade_ideas
+	diplomatic_ideas
+}
+
+historical_units = {
+	native_indian_archer
+	native_indian_tribal_warfare
+	native_indian_mountain_warfare
+}
+
+monarch_names = {
+	"Native Council #0" = 100
+}
+
+leader_names = {
+	Acoma Cochiti Kewa Laguna San_Felipe Santa_Ana Zia
+}

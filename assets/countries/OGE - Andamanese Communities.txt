@@ -1,0 +1,19 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Corrects the imported Filipino culture label for the Indigenous peoples of the Andaman Islands.
+government = tribal
+add_government_reform = polynesian_tribe
+government_rank = 1
+primary_culture = filipino
+religion = animism
+technology_group = polynesian_tech
+capital = 574
+
+1444.11.11 = {
+	monarch = {
+		name = "Community Council"
+		adm = 3
+		dip = 3
+		mil = 3
+		regent = yes
+	}
+}

@@ -1,0 +1,19 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Corrects the imported Khoisan culture label for the Tswana province while retaining a separate territorial authority.
+government = tribal
+add_government_reform = tribal_federation
+government_rank = 1
+primary_culture = khoisan
+religion = shamanism
+technology_group = central_african
+capital = 4782
+
+1444.11.11 = {
+	monarch = {
+		name = "Community Council"
+		adm = 3
+		dip = 3
+		mil = 3
+		regent = yes
+	}
+}

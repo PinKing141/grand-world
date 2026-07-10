@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://ct27bthniwlpy"
+
+[deps]
+
+files=["res://tools/historical_ownership/ownership_overrides.assigned.translation", "res://tools/historical_ownership/ownership_overrides.status.translation", "res://tools/historical_ownership/ownership_overrides.confidence.translation", "res://tools/historical_ownership/ownership_overrides.authority.translation", "res://tools/historical_ownership/ownership_overrides.source.translation", "res://tools/historical_ownership/ownership_overrides.source.translation", "res://tools/historical_ownership/ownership_overrides.reviewer.translation", "res://tools/historical_ownership/ownership_overrides.review.translation"]
+
+source_file="res://tools/historical_ownership/ownership_overrides.csv"
+dest_files=["res://tools/historical_ownership/ownership_overrides.assigned.translation", "res://tools/historical_ownership/ownership_overrides.status.translation", "res://tools/historical_ownership/ownership_overrides.confidence.translation", "res://tools/historical_ownership/ownership_overrides.authority.translation", "res://tools/historical_ownership/ownership_overrides.source.translation", "res://tools/historical_ownership/ownership_overrides.source.translation", "res://tools/historical_ownership/ownership_overrides.reviewer.translation", "res://tools/historical_ownership/ownership_overrides.review.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

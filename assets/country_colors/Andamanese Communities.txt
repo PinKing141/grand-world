@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Corrects the imported Filipino culture label for the Indigenous peoples of the Andaman Islands.
+graphical_culture = asiangfx
+
+color = { 104 227 217 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

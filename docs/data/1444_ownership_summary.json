@@ -1,0 +1,16 @@
+{
+  "generated_at_utc": "2026-07-10T18:28:02.732252+00:00",
+  "province_count": 4940,
+  "categories": {
+    "applied_documented_assignment": 942,
+    "existing_owner": 2314,
+    "reviewed_override": 668,
+    "unused_definition": 1016
+  },
+  "statuses": {
+    "applied": 942,
+    "excluded": 1684,
+    "existing": 2314
+  },
+  "invalid_proposed_tags": []
+}

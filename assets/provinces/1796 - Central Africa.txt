@@ -1,0 +1,5 @@
+# 1796 - Central Africa
+# Imported impassable/wasteland block. This is non-country gameplay terrain,
+# not a claim that the geographic region lacked inhabitants or territorial use.
+
+discovered_by = central_african

@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Province-level abstraction for several Patagonian peoples rather than a single centralized state.
+graphical_culture = southamericagfx
+
+color = { 54 108 173 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

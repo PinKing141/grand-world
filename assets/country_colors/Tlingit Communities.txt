@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Corrects the imported broad Aleutian culture label for Yakutat.
+graphical_culture = northamericagfx
+
+color = { 227 43 123 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

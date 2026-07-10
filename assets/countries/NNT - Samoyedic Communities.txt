@@ -1,0 +1,19 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Gameplay umbrella for Nenets Selkup and related Samoyedic communities.
+government = tribal
+add_government_reform = siberian_tribe
+government_rank = 1
+primary_culture = samoyed
+religion = shamanism
+technology_group = chinese
+capital = 1072
+
+1444.11.11 = {
+	monarch = {
+		name = "Community Council"
+		adm = 3
+		dip = 3
+		mil = 3
+		regent = yes
+	}
+}

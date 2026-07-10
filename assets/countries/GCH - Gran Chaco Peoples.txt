@@ -1,0 +1,19 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Gameplay umbrella for multiple Gran Chaco peoples with mobile and overlapping territorial use.
+government = native
+add_government_reform = native_clan_council_reform
+government_rank = 1
+primary_culture = chacoan
+religion = shamanism
+technology_group = south_american
+capital = 799
+
+1444.11.11 = {
+	monarch = {
+		name = "Community Council"
+		adm = 3
+		dip = 3
+		mil = 3
+		regent = yes
+	}
+}

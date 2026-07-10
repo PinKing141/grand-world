@@ -1,0 +1,19 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Gameplay umbrella for Jivaroan communities including Shuar-related groups.
+government = native
+add_government_reform = native_clan_council_reform
+government_rank = 1
+primary_culture = jivaro
+religion = shamanism
+technology_group = south_american
+capital = 815
+
+1444.11.11 = {
+	monarch = {
+		name = "Community Council"
+		adm = 3
+		dip = 3
+		mil = 3
+		regent = yes
+	}
+}

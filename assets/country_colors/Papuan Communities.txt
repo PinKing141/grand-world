@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Regional authority slot for diverse Papuan communities.
+graphical_culture = asiangfx
+
+color = { 87 189 173 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

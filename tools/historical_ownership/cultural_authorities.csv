@@ -1,0 +1,37 @@
+tag,name,primary_culture,capital,religion,technology_group,government,reform,graphical_culture,scope_note
+TEH,Tehuelche Confederacies,patagonian,2870,shamanism,south_american,native,native_clan_council_reform,southamericagfx,Province-level abstraction for several Patagonian peoples rather than a single centralized state.
+PNG,Papuan Communities,papuan,1237,animism,polynesian_tech,tribal,polynesian_tribe,asiangfx,Regional authority slot for diverse Papuan communities.
+HET,Pampas Peoples,het,2860,shamanism,south_american,native,native_clan_council_reform,southamericagfx,Gameplay umbrella for mobile peoples of the Pampas; Het is treated as a dataset culture label rather than one state.
+KSN,Khoisan Communities,khoisan,1175,shamanism,central_african,tribal,tribal_federation,africangfx,Gameplay umbrella for Khoekhoe and San communities; not a claim of unified sovereignty.
+SKH,Sakha Communities,yakut,1045,tengri_pagan_reformed,chinese,tribal,siberian_tribe,asiangfx,Territorial authority slot for Sakha communities.
+NNT,Samoyedic Communities,samoyed,1072,shamanism,chinese,tribal,siberian_tribe,asiangfx,Gameplay umbrella for Nenets Selkup and related Samoyedic communities.
+EVK,Evenki Communities,tungus,1054,tengri_pagan_reformed,chinese,tribal,siberian_tribe,asiangfx,Territorial authority slot for Evenki and related Tungusic communities.
+HRP,Huarpe Confederacies,huarpe,2877,shamanism,south_american,native,native_clan_council_reform,southamericagfx,Gameplay representation of Huarpe communities and alliances.
+LST,Lesser Sunda Polities,nusa_tenggara,632,hinduism,chinese,tribal,polynesian_tribe,asiangfx,Umbrella slot for local Lesser Sunda rulers and communities where the source lacks individual states.
+GCH,Gran Chaco Peoples,chacoan,799,shamanism,south_american,native,native_clan_council_reform,southamericagfx,Gameplay umbrella for multiple Gran Chaco peoples with mobile and overlapping territorial use.
+NCN,Nuu-chah-nulth Communities,aleutian,972,totemism,north_american,native,native_clan_council_reform,northamericagfx,Corrects the imported broad Aleutian culture label for Nootka.
+KWK,Kwakwaka'wakw Communities,aleutian,974,totemism,north_american,native,native_clan_council_reform,northamericagfx,Corrects the imported broad Aleutian culture label for Kwakiutl territory.
+LGT,Tlingit Communities,aleutian,977,totemism,north_american,native,native_clan_council_reform,northamericagfx,Corrects the imported broad Aleutian culture label for Yakutat.
+ALU,Unangan Communities,aleutian,979,totemism,north_american,native,native_clan_council_reform,northamericagfx,Territorial authority slot for Unangan communities.
+ALQ,Alutiiq Communities,aleutian,2611,totemism,north_american,native,native_clan_council_reform,northamericagfx,Territorial authority slot for Kodiak Alutiiq communities.
+DNE,Dene Nations,athabascan,2601,totemism,north_american,native,native_clan_council_reform,northamericagfx,Gameplay umbrella for several northern Dene peoples where province resolution is coarser than individual territories.
+BEM,Bemba Plateau Communities,bemba,4102,shamanism,central_african,tribal,tribal_federation,africangfx,Gameplay territorial authority; does not project the later centralized Bemba state backward into 1444.
+JVR,Jivaroan Peoples,jivaro,815,shamanism,south_american,native,native_clan_council_reform,southamericagfx,Gameplay umbrella for Jivaroan communities including Shuar-related groups.
+INU,Inuit Communities,inuit,998,totemism,north_american,native,native_clan_council_reform,northamericagfx,Gameplay umbrella for Inuit communities; boundaries are approximate and not modern claims.
+KHN,Khanty Principalities,ostyaki,1068,shamanism,chinese,tribal,siberian_tribe,asiangfx,Represents Khanty and related Ob-Ugric principalities and communities.
+DUA,Duala Coastal Communities,sawabantu,1164,shamanism,central_african,tribal,tribal_federation,africangfx,Gameplay umbrella for Sawa Bantu coastal authorities around the Cameroon estuary.
+JUK,Jukun Polities,jukun,1162,shamanism,central_african,tribal,tribal_federation,africangfx,Gameplay representation of Jukun-speaking polities without assuming later Kwararafa borders.
+KYU,Kikuyu Communities,bantu,4060,shamanism,central_african,tribal,tribal_federation,africangfx,Territorial authority slot for central Kenyan communities represented by the imported Bantu culture label.
+SHC,Southern Highlands Communities,bena,4073,shamanism,central_african,tribal,tribal_federation,africangfx,Gameplay umbrella for Bena Hehe and neighbouring southern highland communities.
+TZI,Tanzanian Interior Communities,takama,4056,shamanism,central_african,tribal,tribal_federation,africangfx,Gameplay umbrella where the imported Takama culture groups several interior communities.
+NIL,Nilotic Communities,acholi,4075,shamanism,central_african,tribal,tribal_federation,africangfx,Gameplay umbrella for Acholi Lango and neighbouring Nilotic communities at this map resolution.
+GLC,Great Lakes Communities,masaba,4054,shamanism,central_african,tribal,tribal_federation,africangfx,Gameplay umbrella for communities represented by the imported Masaba culture label.
+TSW,Tswana Communities,khoisan,4782,shamanism,central_african,tribal,tribal_federation,africangfx,Corrects the imported Khoisan culture label for the Tswana province while retaining a separate territorial authority.
+FMC,Formosan Indigenous Communities,polynesian,738,animism,chinese,native,native_clan_council_reform,asiangfx,Corrects the imported Polynesian culture label for Taiwan and represents diverse Formosan Indigenous peoples.
+CMR,Chamorro Communities,polynesian,1235,animism,polynesian_tech,tribal,polynesian_tribe,asiangfx,Territorial authority slot for Chamorro communities on Guam.
+MIC,Micronesian Communities,polynesian,1995,animism,polynesian_tech,tribal,polynesian_tribe,asiangfx,Gameplay umbrella for several Micronesian island societies at this map resolution.
+THT,Tahitian Polities,polynesian,1244,animism,polynesian_tech,tribal,polynesian_tribe,asiangfx,Territorial authority slot for Tahitian and Society Islands polities.
+RPN,Rapa Nui Communities,polynesian,1988,animism,polynesian_tech,tribal,polynesian_tribe,asiangfx,Territorial authority slot for Rapa Nui.
+OGE,Andamanese Communities,filipino,574,animism,polynesian_tech,tribal,polynesian_tribe,asiangfx,Corrects the imported Filipino culture label for the Indigenous peoples of the Andaman Islands.
+NGU,Nguni Communities,nguni,789,shamanism,central_african,tribal,tribal_federation,africangfx,Represents 1444 Nguni-speaking communities without projecting the nineteenth-century Zulu kingdom backward.
+SWZ,Swazi Communities,nguni,4783,shamanism,central_african,tribal,tribal_federation,africangfx,Separate territorial authority for the Swazi province while avoiding later hard borders.

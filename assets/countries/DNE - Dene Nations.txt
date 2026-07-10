@@ -1,0 +1,19 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Gameplay umbrella for several northern Dene peoples where province resolution is coarser than individual territories.
+government = native
+add_government_reform = native_clan_council_reform
+government_rank = 1
+primary_culture = athabascan
+religion = totemism
+technology_group = north_american
+capital = 2601
+
+1444.11.11 = {
+	monarch = {
+		name = "Community Council"
+		adm = 3
+		dip = 3
+		mil = 3
+		regent = yes
+	}
+}

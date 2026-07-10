@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Gameplay umbrella for several Micronesian island societies at this map resolution.
+graphical_culture = asiangfx
+
+color = { 43 186 102 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

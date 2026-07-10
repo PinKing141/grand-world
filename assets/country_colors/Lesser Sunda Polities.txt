@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Umbrella slot for local Lesser Sunda rulers and communities where the source lacks individual states.
+graphical_culture = asiangfx
+
+color = { 98 217 214 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

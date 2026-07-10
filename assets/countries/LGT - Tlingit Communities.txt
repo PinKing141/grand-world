@@ -1,0 +1,19 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Corrects the imported broad Aleutian culture label for Yakutat.
+government = native
+add_government_reform = native_clan_council_reform
+government_rank = 1
+primary_culture = aleutian
+religion = totemism
+technology_group = north_american
+capital = 977
+
+1444.11.11 = {
+	monarch = {
+		name = "Community Council"
+		adm = 3
+		dip = 3
+		mil = 3
+		regent = yes
+	}
+}

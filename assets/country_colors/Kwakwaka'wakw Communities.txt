@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Corrects the imported broad Aleutian culture label for Kwakiutl territory.
+graphical_culture = northamericagfx
+
+color = { 85 230 229 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

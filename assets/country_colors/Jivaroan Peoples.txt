@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Gameplay umbrella for Jivaroan communities including Shuar-related groups.
+graphical_culture = southamericagfx
+
+color = { 73 227 155 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

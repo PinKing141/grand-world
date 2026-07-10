@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Gameplay umbrella for Inuit communities; boundaries are approximate and not modern claims.
+graphical_culture = northamericagfx
+
+color = { 75 222 166 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

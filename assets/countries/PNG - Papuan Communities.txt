@@ -1,0 +1,19 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Regional authority slot for diverse Papuan communities.
+government = tribal
+add_government_reform = polynesian_tribe
+government_rank = 1
+primary_culture = papuan
+religion = animism
+technology_group = polynesian_tech
+capital = 1237
+
+1444.11.11 = {
+	monarch = {
+		name = "Community Council"
+		adm = 3
+		dip = 3
+		mil = 3
+		regent = yes
+	}
+}

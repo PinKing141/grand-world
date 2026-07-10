@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Represents Khanty and related Ob-Ugric principalities and communities.
+graphical_culture = asiangfx
+
+color = { 201 46 230 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

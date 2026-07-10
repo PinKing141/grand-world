@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Gameplay umbrella for Acholi Lango and neighbouring Nilotic communities at this map resolution.
+graphical_culture = africangfx
+
+color = { 93 194 142 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

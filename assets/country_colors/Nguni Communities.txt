@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Represents 1444 Nguni-speaking communities without projecting the nineteenth-century Zulu kingdom backward.
+graphical_culture = africangfx
+
+color = { 201 136 85 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}

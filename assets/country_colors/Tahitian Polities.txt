@@ -1,0 +1,11 @@
+# Generated cultural-territorial authority for the 1444 scenario.
+# Territorial authority slot for Tahitian and Society Islands polities.
+graphical_culture = asiangfx
+
+color = { 138 181 36 }
+
+revolutionary_colors = { 8 5 8 }
+
+monarch_names = {
+	"Community Council #0" = 100
+}
