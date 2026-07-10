@@ -36,7 +36,7 @@ This directory contains the reproducible workflow for assigning the 11 November 
    python tools/historical_ownership/build_manifest.py --apply-approved --check
    ~~~
 
-5. Bake the political textures. The CPU baker is deterministic and avoids the Godot 4.7 compute-shader crash path:
+5. Bake the political textures and the explicit terrain-class texture. The latter records water, owned land, unowned land, and impassable terrain without runtime colour guessing. The CPU baker is deterministic and avoids the Godot 4.7 compute-shader crash path:
 
    ~~~powershell
    python tools/historical_ownership/bake_political_textures.py

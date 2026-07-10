@@ -14,6 +14,26 @@ WATER_NAME = re.compile(
     re.IGNORECASE,
 )
 
+# The imported province set retains the classic contiguous sea-zone block.
+# Two later map revisions reuse IDs in that range for land and must not be
+# folded into the water class.
+SEA_ZONE_ID_RANGE = range(1250, 1742)
+SEA_ZONE_LAND_EXCEPTIONS = {1306, 1658}  # Sao Tome, Everglades
+KNOWN_INLAND_WATER_IDS = {
+    1886, 1887, 1890, 1891, 1897,
+    1904, 1905, 1906, 1907, 1908, 1909, 1910,
+    1977, 2953,
+    4132, 4133, 4134, 4136, 4137, 4138, 4139, 4140,
+}
+
+
+def is_water_definition(province_id: int, province_name: str) -> bool:
+    if province_id in SEA_ZONE_ID_RANGE and province_id not in SEA_ZONE_LAND_EXCEPTIONS:
+        return True
+    if province_id in KNOWN_INLAND_WATER_IDS:
+        return True
+    return WATER_NAME.search(province_name) is not None
+
 
 def main() -> int:
     rows, _countries = ownership.build_manifest()
@@ -21,18 +41,23 @@ def main() -> int:
     today = datetime.now(timezone.utc).date().isoformat()
     staged = 0
     for row in rows:
+        province_id = int(row["province_id"])
+        existing_override = overrides.get(province_id)
+        owns_existing_override = (
+            existing_override is not None
+            and existing_override.get("reviewer") == "Codex terrain-exclusion pass"
+        )
         if row["category"] not in {
             "water_candidate",
             "uninhabited_or_wasteland_research_required",
             "missing_active_history",
-        }:
+        } and not owns_existing_override:
             continue
-        province_id = int(row["province_id"])
-        if province_id in overrides:
+        if existing_override is not None and not owns_existing_override:
             continue
-        if WATER_NAME.search(row["province_name"]):
+        if is_water_definition(province_id, row["province_name"]):
             authority_type = "water_or_inland_lake"
-            note = "Reviewed as water/inland-lake terrain from the imported name and map texture."
+            note = "Reviewed as water/inland-lake terrain from the imported sea-zone block, name, and map texture."
             confidence = "high"
         else:
             authority_type = "impassable_or_non_playable_terrain"

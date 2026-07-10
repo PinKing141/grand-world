@@ -2,10 +2,12 @@ shader_type spatial;
 render_mode unshaded;
 uniform sampler2D subview_image : source_color, filter_linear;
 uniform sampler2D ocean_texture : source_color, filter_linear;
+uniform sampler2D terrain_class_map : filter_nearest;
 uniform sampler2D lookup_map : filter_nearest;
-uniform vec4 ocean_color : source_color;
-uniform vec4 wasteland_color : source_color = vec4(0.20, 0.22, 0.20, 1.0);
-uniform float terrain_land_threshold : hint_range(0.0, 1.0, 0.01) = 0.34;
+uniform vec4 deep_ocean_color : source_color = vec4(0.018, 0.075, 0.14, 1.0);
+uniform vec4 unowned_land_color : source_color = vec4(0.38, 0.40, 0.30, 1.0);
+uniform vec4 impassable_color : source_color = vec4(0.24, 0.24, 0.20, 1.0);
+uniform float owned_terrain_strength : hint_range(0.0, 0.5, 0.01) = 0.16;
 uniform bool hover_enabled = false;
 uniform bool selection_enabled = false;
 uniform vec2 hovered_province = vec2(-1.0);
@@ -44,13 +46,6 @@ bool diag(inout vec4 sum, vec2 ip, vec2 p1, vec2 p2, float thickness)
 	}
 	return false;
 }
-const float EPSILON = 0.001;
-
-bool colors_equal(vec4 a, vec4 b)
-{
-	return all(lessThan(abs(a - b), vec4(EPSILON)));
-}
-
 bool province_matches(vec2 encoded_id, vec2 target_id)
 {
 	vec2 tolerance = vec2(0.5 / 255.0);
@@ -89,29 +84,47 @@ void fragment()
 	}
 
 
-	if(s.a < 0.1){
-		vec4 terrain_sample = texture(ocean_texture, UV);
-		float land_factor = smoothstep(terrain_land_threshold - 0.08, terrain_land_threshold + 0.08, terrain_sample.g);
-		vec3 ocean_surface = terrain_sample.rgb * vec3(0.65, 0.82, 1.08);
-		s = vec4(mix(ocean_surface, wasteland_color.rgb, land_factor), 1.0);
-		}
-	else if(colors_equal(s, ocean_color)){
-			s = texture(ocean_texture, UV);
-		}
+	// The CPU-baked class texture is authoritative. Its red channel encodes:
+	// 0 = water, 1/3 = owned land, 2/3 = unowned land, 1 = impassable.
+	// This avoids guessing land from texture brightness every frame.
+	float terrain_class = texture(terrain_class_map, UV).r;
+	vec3 terrain_rgb = texture(ocean_texture, UV).rgb;
+	float terrain_luma = dot(terrain_rgb, vec3(0.2126, 0.7152, 0.0722));
+	float terrain_detail = smoothstep(0.12, 0.82, terrain_luma);
+
+	if (terrain_class < 0.17)
+	{
+		vec3 ocean_surface = terrain_rgb * vec3(0.62, 0.80, 1.12);
+		s = vec4(mix(deep_ocean_color.rgb, ocean_surface, 0.78), 1.0);
+	}
+	else if (terrain_class < 0.50)
+	{
+		// Keep country colours readable while allowing a restrained terrain relief.
+		float terrain_shade = mix(0.86, 1.10, terrain_detail);
+		s.rgb = mix(s.rgb, s.rgb * terrain_shade, owned_terrain_strength);
+		s.a = 1.0;
+
+		float df_province = texture(distance_field, UV).r;
+
+		float center_factor = smoothstep(min_center, 1.0, df_province);
+
+		float noise = texture(noise_texture, UV).r;
+
+		float noise_factor = smoothstep(noise_threshold, 1.0, noise); // Wider range = softer
+
+		float white_amount = center_factor * noise_factor * noise_strength;
+
+		s.rgb = mix(s.rgb, vec3(1.0), white_amount);
+	}
+	else if (terrain_class < 0.83)
+	{
+		float terrain_shade = mix(0.82, 1.10, terrain_detail);
+		s = vec4(unowned_land_color.rgb * terrain_shade, 1.0);
+	}
 	else
 	{
-	float df_province = texture(distance_field, UV).r;
-
-
-	float center_factor = smoothstep(min_center, 1.0, df_province);
-
-	float noise = texture(noise_texture, UV).r;
-
-	float noise_factor = smoothstep(noise_threshold, 1.0, noise); // Wider range = softer
-
-	float white_amount = center_factor * noise_factor * noise_strength;
-
-	s.rgb = mix(s.rgb, vec3(1.0), white_amount);
+		float terrain_shade = mix(0.76, 1.08, terrain_detail);
+		s = vec4(impassable_color.rgb * terrain_shade, 1.0);
 	}
 
 	vec2 encoded_province = texture(lookup_map, UV).rg;

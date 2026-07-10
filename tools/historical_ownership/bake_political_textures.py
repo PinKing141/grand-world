@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bake color_map.png and mask_political_map.png on CPU without Godot compute shaders."""
+"""Bake political and terrain-class textures on CPU without Godot compute shaders."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import csv
 import re
 import struct
 import zlib
+from collections import Counter
 from pathlib import Path
 
 import build_manifest as ownership
@@ -17,7 +18,17 @@ ROOT = Path(__file__).resolve().parents[2]
 PROVINCE_BITMAP = ROOT / "assets" / "provinces.bmp"
 COLOR_MAP = ROOT / "assets" / "color_map.png"
 POLITICAL_MASK = ROOT / "assets" / "mask_political_map.png"
+TERRAIN_CLASS_MAP = ROOT / "assets" / "terrain_class_map.png"
 COLOR_PATTERN = re.compile(r"color\s*=\s*\{\s*(\d+)\s+(\d+)\s+(\d+)\s*\}")
+WATER_NAME_PATTERN = re.compile(
+    r"(?:sea|ocean|gulf|lake|strait|channel|bay|bight|coast|basin|lagoon|reef|bank|sound|hav|approach|delta|archipelago|shelf|trench|current|gap|river|firth|chott)",
+    re.IGNORECASE,
+)
+
+TERRAIN_WATER = 0
+TERRAIN_OWNED_LAND = 85
+TERRAIN_UNOWNED_LAND = 170
+TERRAIN_IMPASSABLE = 255
 
 
 def png_chunk(chunk_type: bytes, data: bytes) -> bytes:
@@ -86,6 +97,39 @@ def load_province_colors(country_colors: dict[str, tuple[int, int, int]], max_id
     return colors
 
 
+def load_terrain_classes(max_id: int) -> list[int]:
+    classes = [TERRAIN_WATER for _ in range(max_id + 1)]
+    if not ownership.MANIFEST.exists():
+        raise FileNotFoundError("Build docs/data/1444_ownership_manifest.csv before baking terrain classes")
+    with ownership.MANIFEST.open("r", encoding="utf-8-sig", newline="") as handle:
+        for row in csv.DictReader(handle):
+            raw_id = (row.get("province_id") or "").strip()
+            if not raw_id.isdigit():
+                continue
+            province_id = int(raw_id)
+            if province_id > max_id:
+                continue
+            status = (row.get("status") or "").strip()
+            authority_type = (row.get("authority_type") or "").strip()
+            province_name = (row.get("province_name") or "").strip()
+            if status in {"existing", "applied"}:
+                terrain_class = TERRAIN_OWNED_LAND
+            elif authority_type == "uninhabited_land":
+                terrain_class = TERRAIN_UNOWNED_LAND
+            elif authority_type == "water_or_inland_lake" or WATER_NAME_PATTERN.search(province_name):
+                terrain_class = TERRAIN_WATER
+            elif authority_type in {"impassable_or_non_playable_terrain", "non_playable_definition"}:
+                terrain_class = TERRAIN_IMPASSABLE
+            elif province_name.casefold().startswith("unusedwater") or province_name.casefold().startswith("unusedsea"):
+                terrain_class = TERRAIN_WATER
+            elif province_name.casefold().startswith("unused"):
+                terrain_class = TERRAIN_IMPASSABLE
+            else:
+                terrain_class = TERRAIN_UNOWNED_LAND
+            classes[province_id] = terrain_class
+    return classes
+
+
 def read_bmp_header(data: bytes) -> tuple[int, int, int, int]:
     if data[:2] != b"BM":
         raise ValueError("Province bitmap is not a BMP file")
@@ -134,10 +178,35 @@ def political_mask_rows(
         yield row
 
 
+def terrain_class_rows(
+    bmp: bytes,
+    pixel_offset: int,
+    width: int,
+    signed_height: int,
+    row_stride: int,
+    definition_colors: dict[tuple[int, int, int], int],
+    terrain_classes: list[int],
+):
+    height = abs(signed_height)
+    bottom_up = signed_height > 0
+    for output_y in range(height):
+        source_y = height - 1 - output_y if bottom_up else output_y
+        source_start = pixel_offset + source_y * row_stride
+        row = bytearray(width * 4)
+        for x in range(width):
+            source = source_start + x * 3
+            blue, green, red = bmp[source:source + 3]
+            province_id = definition_colors.get((red, green, blue), -1)
+            terrain_class = terrain_classes[province_id] if 0 <= province_id < len(terrain_classes) else TERRAIN_WATER
+            row[x * 4:x * 4 + 4] = bytes((terrain_class, 0, 0, 255))
+        yield row
+
+
 def main() -> int:
     definition_colors, max_id = load_definitions()
     country_colors = load_country_colors()
     province_colors = load_province_colors(country_colors, max_id)
+    terrain_classes = load_terrain_classes(max_id)
     missing_colored = [province_id for province_id, color in enumerate(province_colors) if color[3] and color[:3] == (0, 0, 0)]
     if missing_colored:
         raise ValueError(f"Invalid opaque-black province colors: {missing_colored[:20]}")
@@ -160,8 +229,30 @@ def main() -> int:
             province_colors,
         ),
     )
+    write_rgba_png(
+        TERRAIN_CLASS_MAP,
+        width,
+        height,
+        terrain_class_rows(
+            bmp,
+            pixel_offset,
+            width,
+            signed_height,
+            row_stride,
+            definition_colors,
+            terrain_classes,
+        ),
+    )
     owned = sum(1 for color in province_colors if color[3])
+    class_counts = Counter(terrain_classes)
     print(f"Baked political textures for {owned} owned provinces at {width}x{height}.")
+    print(
+        "Terrain definitions: "
+        f"water={class_counts[TERRAIN_WATER]}, "
+        f"owned={class_counts[TERRAIN_OWNED_LAND]}, "
+        f"unowned={class_counts[TERRAIN_UNOWNED_LAND]}, "
+        f"impassable={class_counts[TERRAIN_IMPASSABLE]}."
+    )
     return 0
 
 
