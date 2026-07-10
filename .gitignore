@@ -10,6 +10,3 @@ __pycache__/
 
 # Windows lock/temp copies left behind when a plugin DLL is rebuilt while loaded.
 ~*.dll
-
-# Local scratch copy of the upstream gs-map-editor package.
-/helper/
