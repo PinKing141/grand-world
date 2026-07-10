@@ -10,7 +10,10 @@ uniform sampler2D height_map : filter_linear;
 uniform sampler2D lookup_map : filter_nearest;
 uniform vec4 deep_ocean_color : source_color = vec4(0.018, 0.075, 0.14, 1.0);
 // How strongly the active mapmode colour covers the terrain underneath.
-uniform float overlay_strength : hint_range(0.0, 1.0, 0.01) = 0.72;
+uniform float overlay_strength : hint_range(0.0, 1.0, 0.01) = 0.9;
+// Ground texture shows through as brightness detail, not as a colour wash,
+// so mapmode hues stay saturated instead of turning milky.
+uniform float terrain_texture_strength : hint_range(0.0, 1.0, 0.01) = 0.7;
 uniform float unowned_biome_brightness : hint_range(0.5, 1.25, 0.01) = 0.92;
 uniform float impassable_biome_brightness : hint_range(0.5, 1.25, 0.01) = 0.88;
 uniform float wasteland_desaturation : hint_range(0.0, 1.0, 0.01) = 0.22;
@@ -21,7 +24,7 @@ uniform float wasteland_hatch_period : hint_range(4.0, 64.0, 1.0) = 22.0;
 uniform float relief_strength : hint_range(0.0, 16.0, 0.1) = 7.0;
 uniform float relief_owned_factor : hint_range(0.0, 1.0, 0.01) = 0.65;
 uniform float relief_max : hint_range(0.0, 0.5, 0.01) = 0.26;
-uniform float relief_elevation_lift : hint_range(0.0, 0.5, 0.01) = 0.14;
+uniform float relief_elevation_lift : hint_range(0.0, 0.5, 0.01) = 0.10;
 // True geometric displacement: the terrain mesh's vertices are raised by the
 // heightmap, so mountains physically stand off the map plane.
 uniform float terrain_height_scale : hint_range(0.0, 2.0, 0.01) = 0.35;
@@ -38,7 +41,7 @@ uniform sampler2D noise_texture : filter_linear;
 
 uniform float noise_threshold : hint_range(0.0, 1.0, 0.01) = 0.3;
 uniform float min_center : hint_range(0.0, 0.16, 0.01) = 0.16;
-uniform float noise_strength : hint_range(0.0, 1.0, 0.01) = 0.3;
+uniform float noise_strength : hint_range(0.0, 1.0, 0.01) = 0.0;
 
 
 // Parameters
@@ -135,9 +138,12 @@ void fragment()
 	}
 	else if (terrain_class < 0.50)
 	{
-		// Mapmode colour as a wash over the physical ground, CK/EU-style; the
-		// terrain and its relief stay visible through whatever layer is active.
-		s.rgb = mix(ground_rgb, s.rgb, overlay_strength);
+		// Mapmode colour over the physical ground, CK/EU-style. The ground
+		// contributes shading detail through its luminance so the colour keeps
+		// its saturation; only a small amount of true ground colour bleeds in.
+		float ground_luma = dot(ground_rgb, vec3(0.2126, 0.7152, 0.0722));
+		vec3 mapmode_rgb = s.rgb * mix(1.0, 0.72 + 0.56 * ground_luma, terrain_texture_strength);
+		s.rgb = mix(ground_rgb, mapmode_rgb, overlay_strength);
 		s.rgb *= 1.0 + (relief_shade + elevation * relief_elevation_lift) * relief_owned_factor;
 		s.a = 1.0;
 
