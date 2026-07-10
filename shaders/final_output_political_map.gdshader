@@ -3,12 +3,14 @@ render_mode unshaded;
 uniform sampler2D subview_image : source_color, filter_linear;
 uniform sampler2D ocean_texture : source_color, filter_linear;
 uniform sampler2D terrain_class_map : filter_nearest;
-uniform sampler2D biome_map : source_color, filter_nearest;
+// Physical ground layer baked by tools/terrain/build_terrain_base.py. Every
+// colour mapmode (political now; religion/ideology later) is a wash over it.
+uniform sampler2D terrain_base_map : source_color, filter_linear;
 uniform sampler2D height_map : filter_linear;
 uniform sampler2D lookup_map : filter_nearest;
 uniform vec4 deep_ocean_color : source_color = vec4(0.018, 0.075, 0.14, 1.0);
-uniform float owned_terrain_strength : hint_range(0.0, 0.5, 0.01) = 0.16;
-uniform float owned_biome_strength : hint_range(0.0, 0.35, 0.01) = 0.10;
+// How strongly the active mapmode colour covers the terrain underneath.
+uniform float overlay_strength : hint_range(0.0, 1.0, 0.01) = 0.72;
 uniform float unowned_biome_brightness : hint_range(0.5, 1.25, 0.01) = 0.92;
 uniform float impassable_biome_brightness : hint_range(0.5, 1.25, 0.01) = 0.88;
 uniform float wasteland_desaturation : hint_range(0.0, 1.0, 0.01) = 0.22;
@@ -109,9 +111,7 @@ void fragment()
 	// This avoids guessing land from texture brightness every frame.
 	float terrain_class = texture(terrain_class_map, UV).r;
 	vec3 terrain_rgb = texture(ocean_texture, UV).rgb;
-	vec3 biome_rgb = texture(biome_map, UV).rgb;
-	float terrain_luma = dot(terrain_rgb, vec3(0.2126, 0.7152, 0.0722));
-	float terrain_detail = smoothstep(0.12, 0.82, terrain_luma);
+	vec3 ground_rgb = texture(terrain_base_map, UV).rgb;
 
 	// Hillshade from the baked elevation texture, lit from the northwest.
 	// Two slope scales combine crisp ridge lines with the broad swell of a
@@ -135,10 +135,9 @@ void fragment()
 	}
 	else if (terrain_class < 0.50)
 	{
-		// Keep country colours readable while allowing a restrained terrain relief.
-		float terrain_shade = mix(0.86, 1.10, terrain_detail);
-		s.rgb = mix(s.rgb, biome_rgb, owned_biome_strength);
-		s.rgb = mix(s.rgb, s.rgb * terrain_shade, owned_terrain_strength);
+		// Mapmode colour as a wash over the physical ground, CK/EU-style; the
+		// terrain and its relief stay visible through whatever layer is active.
+		s.rgb = mix(ground_rgb, s.rgb, overlay_strength);
 		s.rgb *= 1.0 + (relief_shade + elevation * relief_elevation_lift) * relief_owned_factor;
 		s.a = 1.0;
 
@@ -156,16 +155,14 @@ void fragment()
 	}
 	else if (terrain_class < 0.83)
 	{
-		float terrain_shade = mix(0.82, 1.10, terrain_detail);
-		s = vec4(biome_rgb * terrain_shade * unowned_biome_brightness * (1.0 + relief_shade + elevation * relief_elevation_lift), 1.0);
+		s = vec4(ground_rgb * unowned_biome_brightness * (1.0 + relief_shade + elevation * relief_elevation_lift), 1.0);
 	}
 	else
 	{
-		// Impassable wasteland: keep the biome colour readable (ice stays icy,
+		// Impassable wasteland: keep the ground colour readable (ice stays icy,
 		// mountains stay rocky) but mark it as non-playable with a slight
 		// desaturation and a faint diagonal hatch.
-		float terrain_shade = mix(0.76, 1.08, terrain_detail);
-		vec3 wasteland = biome_rgb * terrain_shade * impassable_biome_brightness * (1.0 + relief_shade + elevation * relief_elevation_lift);
+		vec3 wasteland = ground_rgb * impassable_biome_brightness * (1.0 + relief_shade + elevation * relief_elevation_lift);
 		float wasteland_luma = dot(wasteland, vec3(0.2126, 0.7152, 0.0722));
 		wasteland = mix(wasteland, vec3(wasteland_luma), wasteland_desaturation);
 		float hatch_wave = sin((ip.x + ip.y) * 6.2831853 / wasteland_hatch_period);

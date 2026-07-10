@@ -15,7 +15,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/map_hud.tscn" id="13_hud"]
 [ext_resource type="Script" path="res://scripts/strategy_camera_controller.gd" id="14_camera"]
 [ext_resource type="Texture2D" path="res://assets/terrain_class_map.png" id="15_terrain"]
-[ext_resource type="Texture2D" path="res://assets/biome_map.png" id="16_biome"]
+[ext_resource type="Texture2D" path="res://assets/terrain_base_map.png" id="16_ground"]
 [ext_resource type="Texture2D" path="res://assets/heightmap.png" id="17_height"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_eb6dy"]
@@ -31,7 +31,7 @@ shader = ExtResource("1_tipki")
 shader_parameter/subview_image = SubResource("ViewportTexture_tipki")
 shader_parameter/ocean_texture = ExtResource("5_ya4ey")
 shader_parameter/terrain_class_map = ExtResource("15_terrain")
-shader_parameter/biome_map = ExtResource("16_biome")
+shader_parameter/terrain_base_map = ExtResource("16_ground")
 shader_parameter/height_map = ExtResource("17_height")
 shader_parameter/lookup_map = ExtResource("6_85g3d")
 shader_parameter/distance_field = SubResource("ViewportTexture_eb6dy")
