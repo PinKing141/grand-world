@@ -1,0 +1,3 @@
+# Documentation and offline data manifests are not runtime Godot resources.
+# Ignoring this directory prevents large CSV files from being imported as
+# translation catalogs.

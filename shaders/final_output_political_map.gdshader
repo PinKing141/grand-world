@@ -3,11 +3,13 @@ render_mode unshaded;
 uniform sampler2D subview_image : source_color, filter_linear;
 uniform sampler2D ocean_texture : source_color, filter_linear;
 uniform sampler2D terrain_class_map : filter_nearest;
+uniform sampler2D biome_map : source_color, filter_nearest;
 uniform sampler2D lookup_map : filter_nearest;
 uniform vec4 deep_ocean_color : source_color = vec4(0.018, 0.075, 0.14, 1.0);
-uniform vec4 unowned_land_color : source_color = vec4(0.38, 0.40, 0.30, 1.0);
-uniform vec4 impassable_color : source_color = vec4(0.24, 0.24, 0.20, 1.0);
 uniform float owned_terrain_strength : hint_range(0.0, 0.5, 0.01) = 0.16;
+uniform float owned_biome_strength : hint_range(0.0, 0.35, 0.01) = 0.10;
+uniform float unowned_biome_brightness : hint_range(0.5, 1.25, 0.01) = 0.92;
+uniform float impassable_biome_brightness : hint_range(0.5, 1.25, 0.01) = 0.82;
 uniform bool hover_enabled = false;
 uniform bool selection_enabled = false;
 uniform vec2 hovered_province = vec2(-1.0);
@@ -89,6 +91,7 @@ void fragment()
 	// This avoids guessing land from texture brightness every frame.
 	float terrain_class = texture(terrain_class_map, UV).r;
 	vec3 terrain_rgb = texture(ocean_texture, UV).rgb;
+	vec3 biome_rgb = texture(biome_map, UV).rgb;
 	float terrain_luma = dot(terrain_rgb, vec3(0.2126, 0.7152, 0.0722));
 	float terrain_detail = smoothstep(0.12, 0.82, terrain_luma);
 
@@ -101,6 +104,7 @@ void fragment()
 	{
 		// Keep country colours readable while allowing a restrained terrain relief.
 		float terrain_shade = mix(0.86, 1.10, terrain_detail);
+		s.rgb = mix(s.rgb, biome_rgb, owned_biome_strength);
 		s.rgb = mix(s.rgb, s.rgb * terrain_shade, owned_terrain_strength);
 		s.a = 1.0;
 
@@ -119,12 +123,12 @@ void fragment()
 	else if (terrain_class < 0.83)
 	{
 		float terrain_shade = mix(0.82, 1.10, terrain_detail);
-		s = vec4(unowned_land_color.rgb * terrain_shade, 1.0);
+		s = vec4(biome_rgb * terrain_shade * unowned_biome_brightness, 1.0);
 	}
 	else
 	{
 		float terrain_shade = mix(0.76, 1.08, terrain_detail);
-		s = vec4(impassable_color.rgb * terrain_shade, 1.0);
+		s = vec4(biome_rgb * terrain_shade * impassable_biome_brightness, 1.0);
 	}
 
 	vec2 encoded_province = texture(lookup_map, UV).rg;

@@ -5,6 +5,12 @@ const PROVINCE_MAP_PATH := "res://assets/provinces.bmp"
 const GEOGRAPHY_MAP_PATH := "res://assets/colormap_water.png"
 const OUTPUT_PATH := "res://docs/data/province_geography.csv"
 
+# This strategy map uses a cropped Mercator-style projection, not a full
+# pole-to-pole equirectangular projection. These constants are calibrated from
+# stable control points at Stockholm, London, and Cairo in the province map.
+const MERCATOR_EQUATOR_Y := 1343.856076
+const MERCATOR_PIXELS_PER_UNIT := 796.164187
+
 
 func _initialize() -> void:
 	var definitions := _load_definitions()
@@ -111,7 +117,8 @@ func _initialize() -> void:
 		var centroid_x := float(sum_x[province_id]) / count
 		var centroid_y := float(sum_y[province_id]) / count
 		var longitude := centroid_x / width * 360.0 - 180.0
-		var latitude := 90.0 - centroid_y / height * 180.0
+		var mercator_y := (MERCATOR_EQUATOR_Y - centroid_y) / MERCATOR_PIXELS_PER_UNIT
+		var latitude := rad_to_deg(2.0 * atan(exp(mercator_y)) - PI / 2.0)
 		output.store_csv_line(PackedStringArray([
 			str(province_id), str(names.get(province_id, "")), str(count),
 			"%.3f" % centroid_x, "%.3f" % centroid_y,

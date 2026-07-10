@@ -28,6 +28,7 @@ func _run() -> void:
 	_require(hud != null, "map HUD must exist")
 	_require(selector.province_image != null and not selector.province_image.is_empty(), "province image must be ready")
 	_require(map.final_material.get_shader_parameter("terrain_class_map") != null, "explicit terrain class texture must be assigned")
+	_require(map.final_material.get_shader_parameter("biome_map") != null, "physical biome texture must be assigned")
 
 	var original_owner: String = country_data.province_id_to_owner.get(1, "")
 	var country_field_mode = map.country_field.render_target_update_mode

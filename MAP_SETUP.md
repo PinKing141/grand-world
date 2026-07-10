@@ -53,6 +53,8 @@ Normal map interaction no longer changes province ownership. Ownership editing i
 
 The project disables parallel asset imports because Godot 4.7 can crash when these compute shaders are imported concurrently.
 
+If the Output panel reports `progress_dialog.cpp` errors about flushing the message queue, another Godot editor or headless import is usually touching the same `.godot` import cache. Keep only one editor/import process open for this project. When the editor is already open, let its FileSystem dock import changed assets automatically; do not launch a separate `Godot --import` process at the same time. Restart the editor once after stopping any orphaned headless Godot process to clear stale progress tasks.
+
 The demo now loads prebaked political-map textures by default. Rebuild them after ownership-data changes with:
 
 ~~~powershell
