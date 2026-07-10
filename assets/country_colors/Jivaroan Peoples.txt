@@ -2,7 +2,7 @@
 # Gameplay umbrella for Jivaroan communities including Shuar-related groups.
 graphical_culture = southamericagfx
 
-color = { 73 227 155 }
+color = { 72 224 153 }
 
 revolutionary_colors = { 8 5 8 }
 

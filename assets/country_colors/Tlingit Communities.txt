@@ -2,7 +2,7 @@
 # Corrects the imported broad Aleutian culture label for Yakutat.
 graphical_culture = northamericagfx
 
-color = { 227 43 123 }
+color = { 220 42 119 }
 
 revolutionary_colors = { 8 5 8 }
 

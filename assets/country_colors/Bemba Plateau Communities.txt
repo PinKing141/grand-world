@@ -2,7 +2,7 @@
 # Gameplay territorial authority; does not project the later centralized Bemba state backward into 1444.
 graphical_culture = africangfx
 
-color = { 180 230 44 }
+color = { 173 221 42 }
 
 revolutionary_colors = { 8 5 8 }
 

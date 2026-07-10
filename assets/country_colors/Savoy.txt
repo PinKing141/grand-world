@@ -2,7 +2,7 @@
 
 graphical_culture = westerngfx
 
-color = { 235  196 231 }
+color = { 224 187 221 }
 
 revolutionary_colors = { 5  13  6 } #Republic of Alba
 

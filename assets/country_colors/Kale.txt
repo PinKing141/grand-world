@@ -3,7 +3,7 @@
 graphical_culture = asiangfx
 special_unit_culture = south_east_asian_special
 
-color = { 148  182  3 }
+color = { 150 182 15 }
 
 historical_idea_groups = {
 	defensive_ideas

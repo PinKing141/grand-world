@@ -2,7 +2,7 @@
 
 graphical_culture = westerngfx
 
-color = { 153  240  182 }
+color = { 143 224 170 }
 
 revolutionary_colors = { 9  5  8 } #Helvetian Republic
 

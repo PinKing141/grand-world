@@ -2,7 +2,7 @@
 # Represents Khanty and related Ob-Ugric principalities and communities.
 graphical_culture = asiangfx
 
-color = { 201 46 230 }
+color = { 195 45 223 }
 
 revolutionary_colors = { 8 5 8 }
 

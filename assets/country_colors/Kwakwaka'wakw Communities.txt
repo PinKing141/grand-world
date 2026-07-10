@@ -2,7 +2,7 @@
 # Corrects the imported broad Aleutian culture label for Kwakiutl territory.
 graphical_culture = northamericagfx
 
-color = { 85 230 229 }
+color = { 49 224 223 }
 
 revolutionary_colors = { 8 5 8 }
 

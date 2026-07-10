@@ -2,7 +2,7 @@
 # Gameplay umbrella for mobile peoples of the Pampas; Het is treated as a dataset culture label rather than one state.
 graphical_culture = southamericagfx
 
-color = { 230 185 110 }
+color = { 224 180 107 }
 
 revolutionary_colors = { 8 5 8 }
 

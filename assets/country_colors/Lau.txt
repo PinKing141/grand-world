@@ -2,7 +2,7 @@
 
 graphical_culture = polynesiangfx
 
-color = { 250 220 180 }
+color = { 224 197 162 }
 #revolutionary_colors = { 10 8 5 }
 
 historical_idea_groups = {

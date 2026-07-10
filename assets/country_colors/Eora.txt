@@ -2,7 +2,7 @@
 
 graphical_culture = aboriginalgfx
 
-color = { 243  155  75 }
+color = { 224 143 69 }
 revolutionary_colors = { 16 8 1 } #Aboriginal flag colours
 
 historical_idea_groups = {

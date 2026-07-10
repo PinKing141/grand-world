@@ -2,7 +2,7 @@
 
 graphical_culture = westerngfx
 
-color = { 20  50  210 }
+color = { 19 47 197 }
 
 historical_council = concilatory
 

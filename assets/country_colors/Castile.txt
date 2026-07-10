@@ -4,7 +4,7 @@ graphical_culture = westerngfx
 
 historical_council = harsh
 
-color = { 193  171  8 }
+color = { 193 172 15 }
 
 revolutionary_colors = { 5  8  5 }
 

@@ -2,7 +2,7 @@
 
 graphical_culture = westerngfx
 
-color = { 61  152  180 }
+color = { 93 160 180 }
 
 revolutionary_colors = { 13  8  5 } #Repubblica Ancona
 

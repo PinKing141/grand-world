@@ -2,7 +2,7 @@
 
 graphical_culture = westerngfx
 
-color = { 0 105 104 }
+color = { 8 105 104 }
 
 preferred_religion = reformed
 

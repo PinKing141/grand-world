@@ -2,7 +2,7 @@
 
 graphical_culture = northamericagfx
 
-color = { 92 235 29 }
+color = { 80 204 25 }
 revolutionary_colors = { 0 1 0 }
 
 historical_idea_groups = {
