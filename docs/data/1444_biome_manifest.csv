@@ -1102,7 +1102,7 @@
 1101,Diego Garcia,73.73224,-13.27541,15,Tropical & Subtropical Moist Broadleaf Forests,42,107,61,latitude_fallback,
 1102,Mauritius,57.17685,-25.93229,14,"Tropical & Subtropical Grasslands, Savannas & Shrublands",157,145,70,latitude_fallback,
 1103,Bourbon,54.56676,-27.07571,14,"Tropical & Subtropical Grasslands, Savannas & Shrublands",157,145,70,latitude_fallback,
-1104,Eiriksfjord,-46.29503,63.99083,8,Rock and Ice,196,211,216,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
+1104,Eiriksfjord,-46.29503,63.99083,8,Rock and Ice,234,242,248,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
 1105,Vestbygden,-51.01539,66.36853,16,Tundra,132,139,112,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
 1106,Whangarei,173.91119,-32.79374,9,Temperate Broadleaf & Mixed Forests,81,119,70,latitude_fallback,
 1107,Taranaki,174.95475,-37.37427,9,Temperate Broadleaf & Mixed Forests,81,119,70,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
@@ -1802,7 +1802,7 @@
 1801,Kalahari,20.09665,-25.65289,2,Deserts & Xeric Shrublands,194,157,96,historical_gameplay_override,
 1802,Northern Amazonas,-68.32460,6.98538,15,Tropical & Subtropical Moist Broadleaf Forests,42,107,61,historical_gameplay_override,
 1803,Southern Amazonas,-56.34756,2.87832,15,Tropical & Subtropical Moist Broadleaf Forests,42,107,61,historical_gameplay_override,
-1804,Greenland,-44.50333,67.37145,8,Rock and Ice,196,211,216,historical_gameplay_override,
+1804,Greenland,-44.50333,67.37145,8,Rock and Ice,234,242,248,historical_gameplay_override,
 1805,Québec,-70.96789,63.24020,16,Tundra,132,139,112,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
 1806,Weagamow,-90.83801,61.64534,1,Boreal Forests/Taiga,57,88,64,latitude_fallback,
 1807,Baffin Island,-71.41291,68.65066,16,Tundra,132,139,112,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
@@ -1922,7 +1922,7 @@
 1921,Peter Pond Lake,-108.59425,64.12055,0,Water,0,0,0,terrain_water_class,
 1922,Great salt lake,-112.92849,52.49130,0,Water,0,0,0,terrain_water_class,
 1923,Williston Lake,-129.32795,64.97588,0,Water,0,0,0,terrain_water_class,
-1924,Greenland tip,-43.39644,62.89478,8,Rock and Ice,196,211,216,historical_gameplay_override,
+1924,Greenland tip,-43.39644,62.89478,0,Water,0,0,0,terrain_water_class,
 1925,Tana,37.84302,-4.95405,14,"Tropical & Subtropical Grasslands, Savannas & Shrublands",157,145,70,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
 1926,Northern baltic sea,20.49083,58.17580,0,Water,0,0,0,terrain_water_class,
 1927,Eastern baltic sea,18.65745,55.84771,0,Water,0,0,0,terrain_water_class,
@@ -2125,12 +2125,12 @@
 2124,Yarkand,76.56040,37.66470,7,Montane Grasslands & Shrublands,124,119,103,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
 2125,Kochkor,75.53898,42.29373,11,"Temperate Grasslands, Savannas & Shrublands",139,148,78,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
 2126,Chuy,73.48162,43.33718,2,Deserts & Xeric Shrublands,194,157,96,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
-2127,Yashilkul,72.45477,38.60043,8,Rock and Ice,196,211,216,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
+2127,Yashilkul,72.45477,38.60043,8,Rock and Ice,234,242,248,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
 2128,Ngari,79.58392,31.94176,7,Montane Grasslands & Shrublands,124,119,103,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
 2129,Changtang,85.06220,33.72544,7,Montane Grasslands & Shrublands,124,119,103,historical_gameplay_override,
 2130,Nyingchi,94.17279,30.86090,7,Montane Grasslands & Shrublands,124,119,103,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
 2131,Qamdo,97.15849,31.77618,7,Montane Grasslands & Shrublands,124,119,103,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
-2132,Markam,96.93586,29.50619,8,Rock and Ice,196,211,216,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
+2132,Markam,96.93586,29.50619,8,Rock and Ice,234,242,248,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
 2133,Dege,98.69409,33.30755,7,Montane Grasslands & Shrublands,124,119,103,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
 2134,Rebgong,96.95288,36.57879,7,Montane Grasslands & Shrublands,124,119,103,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
 2135,Garze,100.72283,32.36624,7,Montane Grasslands & Shrublands,124,119,103,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
@@ -3463,7 +3463,7 @@
 4479,Goraghat,88.18071,24.16926,15,Tropical & Subtropical Moist Broadleaf Forests,42,107,61,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
 4480,Mahikantha,72.51919,23.00450,13,Tropical & Subtropical Dry Broadleaf Forests,126,143,76,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
 4481,Punakah,89.83212,27.49406,9,Temperate Broadleaf & Mixed Forests,81,119,70,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
-4482,Sikkim,87.61199,27.72899,8,Rock and Ice,196,211,216,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
+4482,Sikkim,87.61199,27.72899,8,Rock and Ice,234,242,248,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
 4483,Morung,86.38130,27.38446,9,Temperate Broadleaf & Mixed Forests,81,119,70,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
 4484,Makwanpur,84.63995,27.23765,15,Tropical & Subtropical Moist Broadleaf Forests,42,107,61,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0
 4485,Palpa,82.90715,28.13984,12,Tropical & Subtropical Coniferous Forests,54,113,72,wwf_biome_centroid,https://services.arcgis.com/BG6nSlhZSAWtExvp/arcgis/rest/services/GlobalBiomes/FeatureServer/0

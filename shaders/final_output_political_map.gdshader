@@ -9,7 +9,10 @@ uniform vec4 deep_ocean_color : source_color = vec4(0.018, 0.075, 0.14, 1.0);
 uniform float owned_terrain_strength : hint_range(0.0, 0.5, 0.01) = 0.16;
 uniform float owned_biome_strength : hint_range(0.0, 0.35, 0.01) = 0.10;
 uniform float unowned_biome_brightness : hint_range(0.5, 1.25, 0.01) = 0.92;
-uniform float impassable_biome_brightness : hint_range(0.5, 1.25, 0.01) = 0.82;
+uniform float impassable_biome_brightness : hint_range(0.5, 1.25, 0.01) = 0.88;
+uniform float wasteland_desaturation : hint_range(0.0, 1.0, 0.01) = 0.22;
+uniform float wasteland_hatch_strength : hint_range(0.0, 0.3, 0.01) = 0.06;
+uniform float wasteland_hatch_period : hint_range(4.0, 64.0, 1.0) = 22.0;
 uniform bool hover_enabled = false;
 uniform bool selection_enabled = false;
 uniform vec2 hovered_province = vec2(-1.0);
@@ -22,7 +25,7 @@ uniform sampler2D noise_texture : filter_linear;
 
 
 uniform float noise_threshold : hint_range(0.0, 1.0, 0.01) = 0.3;
-uniform float min_center : hint_range(0.0, 0.16, 0.01) = 1.0;
+uniform float min_center : hint_range(0.0, 0.16, 0.01) = 0.16;
 uniform float noise_strength : hint_range(0.0, 1.0, 0.01) = 0.3;
 
 
@@ -127,8 +130,16 @@ void fragment()
 	}
 	else
 	{
+		// Impassable wasteland: keep the biome colour readable (ice stays icy,
+		// mountains stay rocky) but mark it as non-playable with a slight
+		// desaturation and a faint diagonal hatch.
 		float terrain_shade = mix(0.76, 1.08, terrain_detail);
-		s = vec4(biome_rgb * terrain_shade * impassable_biome_brightness, 1.0);
+		vec3 wasteland = biome_rgb * terrain_shade * impassable_biome_brightness;
+		float wasteland_luma = dot(wasteland, vec3(0.2126, 0.7152, 0.0722));
+		wasteland = mix(wasteland, vec3(wasteland_luma), wasteland_desaturation);
+		float hatch_wave = sin((ip.x + ip.y) * 6.2831853 / wasteland_hatch_period);
+		wasteland *= 1.0 - wasteland_hatch_strength * smoothstep(0.25, 0.9, hatch_wave);
+		s = vec4(wasteland, 1.0);
 	}
 
 	vec2 encoded_province = texture(lookup_map, UV).rg;

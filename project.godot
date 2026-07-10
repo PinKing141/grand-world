@@ -20,13 +20,17 @@ config/icon="res://icon.svg"
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
-[editor_plugins]
+[dotnet]
 
-enabled=PackedStringArray("res://addons/map_editor/plugin.cfg")
+project/assembly_name="Grand World V2"
 
 [editor]
 
 import/use_multiple_threads=false
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/map_editor/plugin.cfg")
 
 [input]
 
@@ -62,8 +66,6 @@ select={
 
 [rendering]
 
-rendering_device/driver.windows="d3d12"
-renderer/rendering_method="forward_plus"
-renderer/rendering_method.mobile="mobile"
 textures/canvas_textures/default_texture_filter=0
+rendering_device/driver.windows="d3d12"
 viewport/hdr_2d=true

@@ -48,7 +48,7 @@ BIOMES = {
     "Mangroves": (5, (43, 103, 82)),
     "Mediterranean Forests, Woodlands & Scrub": (6, (119, 132, 72)),
     "Montane Grasslands & Shrublands": (7, (124, 119, 103)),
-    "Rock and Ice": (8, (196, 211, 216)),
+    "Rock and Ice": (8, (234, 242, 248)),
     "Temperate Broadleaf & Mixed Forests": (9, (81, 119, 70)),
     "Temperate Conifer Forests": (10, (61, 103, 70)),
     "Temperate Grasslands, Savannas & Shrublands": (11, (139, 148, 78)),
@@ -93,7 +93,8 @@ BIOME_OVERRIDES = {
     1802: "Tropical & Subtropical Moist Broadleaf Forests",  # Northern Amazonas
     1803: "Tropical & Subtropical Moist Broadleaf Forests",  # Southern Amazonas
     1804: "Rock and Ice",  # Greenland
-    1924: "Rock and Ice",  # Greenland tip
+    # 1924 "Greenland tip" is a projection-artifact wedge reviewed as water in
+    # ownership_overrides.csv; the terrain water class assigns its biome.
 }
 
 
