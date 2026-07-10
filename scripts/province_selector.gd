@@ -8,10 +8,13 @@ signal selection_cleared()
 
 const RAY_LENGTH := 1000.0
 const INVALID_PROVINCE_ID := -1
+# World units per province-map pixel: the 56.32 x 20.48 terrain mesh spans the
+# 5632 x 2048 province bitmap exactly.
+const MAP_PIXEL_SIZE := 0.01
 
 @export var map_data: MapData
 @export var country_data: CountryData
-@export var province_map: Sprite3D
+@export var province_map: MeshInstance3D
 @export var camera_controller: Node
 
 var province_image: Image
@@ -53,7 +56,7 @@ func get_province_at_screen_position(screen_position: Vector2) -> Dictionary:
 		return {}
 
 	var texture_size := province_image.get_size()
-	var pixel_size := province_map.get_pixel_size()
+	var pixel_size := MAP_PIXEL_SIZE
 	var world_position: Vector3 = result["position"]
 	var half_width := texture_size.x * pixel_size * 0.5
 	var half_height := texture_size.y * pixel_size * 0.5

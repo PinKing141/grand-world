@@ -20,6 +20,9 @@ uniform float relief_strength : hint_range(0.0, 16.0, 0.1) = 7.0;
 uniform float relief_owned_factor : hint_range(0.0, 1.0, 0.01) = 0.65;
 uniform float relief_max : hint_range(0.0, 0.5, 0.01) = 0.26;
 uniform float relief_elevation_lift : hint_range(0.0, 0.5, 0.01) = 0.14;
+// True geometric displacement: the terrain mesh's vertices are raised by the
+// heightmap, so mountains physically stand off the map plane.
+uniform float terrain_height_scale : hint_range(0.0, 2.0, 0.01) = 0.35;
 uniform bool hover_enabled = false;
 uniform bool selection_enabled = false;
 uniform vec2 hovered_province = vec2(-1.0);
@@ -62,6 +65,11 @@ bool province_matches(vec2 encoded_id, vec2 target_id)
 {
 	vec2 tolerance = vec2(0.5 / 255.0);
 	return all(lessThanEqual(abs(encoded_id - target_id), tolerance));
+}
+void vertex()
+{
+	float elevation_sample = texture(height_map, UV).r;
+	VERTEX += NORMAL * elevation_sample * terrain_height_scale;
 }
 void fragment()
 {

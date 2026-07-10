@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3 uid="uid://cgoxd520waiho"]
+[gd_scene load_steps=29 format=3 uid="uid://cgoxd520waiho"]
 
 [ext_resource type="Texture2D" uid="uid://c7x6n8v5pq0qm" path="res://assets/provinces.bmp" id="1_o5qli"]
 [ext_resource type="Shader" uid="uid://huxgtaoxjfut" path="res://shaders/final_output_political_map.gdshader" id="1_tipki"]
@@ -47,7 +47,12 @@ shader_parameter/base_line_thickness = 0.38197
 size = Vector2(5632, 2048)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_o5qli"]
-size = Vector3(56.32, 20.48, 0)
+size = Vector3(56.32, 0.1, 20.48)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_terrain"]
+size = Vector2(56.32, 20.48)
+subdivide_width = 703
+subdivide_depth = 255
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_tipki"]
 resource_local_to_scene = true
@@ -20775,10 +20780,9 @@ terrain_colors = Dictionary[String, Color]({
 "Ocean": Color(0.1, 0.4, 0.7, 1)
 })
 
-[node name="MapSprite" type="Sprite3D" parent="Map"]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0)
+[node name="MapSprite" type="MeshInstance3D" parent="Map"]
 material_override = SubResource("ShaderMaterial_85g3d")
-texture = SubResource("PlaceholderTexture2D_ya4ey")
+mesh = SubResource("PlaneMesh_terrain")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="Map/MapSprite"]
 
