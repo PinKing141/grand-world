@@ -3,7 +3,7 @@ extends RefCounted
 
 const DeterministicRng = preload("res://scripts/simulation/deterministic_rng.gd")
 
-const SAVE_SCHEMA_VERSION := 2
+const SAVE_SCHEMA_VERSION := 3
 const DEFAULT_SCENARIO_ID := "grand_world_1444"
 
 const ARMY_STATUS_IDLE := "idle"
@@ -23,6 +23,9 @@ var country_to_provinces: Dictionary = {}
 var diplomatic_relations: Dictionary = {}
 var army_registry: Dictionary = {}
 var war_registry: Dictionary = {}
+var construction_registry: Dictionary = {}
+var recruitment_registry: Dictionary = {}
+var loan_registry: Dictionary = {}
 var global_flags: Dictionary = {}
 var global_counters: Dictionary = {}
 var rng_stream_states: Dictionary = {}
@@ -45,6 +48,9 @@ func initialize(
 	diplomatic_relations.clear()
 	army_registry.clear()
 	war_registry.clear()
+	construction_registry.clear()
+	recruitment_registry.clear()
+	loan_registry.clear()
 	global_flags.clear()
 	global_counters.clear()
 	rng_stream_states.clear()
@@ -99,6 +105,10 @@ static func make_army_record(army_id: String, owner_tag: String, province_id: in
 		"movement_progress": 0.0,
 		"movement_locked": false,
 		"status": ARMY_STATUS_IDLE,
+		"unit_id": "infantry_regiment",
+		"regiment_count": 1,
+		"strength": 1000,
+		"base_monthly_maintenance": 500,
 	}
 
 
@@ -129,31 +139,58 @@ func country_armies(country_tag: String) -> Array[String]:
 
 
 static func migrate_save_data(save_data: Dictionary) -> Dictionary:
-	# Schema 1 (Phase 2) predates armies. Recreate the scenario's default army
-	# setup from the saved ownership so old campaigns stay loadable.
-	if int(save_data.get("schema_version", -1)) != 1:
-		return save_data
 	var migrated := save_data.duplicate(true)
-	var owners: Dictionary = migrated.get("province_owners", {})
-	var first_province := {}
-	var province_keys := owners.keys()
-	province_keys.sort_custom(func(a, b): return int(a) < int(b))
-	for key in province_keys:
-		var owner := String(owners[key])
-		if owner.is_empty() or first_province.has(owner):
-			continue
-		first_province[owner] = int(key)
-	var armies := {}
-	var tags := first_province.keys()
-	tags.sort()
-	for raw_tag in tags:
-		var tag := String(raw_tag)
-		var army_id := "a_%s" % tag
-		armies[army_id] = make_army_record(army_id, tag, int(first_province[raw_tag]))
-	migrated["army_registry"] = armies
+	var schema := int(migrated.get("schema_version", -1))
+	if schema == 1:
+		# Phase 2 predates armies. Recreate one deterministic test army for
+		# each country represented in the saved ownership.
+		var owners: Dictionary = migrated.get("province_owners", {})
+		var first_province := {}
+		var province_keys := owners.keys()
+		province_keys.sort_custom(func(a, b): return int(a) < int(b))
+		for key in province_keys:
+			var owner := String(owners[key])
+			if owner.is_empty() or first_province.has(owner):
+				continue
+			first_province[owner] = int(key)
+		var armies := {}
+		var tags := first_province.keys()
+		tags.sort()
+		for raw_tag in tags:
+			var tag := String(raw_tag)
+			var army_id := "a_%s" % tag
+			armies[army_id] = make_army_record(army_id, tag, int(first_province[raw_tag]))
+		migrated["army_registry"] = armies
+		schema = 2
+	if schema == 2:
+		# Phase 4 economy values merge onto the scenario defaults already
+		# present in the target world during apply_save_dict.
+		migrated["province_economy"] = {}
+		migrated["construction_registry"] = {}
+		migrated["recruitment_registry"] = {}
+		migrated["loan_registry"] = {}
+		migrated["migrated_from_schema"] = int(save_data.get("schema_version", 2))
+	if schema < 1 or schema > SAVE_SCHEMA_VERSION:
+		return save_data
 	migrated["schema_version"] = SAVE_SCHEMA_VERSION
-	migrated["migrated_from_schema"] = 1
 	return migrated
+
+
+func country_runtime(country_tag: String) -> Dictionary:
+	var country: Dictionary = country_states.get(country_tag, {})
+	return (country.get("runtime_values", {}) as Dictionary).duplicate(true)
+
+
+func set_country_runtime(country_tag: String, runtime: Dictionary) -> void:
+	var country: Dictionary = country_states[country_tag]
+	country["runtime_values"] = runtime
+	country_states[country_tag] = country
+
+
+func take_counter(counter_name: String) -> int:
+	var current := int(global_counters.get(counter_name, 1))
+	global_counters[counter_name] = current + 1
+	return current
 
 
 func has_province(province_id: int) -> bool:
@@ -217,6 +254,9 @@ func checksum() -> String:
 		"relations=%s" % _canonical_variant(diplomatic_relations),
 		"armies=%s" % _canonical_variant(army_registry),
 		"wars=%s" % _canonical_variant(war_registry),
+		"construction=%s" % _canonical_variant(construction_registry),
+		"recruitment=%s" % _canonical_variant(recruitment_registry),
+		"loans=%s" % _canonical_variant(loan_registry),
 	]
 	var stream_names := rng_stream_states.keys()
 	stream_names.sort()
@@ -234,7 +274,7 @@ func checksum() -> String:
 	for raw_province_id in province_ids:
 		var province_id := int(raw_province_id)
 		var state: Dictionary = province_states[raw_province_id]
-		canonical_parts.append("province:%d=%s/%s" % [province_id, state["owner"], state["controller"]])
+		canonical_parts.append("province:%d=%s" % [province_id, _canonical_variant(state)])
 	var hashing := HashingContext.new()
 	hashing.start(HashingContext.HASH_SHA256)
 	hashing.update("\n".join(canonical_parts).to_utf8_buffer())
@@ -244,6 +284,7 @@ func checksum() -> String:
 func to_save_dict(game_version: String) -> Dictionary:
 	var owners := {}
 	var controllers := {}
+	var province_economy := {}
 	var province_ids := province_states.keys()
 	province_ids.sort()
 	for raw_province_id in province_ids:
@@ -251,6 +292,7 @@ func to_save_dict(game_version: String) -> Dictionary:
 		var state: Dictionary = province_states[raw_province_id]
 		owners[str(province_id)] = state["owner"]
 		controllers[str(province_id)] = state["controller"]
+		province_economy[str(province_id)] = (state.get("economy", {}) as Dictionary).duplicate(true)
 	var runtime_values := {}
 	var country_tags := country_states.keys()
 	country_tags.sort()
@@ -270,12 +312,16 @@ func to_save_dict(game_version: String) -> Dictionary:
 		"rng_stream_states": rng_stream_states.duplicate(true),
 		"province_owners": owners,
 		"province_controllers": controllers,
+		"province_economy": province_economy,
 		"country_runtime_values": runtime_values,
 		"global_flags": global_flags.duplicate(true),
 		"global_counters": global_counters.duplicate(true),
 		"diplomatic_relations": diplomatic_relations.duplicate(true),
 		"army_registry": army_registry.duplicate(true),
 		"war_registry": war_registry.duplicate(true),
+		"construction_registry": construction_registry.duplicate(true),
+		"recruitment_registry": recruitment_registry.duplicate(true),
+		"loan_registry": loan_registry.duplicate(true),
 		"checksum": checksum(),
 	}
 
@@ -300,6 +346,10 @@ func apply_save_dict(save_data: Dictionary) -> String:
 		return "The save is missing province state."
 	var owners: Dictionary = owners_variant
 	var controllers: Dictionary = controllers_variant
+	var province_economy_variant = save_data.get("province_economy", {})
+	if not province_economy_variant is Dictionary:
+		return "The save contains invalid province economy state."
+	var province_economy: Dictionary = province_economy_variant
 	if owners.size() != province_states.size() or controllers.size() != province_states.size():
 		return "The save has a different province set."
 
@@ -315,7 +365,16 @@ func apply_save_dict(save_data: Dictionary) -> String:
 			return "Province %d has an unknown owner %s." % [province_id, owner]
 		if not controller.is_empty() and not country_states.has(controller):
 			return "Province %d has an unknown controller %s." % [province_id, controller]
-		loaded_provinces[province_id] = {"owner": owner, "controller": controller}
+		var existing_state: Dictionary = province_states[province_id]
+		var economy := (existing_state.get("economy", {}) as Dictionary).duplicate(true)
+		if province_economy.has(key):
+			if not province_economy[key] is Dictionary:
+				return "Province %d has invalid economy state." % province_id
+			economy.merge((province_economy[key] as Dictionary).duplicate(true), true)
+		var loaded_state := {"owner": owner, "controller": controller}
+		if existing_state.has("economy") or not economy.is_empty():
+			loaded_state["economy"] = economy
+		loaded_provinces[province_id] = loaded_state
 
 	var armies_variant = save_data.get("army_registry", {})
 	if not armies_variant is Dictionary:
@@ -341,7 +400,13 @@ func apply_save_dict(save_data: Dictionary) -> String:
 		var tag := String(raw_tag)
 		if not loaded_country_states.has(tag) or not runtime_values[raw_tag] is Dictionary:
 			return "The save contains invalid runtime state for %s." % tag
-		loaded_country_states[tag]["runtime_values"] = (runtime_values[raw_tag] as Dictionary).duplicate(true)
+		var merged_runtime := (loaded_country_states[tag].get("runtime_values", {}) as Dictionary).duplicate(true)
+		merged_runtime.merge((runtime_values[raw_tag] as Dictionary).duplicate(true), true)
+		loaded_country_states[tag]["runtime_values"] = merged_runtime
+
+	for registry_key in ["construction_registry", "recruitment_registry", "loan_registry"]:
+		if not save_data.get(registry_key, {}) is Dictionary:
+			return "The save contains an invalid %s." % registry_key.replace("_", " ")
 
 	province_states = loaded_provinces
 	country_states = loaded_country_states
@@ -356,6 +421,9 @@ func apply_save_dict(save_data: Dictionary) -> String:
 	diplomatic_relations = (save_data.get("diplomatic_relations", {}) as Dictionary).duplicate(true)
 	army_registry = (save_data.get("army_registry", {}) as Dictionary).duplicate(true)
 	war_registry = (save_data.get("war_registry", {}) as Dictionary).duplicate(true)
+	construction_registry = (save_data.get("construction_registry", {}) as Dictionary).duplicate(true)
+	recruitment_registry = (save_data.get("recruitment_registry", {}) as Dictionary).duplicate(true)
+	loan_registry = (save_data.get("loan_registry", {}) as Dictionary).duplicate(true)
 	_rebuild_country_index()
 	return ""
 
@@ -390,4 +458,6 @@ func _canonical_variant(value: Variant) -> String:
 		for item in value:
 			parts.append(_canonical_variant(item))
 		return "[%s]" % ",".join(parts)
+	if value is float and is_equal_approx(float(value), roundf(float(value))):
+		return str(int(value))
 	return str(value)

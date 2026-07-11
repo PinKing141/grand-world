@@ -36,6 +36,8 @@ func _ready() -> void:
 	var height_texture := load("res://assets/heightmap.png") as Texture2D
 	if height_texture != null:
 		_height_image = height_texture.get_image()
+		if _height_image != null and _height_image.is_compressed():
+			_height_image.decompress()
 	if map_render != null and map_render.get("final_material") != null:
 		var scale_param = map_render.final_material.get_shader_parameter("terrain_height_scale")
 		if scale_param != null:

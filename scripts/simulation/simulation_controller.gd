@@ -16,12 +16,21 @@ const MoveArmyCommandScript = preload("res://scripts/simulation/commands/move_ar
 const CancelArmyMovementCommandScript = preload("res://scripts/simulation/commands/cancel_army_movement_command.gd")
 const ArmyMovementSystemScript = preload("res://scripts/simulation/army_movement_system.gd")
 const ProvincePathfinderScript = preload("res://scripts/simulation/province_pathfinder.gd")
+const EconomyDefinitionsScript = preload("res://scripts/simulation/economy_definitions.gd")
+const EconomySystemScript = preload("res://scripts/simulation/economy_system.gd")
+const ConstructBuildingCommandScript = preload("res://scripts/simulation/commands/construct_building_command.gd")
+const CancelConstructionCommandScript = preload("res://scripts/simulation/commands/cancel_construction_command.gd")
+const RecruitUnitCommandScript = preload("res://scripts/simulation/commands/recruit_unit_command.gd")
+const DisbandArmyCommandScript = preload("res://scripts/simulation/commands/disband_army_command.gd")
+const SetArmyMaintenanceCommandScript = preload("res://scripts/simulation/commands/set_army_maintenance_command.gd")
+const TakeLoanCommandScript = preload("res://scripts/simulation/commands/take_loan_command.gd")
+const RepayLoanCommandScript = preload("res://scripts/simulation/commands/repay_loan_command.gd")
 
 signal simulation_ready(world: CampaignWorldState)
 signal save_completed(success: bool, message: String)
 signal load_completed(success: bool, message: String)
 
-const GAME_VERSION := "0.2.0-phase2"
+const GAME_VERSION := "0.4.0-phase4"
 const QUICK_SAVE_PATH := "user://saves/quick_save.json"
 const SPEED_DAYS_PER_SECOND: Array[float] = [0.0, 1.0, 3.0, 10.0, 30.0, 90.0]
 
@@ -104,6 +113,69 @@ func cancel_army_movement(army_id: String, issuing_country: String) -> int:
 	return submit_command(CancelArmyMovementCommandScript.new(army_id, issuing_country))
 
 
+func construct_building(country_tag: String, province_id: int, building_id: String) -> int:
+	return submit_command(ConstructBuildingCommandScript.new(country_tag, province_id, building_id))
+
+
+func cancel_construction(country_tag: String, construction_id: String) -> int:
+	return submit_command(CancelConstructionCommandScript.new(country_tag, construction_id))
+
+
+func recruit_unit(country_tag: String, province_id: int, unit_id := "infantry_regiment") -> int:
+	return submit_command(RecruitUnitCommandScript.new(country_tag, province_id, unit_id))
+
+
+func disband_army(country_tag: String, army_id: String) -> int:
+	return submit_command(DisbandArmyCommandScript.new(country_tag, army_id))
+
+
+func set_army_maintenance(country_tag: String, maintenance_bp: int) -> int:
+	return submit_command(SetArmyMaintenanceCommandScript.new(country_tag, maintenance_bp))
+
+
+func take_loan(country_tag: String) -> int:
+	return submit_command(TakeLoanCommandScript.new(country_tag))
+
+
+func repay_loan(country_tag: String, loan_id: String) -> int:
+	return submit_command(RepayLoanCommandScript.new(country_tag, loan_id))
+
+
+func country_economy(country_tag: String) -> Dictionary:
+	return world.country_runtime(country_tag) if initialized and world.has_country(country_tag) else {}
+
+
+func province_economy(province_id: int) -> Dictionary:
+	if not initialized or not world.has_province(province_id):
+		return {}
+	return (world.province_states[province_id].get("economy", {}) as Dictionary).duplicate(true)
+
+
+func economy_map_values(mode: String) -> Dictionary:
+	var values := {}
+	if not initialized:
+		return values
+	var definitions = EconomyDefinitionsScript.load_default()
+	var construction_provinces := {}
+	for raw_id in world.construction_registry:
+		construction_provinces[int(world.construction_registry[raw_id].get("province_id", -1))] = 1
+	var ids := world.province_states.keys()
+	ids.sort()
+	for raw_id in ids:
+		var province_id := int(raw_id)
+		var economy: Dictionary = world.province_states[raw_id].get("economy", {})
+		if not bool(economy.get("economic_eligible", false)):
+			continue
+		var outputs: Dictionary = EconomySystemScript.province_outputs(economy, definitions)
+		match mode:
+			"tax": values[province_id] = int(outputs["tax"])
+			"production": values[province_id] = int(outputs["production"])
+			"manpower": values[province_id] = int(outputs["maximum_manpower"])
+			"development": values[province_id] = int(economy.get("development", 0))
+			"construction": values[province_id] = 2 if construction_provinces.has(province_id) else (1 if not (economy.get("buildings", []) as Array).is_empty() else 0)
+	return values
+
+
 func preview_army_route(army_id: String, destination_province_id: int) -> Dictionary:
 	# Presentation-only: identical pathfinder call to what the command will
 	# execute, so the previewed route and arrival date match the real order.
@@ -181,6 +253,8 @@ func quick_load() -> Dictionary:
 		scheduler.clear_pending_commands()
 		_day_accumulator = 0.0
 		_sync_all_owners_to_presentation()
+		if String(result.get("message", "")).contains("migrated"):
+			EconomySystemScript.recalculate_all(world)
 		event_bus.world_reloaded.emit(world.checksum())
 		event_bus.publish_date(world.current_day)
 		event_bus.pause_changed.emit(world.paused)
@@ -226,10 +300,23 @@ func _bootstrap_scenario() -> void:
 		scenario_definition.scenario_id(),
 		campaign_seed
 	)
+	var economy_definitions = EconomyDefinitionsScript.load_default()
+	if not economy_definitions.is_valid():
+		push_error("SimulationController requires valid Phase 4 economy definitions.")
+		return
+	EconomySystemScript.initialize_world(world, economy_definitions)
 	scheduler = SimulationScheduler.new(world, event_bus)
 	scheduler.daily_systems.append(
 		func(day_world: CampaignWorldState) -> void:
 			ArmyMovementSystemScript.advance_day(day_world, event_bus)
+	)
+	scheduler.start_of_day_systems.append(
+		func(day_world: CampaignWorldState) -> void:
+			EconomySystemScript.process_day(day_world, event_bus, economy_definitions)
+	)
+	scheduler.monthly_systems.append(
+		func(month_world: CampaignWorldState) -> void:
+			EconomySystemScript.process_month(month_world, event_bus, economy_definitions)
 	)
 	initialized = true
 	_sync_all_owners_to_presentation()
@@ -239,8 +326,12 @@ func _bootstrap_scenario() -> void:
 	event_bus.speed_changed.emit(world.game_speed)
 
 
-func _on_province_owner_changed(province_id: int, _old_owner: String, new_owner: String) -> void:
+func _on_province_owner_changed(province_id: int, old_owner: String, new_owner: String) -> void:
 	_sync_owner_to_presentation(province_id, new_owner)
+	if not old_owner.is_empty():
+		EconomySystemScript.recalculate_country(world, old_owner)
+	if not new_owner.is_empty():
+		EconomySystemScript.recalculate_country(world, new_owner)
 	if map_hud != null and map_hud.has_method("refresh_authoritative_ownership"):
 		map_hud.refresh_authoritative_ownership(province_id)
 

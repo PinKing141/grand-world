@@ -40,6 +40,8 @@ var color_lookup: Image
 var color_map: Image
 var color_texture: ImageTexture
 var political_map: Image
+var political_color_map: Image
+var display_uses_political_colors := true
 
 # Presentation-only interaction state. Authoritative state arrives in Phase 2.
 var hovered_province_id := -1
@@ -75,7 +77,10 @@ func update_color_map(province_id, new_color):
 	var witdh = color_map.get_width()
 	var x = province_id % witdh
 	var y = floori(float(province_id) / witdh)
-	color_map.set_pixel(x, y, new_color)
+	if political_color_map != null:
+		political_color_map.set_pixel(x, y, new_color)
+	if display_uses_political_colors:
+		color_map.set_pixel(x, y, new_color)
 	color_texture.update(color_map)
 	update_material_dynamic_parameters("color_map", color_texture)
 	update_viewports_dynamic()
@@ -95,10 +100,52 @@ func apply_world_state_owners(province_owners: Dictionary) -> void:
 			continue
 		var owner := String(province_owners[raw_province_id])
 		var owner_color: Color = country_data.country_id_to_color.get(owner, Color(0.0, 0.0, 0.0, 0.0))
-		color_map.set_pixel(province_id % width, floori(float(province_id) / width), owner_color)
+		if political_color_map != null:
+			political_color_map.set_pixel(province_id % width, floori(float(province_id) / width), owner_color)
+		if display_uses_political_colors:
+			color_map.set_pixel(province_id % width, floori(float(province_id) / width), owner_color)
 	color_texture.update(color_map)
 	update_material_dynamic_parameters("color_map", color_texture)
 	update_viewports_dynamic()
+
+
+func apply_economy_heatmap(values: Dictionary) -> void:
+	if political_color_map == null or color_texture == null:
+		return
+	display_uses_political_colors = false
+	color_map = _copy_image(political_color_map)
+	var maximum := 0.0
+	for raw_value in values.values():
+		maximum = maxf(maximum, float(raw_value))
+	var width := color_map.get_width()
+	var ids := values.keys()
+	ids.sort()
+	for raw_id in ids:
+		var province_id := int(raw_id)
+		if province_id < 0 or province_id >= color_map.get_width() * color_map.get_height():
+			continue
+		var normalized := clampf(float(values[raw_id]) / maximum, 0.0, 1.0) if maximum > 0.0 else 0.0
+		var heat := Color(0.16, 0.22, 0.34).lerp(Color(0.95, 0.77, 0.18), sqrt(normalized))
+		color_map.set_pixel(province_id % width, floori(float(province_id) / width), heat)
+	color_texture.update(color_map)
+	update_material_dynamic_parameters("color_map", color_texture)
+	final_material.set_shader_parameter("map_mode", 0)
+	clear_country_highlight()
+	update_viewports_dynamic()
+
+
+func restore_political_map() -> void:
+	if political_color_map == null or color_texture == null:
+		return
+	display_uses_political_colors = true
+	color_map = _copy_image(political_color_map)
+	color_texture.update(color_map)
+	update_material_dynamic_parameters("color_map", color_texture)
+	update_viewports_dynamic()
+
+
+func _copy_image(source: Image) -> Image:
+	return Image.create_from_data(source.get_width(), source.get_height(), source.has_mipmaps(), source.get_format(), source.get_data())
 
 	
 func _ready():
@@ -126,6 +173,8 @@ func _ready():
 		create_lookup_texture()
 		create_color_map_texture()
 		create_political_map_mask_texture()
+	if political_color_map == null and color_map != null:
+		political_color_map = _copy_image(color_map)
 
 	province_selector.province_hovered.connect(_on_province_hovered)
 	province_selector.province_hover_cleared.connect(_on_province_hover_cleared)
@@ -158,6 +207,7 @@ func load_prebaked_map_textures() -> bool:
 		return false
 
 	color_texture = ImageTexture.create_from_image(color_map)
+	political_color_map = _copy_image(color_map)
 	final_material.set_shader_parameter("lookup_map", lookup_resource)
 	distance_material.set_shader_parameter("lookup_map", lookup_resource)
 	distance_material.set_shader_parameter("color_map", color_texture)

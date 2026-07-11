@@ -3,6 +3,7 @@ extends Control
 
 const GrandWorldSimulationController = preload("res://scripts/simulation/simulation_controller.gd")
 const SimulationDate = preload("res://scripts/simulation/simulation_date.gd")
+const EconomySystemScript = preload("res://scripts/simulation/economy_system.gd")
 
 @export var simulation_controller: GrandWorldSimulationController
 @export var province_selector: ProvinceSelector
@@ -35,9 +36,11 @@ const SimulationDate = preload("res://scripts/simulation/simulation_date.gd")
 @onready var army_title: Label = %ArmyTitle
 @onready var army_status: Label = %ArmyStatus
 @onready var army_route_info: Label = %ArmyRouteInfo
+@onready var army_economy_info: Label = %ArmyEconomyInfo
 @onready var army_move_button: Button = %ArmyMoveButton
 @onready var army_cancel_button: Button = %ArmyCancelButton
 @onready var army_close_button: Button = %ArmyCloseButton
+@onready var army_disband_button: Button = %ArmyDisbandButton
 
 var _speed_buttons: Array[Button] = []
 var _selected_province_id := -1
@@ -69,6 +72,7 @@ func _ready() -> void:
 	army_move_button.pressed.connect(_toggle_move_targeting)
 	army_cancel_button.pressed.connect(_cancel_selected_army_movement)
 	army_close_button.pressed.connect(_deselect_army)
+	army_disband_button.pressed.connect(_disband_selected_army)
 	_connect_event_bus()
 	_refresh_all()
 	selection_actions.hide()
@@ -123,6 +127,10 @@ func _connect_event_bus() -> void:
 			_show_status(reason)
 		_refresh_army_panel())
 	events.army_movement_cancelled.connect(func(_army_id: String) -> void: _refresh_army_panel())
+	events.army_disbanded.connect(func(army_id: String) -> void:
+		if army_id == _selected_army_id:
+			_show_status("Army disbanded; part of its manpower returned.")
+			_deselect_army())
 
 
 func _refresh_all() -> void:
@@ -257,6 +265,13 @@ func _cancel_selected_army_movement() -> void:
 	simulation_controller.cancel_army_movement(_selected_army_id, _army_issuing_country(army))
 
 
+func _disband_selected_army() -> void:
+	var army := simulation_controller.world.get_army(_selected_army_id)
+	if army.is_empty():
+		return
+	simulation_controller.disband_army(_army_issuing_country(army), _selected_army_id)
+
+
 func _on_province_hovered_for_army(info: Dictionary, _screen_position: Vector2) -> void:
 	if not _move_targeting or _selected_army_id.is_empty() or army_layer == null:
 		return
@@ -284,6 +299,10 @@ func _refresh_army_panel() -> void:
 	var owner_name: String = country_data.country_id_to_country_name.get(owner, owner)
 	army_title.text = "%s army  ·  %s" % [owner_name, _selected_army_id]
 	var status := String(army.get("status", "idle"))
+	army_economy_info.text = "%d regiment  ·  strength %d  ·  maintenance %s/month" % [
+		int(army.get("regiment_count", 1)), int(army.get("strength", 1000)),
+		EconomySystemScript.format_money(int(army.get("base_monthly_maintenance", 500))),
+	]
 	var graph := ProvinceGraph.load_default()
 	var current := int(army.get("current_province_id", -1))
 	match status:

@@ -44,8 +44,12 @@ The project should contain these folders:
    - Space: pause or resume the deterministic campaign clock
    - Top clock bar: choose speeds 1–5, step one day, or jump to the next month
    - Select a playable province, then use `Play as …` to choose the player country
-   - `Save` / `Load`: write or restore the Phase 2 quick-save slot
-   - `Test transfer`: after choosing a country, sends a validated ownership command for the selected province
+   - `Save` / `Load`: write or restore the versioned campaign quick-save slot
+	- `Test transfer`: after choosing a country, sends a validated ownership command for the selected province
+   - After choosing a country, use the resource bar to inspect treasury, monthly balance, manpower, queues, and debt
+   - `Economy`: open the explainable income/expense ledger, maintenance controls, loans, and economic map modes
+   - Select an owned province to construct a Tax Office, Workshop, or Barracks, recruit infantry, or cancel construction
+   - Select an army to inspect strength/maintenance, move it, stop it, or disband it
 
 Normal map interaction no longer changes province ownership. Ownership editing is disabled by default and is available only through the explicit debug settings on the `Map` node.
 
@@ -84,12 +88,12 @@ The test verifies tooltip updates, selection and country highlighting, province 
 
 ## 7. Exporting a Windows build
 
-The map data is mostly plain text (`assets/provinces/*.txt`, `assets/countries/*.txt`, `assets/country_colors/*.txt`) and CSV (`assets/definition.csv`, `assets/province_metadata.csv`). Godot only packs *imported resources* by default, so these files silently disappear from an export unless the preset's **Filters to export non-resource files** includes them. Without them every province reads as `No Owner`: the political map has data but selection reports non-country terrain and nothing is playable.
+The map data is mostly plain text (`assets/provinces/*.txt`, `assets/countries/*.txt`, `assets/country_colors/*.txt`), CSV (`assets/definition.csv`, `assets/province_metadata.csv`), and baked JSON (`assets/province_graph.json`, `assets/economy_definitions.json`). Godot only packs *imported resources* by default, so these files silently disappear from an export unless the preset's **Filters to export non-resource files** includes them. Without them country selection, movement, or the economy will fail to initialize correctly.
 
 The committed `export_presets.cfg` already carries the correct filter:
 
 ~~~text
-assets/provinces/*.txt, assets/countries/*.txt, assets/country_colors/*.txt, assets/*.csv
+assets/provinces/*.txt, assets/countries/*.txt, assets/country_colors/*.txt, assets/*.csv, assets/*.json
 ~~~
 
 To export:

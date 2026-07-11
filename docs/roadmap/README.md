@@ -2,7 +2,7 @@
 
 ## Current Milestone
 
-**Phase 2 — Deterministic Simulation Core is active.** Phase 1 has been accepted for progression; remaining UI-scale, search-polish, and packaged Map UX checks are tracked as non-blocking deferred work and may be addressed without reopening the map architecture.
+**Phase 4 — Economy and Country Gameplay Loop is in validation.** Its authoritative economy, construction, recruitment, maintenance, loans, ledger, economic map modes, schema migration, UI, deterministic tests, and ten-year full-world soak are implemented. Remaining gate work is the manual Iberian UX/balance pass and final packaged-build interaction checklist.
 
 The roadmap converts the long-term grand-strategy vision into smaller production phases with explicit gates.
 

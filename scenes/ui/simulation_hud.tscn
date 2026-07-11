@@ -145,14 +145,14 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Save"
-tooltip_text = "Write the Phase 2 quick save"
+tooltip_text = "Write the versioned campaign quick save"
 
 [node name="LoadButton" type="Button" parent="TopBar/Margin/Row"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Load"
-tooltip_text = "Load the Phase 2 quick save"
+tooltip_text = "Load the versioned campaign quick save"
 
 [node name="StatusPanel" type="PanelContainer" parent="."]
 unique_name_in_owner = true
@@ -229,7 +229,7 @@ layout_mode = 0
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 18.0
-offset_top = -190.0
+offset_top = -230.0
 offset_right = 348.0
 offset_bottom = -60.0
 grow_vertical = 0
@@ -280,6 +280,13 @@ theme_override_font_sizes/font_size = 12
 text = "Ready for orders."
 autowrap_mode = 2
 
+[node name="ArmyEconomyInfo" type="Label" parent="ArmyPanel/ArmyMargin/ArmyColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.82, 0.66, 1)
+theme_override_font_sizes/font_size = 12
+text = "1 regiment · strength 1000 · maintenance 0.50/month"
+
 [node name="ArmyButtons" type="HBoxContainer" parent="ArmyPanel/ArmyMargin/ArmyColumn"]
 layout_mode = 2
 theme_override_constants/separation = 8
@@ -296,6 +303,12 @@ visible = false
 layout_mode = 2
 text = "Cancel movement"
 tooltip_text = "Stop in the current province and discard the route"
+
+[node name="ArmyDisbandButton" type="Button" parent="ArmyPanel/ArmyMargin/ArmyColumn/ArmyButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Disband"
+tooltip_text = "Remove this army, stop its maintenance, and return part of its manpower"
 
 [node name="DebugPanel" type="PanelContainer" parent="."]
 unique_name_in_owner = true

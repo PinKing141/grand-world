@@ -9,7 +9,7 @@ func _initialize() -> void:
 
 func _require(condition: bool, message: String) -> void:
 	if not condition:
-		push_error("Phase 2 global soak failed: %s" % message)
+		push_error("Global campaign soak failed: %s" % message)
 		quit(1)
 
 
@@ -40,7 +40,10 @@ func _run() -> void:
 	for province_id in owner_samples:
 		_require(simulation.world.get_province_owner(province_id) == owner_samples[province_id], "uncommanded ownership must remain stable for province %d" % province_id)
 	_require(not simulation.world.checksum().is_empty(), "global soak must finish with a checksum")
-	print("Phase 2 global ten-year soak passed in %.2f ms. checksum=%s" % [
+	_require(int(simulation.world.country_runtime("CAS").get("last_economy_day", -1)) > 0, "global soak must process monthly economies")
+	_require((simulation.world.country_runtime("CAS").get("ledger", {}) as Dictionary).has("balance"), "country ledgers must survive the soak")
+	_require(elapsed_ms < 60000.0, "ten-year headless simulation must remain under the provisional 60-second budget")
+	print("Global Phase 4 ten-year soak passed in %.2f ms. checksum=%s" % [
 		elapsed_ms,
 		simulation.world.checksum().left(16),
 	])

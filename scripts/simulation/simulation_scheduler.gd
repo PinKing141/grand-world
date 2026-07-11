@@ -11,6 +11,7 @@ var events: SimulationEventBus
 var command_queue: Array[SimulationCommand] = []
 var command_history: Array[Dictionary] = []
 var daily_systems: Array[Callable] = []
+var start_of_day_systems: Array[Callable] = []
 var monthly_systems: Array[Callable] = []
 var yearly_systems: Array[Callable] = []
 var ai_hooks: Array[Callable] = []
@@ -57,6 +58,8 @@ func advance_one_day() -> void:
 	var previous_date := SimulationDate.day_to_date(world.current_day)
 	world.current_day += 1
 	var current_date := SimulationDate.day_to_date(world.current_day)
+	for system in start_of_day_systems:
+		system.call(world)
 
 	if current_date["month"] != previous_date["month"] or current_date["year"] != previous_date["year"]:
 		for system in monthly_systems:

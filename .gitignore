@@ -10,6 +10,7 @@ __pycache__/
 
 # Windows lock/temp copies left behind when a plugin DLL is rebuilt while loaded.
 ~*.dll
+~*.dll~*.TMP
 
 # Cached elevation source raster downloaded by build_heightmap.py.
 /tools/terrain/gebco_08_rev_elev_5400x2700.jpg

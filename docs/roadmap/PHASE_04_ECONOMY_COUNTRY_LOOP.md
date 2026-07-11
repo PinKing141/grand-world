@@ -8,6 +8,21 @@ Create the first repeatable strategic resource loop: provinces generate value, c
 
 Economy Loop Gate.
 
+## Implementation Status (July 2026)
+
+Implemented in the current build:
+
+- **Baked economic content.** `tools/economy/build_economy_data.py` reads the 1444 province histories and canonical graph, validates 3,924 province definitions, and writes `assets/economy_definitions.json` plus `docs/data/economy_validation.md`. Runtime never scans the raw history folders for economic simulation.
+- **Authoritative state and arithmetic.** Province tax, production, manpower, development, control, devastation placeholder, terrain, trade good, slots, and buildings live in `CampaignWorldState`. Country treasury, debt, manpower, maintenance, and cached explainable ledger use integer money units and basis-point modifiers.
+- **Deterministic scheduling.** Start-of-day queue completion runs before the month-boundary economy. The global monthly pass aggregates every province and army once in stable ID order, applies income, expenses, manpower recovery, interest, and bounded automatic emergency loans, and publishes one economy event.
+- **Commands and scarcity.** Construct/cancel building, recruit unit, disband army, set maintenance, take loan, and repay loan all use the Phase 2 command queue. Rejections are immutable and explain their failure. Ownership/control changes pause affected queues safely.
+- **Construction and recruitment.** Tax Office, Workshop, and Barracks definitions are data-driven. Infantry recruitment reserves money/manpower, completes on an exact day, creates an authoritative Phase 3-compatible army, and adds monthly maintenance.
+- **Presentation.** Choosing a country reveals treasury, monthly balance, manpower, debt, and queue counts. The economy ledger, maintenance and loan controls, owned-province building/recruitment panel, completion notifications, army strength/maintenance/disband action, and tax/production/manpower/development/construction heatmaps are integrated into `scenes/main.tscn`.
+- **Saves.** Schema 3 stores province economy, queues, loans, country runtime values, and extended armies. Schema 1 and 2 saves migrate forward; checksummed JSON round-trips preserve exact state.
+- **Verification.** `phase_4_economy_test.gd`, `phase_4_integration_smoke.gd`, the expanded layout test, existing simulation/movement regressions, frame-rate determinism test, and full-world ten-year soak pass. The optimized global soak completes in approximately 13.5 seconds on the development machine.
+
+Remaining before the Economy Loop Gate: manually assess Iberian starting scarcity and ledger clarity in a normal rendered build, verify all economy interactions in a newly exported Windows build, and record the final reference-hardware/UI screenshots and known-issues statement.
+
 ## Player Outcome
 
 The player receives monthly income and manpower, understands the ledger, constructs a building, recruits an army, pays maintenance, and experiences meaningful scarcity.
@@ -234,4 +249,3 @@ tax
 - Detailed population classes.
 - Naval economy.
 - Final technology unlocks.
-

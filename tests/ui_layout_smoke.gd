@@ -35,6 +35,9 @@ func _check_layout(scene: Node, viewport_size: Vector2i) -> void:
 	var province_panel := scene.get_node("MapHUD/ProvincePanel") as Control
 	var province_content := scene.get_node("MapHUD/ProvincePanel/Margin/Content") as Control
 	var tooltip := scene.get_node("MapHUD/ProvinceTooltip") as Control
+	var resource_bar := scene.get_node("EconomyHUD/ResourceBar") as Control
+	var economy_panel := scene.get_node("EconomyHUD/EconomyPanel") as Control
+	var province_economy := scene.get_node("EconomyHUD/ProvinceEconomyPanel") as Control
 	_disjoint(top_bar, map_modes, "campaign bar and map modes at %s" % viewport_size)
 	_disjoint(top_bar, search, "campaign bar and search at %s" % viewport_size)
 	_disjoint(map_modes, search, "map modes and search at %s" % viewport_size)
@@ -55,6 +58,14 @@ func _check_layout(scene: Node, viewport_size: Vector2i) -> void:
 		_disjoint(tooltip, top_bar, "province tooltip and campaign bar at %s" % viewport_size)
 		_disjoint(tooltip, map_modes, "province tooltip and map modes at %s" % viewport_size)
 		_disjoint(tooltip, search, "province tooltip and search at %s" % viewport_size)
+	if resource_bar.visible:
+		_disjoint(resource_bar, top_bar, "economy resources and campaign bar at %s" % viewport_size)
+		_disjoint(resource_bar, map_modes, "economy resources and map modes at %s" % viewport_size)
+		_disjoint(resource_bar, search, "economy resources and search at %s" % viewport_size)
+	if province_economy.visible:
+		_disjoint(province_economy, map_modes, "province economy and map modes at %s" % viewport_size)
+	if economy_panel.visible:
+		_require(Rect2(Vector2.ZERO, Vector2(viewport_size)).encloses(economy_panel.get_global_rect()), "economy window escapes viewport at %s" % viewport_size)
 
 
 func _run() -> void:
@@ -67,6 +78,8 @@ func _run() -> void:
 	await process_frame
 	var simulation_hud := scene.get_node("SimulationHUD") as SimulationHUDScript
 	var map_hud := scene.get_node("MapHUD") as MapHUD
+	var economy_hud := scene.get_node("EconomyHUD") as EconomyHUD
+	var simulation := scene.get_node("SimulationController") as GrandWorldSimulationController
 	var info := {
 		"province_id": 1,
 		"province_name": "Stockholm",
@@ -82,6 +95,11 @@ func _run() -> void:
 	map_hud._on_province_hovered(info, Vector2(30.0, 74.0))
 	map_hud._process(0.0)
 	simulation_hud._show_status("Layout test notification")
+	simulation.choose_player_country("SWE")
+	simulation.scheduler.process_commands()
+	economy_hud._on_province_selected(info)
+	economy_hud.economy_panel.show()
+	economy_hud._refresh_all()
 	await _check_layout(scene, Vector2i(1700, 960))
 	await _check_layout(scene, Vector2i(1152, 648))
 	print("UI layout smoke test passed at 1700x960 and 1152x648.")

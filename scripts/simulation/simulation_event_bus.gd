@@ -17,6 +17,16 @@ signal army_moved(army_id: String, from_province: int, to_province: int)
 signal army_movement_completed(army_id: String, province_id: int)
 signal army_movement_blocked(army_id: String, province_id: int, reason: String)
 signal army_movement_cancelled(army_id: String)
+signal economy_month_processed(day_count: int)
+signal building_started(construction_id: String, province_id: int, building_id: String)
+signal building_cancelled(construction_id: String, province_id: int, refund: int)
+signal building_completed(construction_id: String, province_id: int, building_id: String)
+signal recruitment_started(recruitment_id: String, province_id: int, unit_id: String)
+signal recruitment_completed(recruitment_id: String, army_id: String, province_id: int)
+signal army_disbanded(army_id: String)
+signal maintenance_changed(country_tag: String, maintenance_bp: int)
+signal loan_taken(loan_id: String, country_tag: String, principal: int)
+signal loan_repaid(loan_id: String, country_tag: String, principal: int)
 
 
 func publish_date(day_count: int) -> void:

@@ -1,4 +1,4 @@
-[gd_scene load_steps=32 format=3 uid="uid://cgoxd520waiho"]
+[gd_scene load_steps=33 format=3 uid="uid://cgoxd520waiho"]
 
 [ext_resource type="Texture2D" uid="uid://c7x6n8v5pq0qm" path="res://assets/provinces.bmp" id="1_o5qli"]
 [ext_resource type="Shader" uid="uid://huxgtaoxjfut" path="res://shaders/final_output_political_map.gdshader" id="1_tipki"]
@@ -20,6 +20,7 @@
 [ext_resource type="Script" path="res://scripts/simulation/simulation_controller.gd" id="18_sim"]
 [ext_resource type="PackedScene" path="res://scenes/ui/simulation_hud.tscn" id="19_sim_hud"]
 [ext_resource type="Script" path="res://scripts/ui/army_layer.gd" id="20_army"]
+[ext_resource type="PackedScene" path="res://scenes/ui/economy_hud.tscn" id="21_economy_hud"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_eb6dy"]
 viewport_path = NodePath("Map/Subviewports/CountryDistanceField")
@@ -20858,3 +20859,9 @@ simulation_controller = NodePath("../SimulationController")
 province_selector = NodePath("../Map/ProvinceSelector")
 country_data = NodePath("../Map/ProvinceSelector/CountryData")
 army_layer = NodePath("../ArmyLayer")
+
+[node name="EconomyHUD" parent="." node_paths=PackedStringArray("simulation_controller", "province_selector", "map_hud", "notification_hud") instance=ExtResource("21_economy_hud")]
+simulation_controller = NodePath("../SimulationController")
+province_selector = NodePath("../Map/ProvinceSelector")
+map_hud = NodePath("../MapHUD")
+notification_hud = NodePath("../SimulationHUD")

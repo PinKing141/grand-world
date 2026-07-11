@@ -65,6 +65,7 @@ var _province_names: Dictionary[int, String] = {}
 var _country_province_counts: Dictionary[String, int] = {}
 var _search_entries: Array[Dictionary] = []
 var _current_map_mode := MODE_POLITICAL
+var _external_map_mode := ""
 var _panel_country_tag := ""
 
 
@@ -107,7 +108,10 @@ func _set_mouse_filter_recursive(node: Node, filter: Control.MouseFilter) -> voi
 # --- Map modes -------------------------------------------------------------
 
 func set_map_mode(mode: int) -> void:
+	_external_map_mode = ""
 	_current_map_mode = clampi(mode, MODE_POLITICAL, MODE_DEBUG)
+	if map_render != null and map_render.has_method("restore_political_map"):
+		map_render.restore_political_map()
 	if map_render != null and map_render.has_method("set_map_mode"):
 		map_render.set_map_mode(_current_map_mode)
 	_apply_mode_to_buttons()
@@ -118,10 +122,23 @@ func get_map_mode() -> int:
 
 
 func _apply_mode_to_buttons() -> void:
+	if not _external_map_mode.is_empty():
+		mode_political_button.disabled = false
+		mode_terrain_button.disabled = false
+		mode_debug_button.disabled = false
+		return
 	mode_political_button.disabled = _current_map_mode == MODE_POLITICAL
 	mode_terrain_button.disabled = _current_map_mode == MODE_TERRAIN
 	mode_debug_button.disabled = _current_map_mode == MODE_DEBUG
 	mode_legend.text = MODE_LEGENDS[_current_map_mode]
+
+
+func set_economy_map_mode(mode_name: String, legend: String, values: Dictionary) -> void:
+	_external_map_mode = mode_name
+	if map_render != null and map_render.has_method("apply_economy_heatmap"):
+		map_render.apply_economy_heatmap(values)
+	mode_legend.text = legend
+	_apply_mode_to_buttons()
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
