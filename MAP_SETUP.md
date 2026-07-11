@@ -41,8 +41,15 @@ The project should contain these folders:
    - `1` / `2` / `3`: switch between the political, terrain, and debug province-ID map modes
    - `/` or Ctrl+F: search countries and provinces; Enter focuses the first result
    - Right click or Escape: clear the current selection
+   - Space: pause or resume the deterministic campaign clock
+   - Top clock bar: choose speeds 1–5, step one day, or jump to the next month
+   - Select a playable province, then use `Play as …` to choose the player country
+   - `Save` / `Load`: write or restore the Phase 2 quick-save slot
+   - `Test transfer`: after choosing a country, sends a validated ownership command for the selected province
 
 Normal map interaction no longer changes province ownership. Ownership editing is disabled by default and is available only through the explicit debug settings on the `Map` node.
+
+The Phase 2 `Test transfer` control is different from the old direct editor mutation: it is an intentional First Playable verification command that validates and mutates `CampaignWorldState`, publishes an ownership event, and then updates the presentation map.
 
 ## 5. If the map does not appear
 
@@ -75,7 +82,26 @@ Run the automated map-UX smoke test from the project folder:
 
 The test verifies tooltip updates, selection and country highlighting, province metadata (including terrain and coastal status), map-mode switching without viewport rebuilds, search indexing, camera focus, clearing selection, and non-mutating normal clicks.
 
-## 7. Optional: use the addon in your own scene
+## 7. Exporting a Windows build
+
+The map data is mostly plain text (`assets/provinces/*.txt`, `assets/countries/*.txt`, `assets/country_colors/*.txt`) and CSV (`assets/definition.csv`, `assets/province_metadata.csv`). Godot only packs *imported resources* by default, so these files silently disappear from an export unless the preset's **Filters to export non-resource files** includes them. Without them every province reads as `No Owner`: the political map has data but selection reports non-country terrain and nothing is playable.
+
+The committed `export_presets.cfg` already carries the correct filter:
+
+~~~text
+assets/provinces/*.txt, assets/countries/*.txt, assets/country_colors/*.txt, assets/*.csv
+~~~
+
+To export:
+
+1. Install export templates once via `Editor -> Manage Export Templates -> Download and Install` (they must match the editor version).
+2. Open `Project -> Export...` and select the `Windows Desktop` preset. If you create a new preset instead, copy the include filter above into `Resources -> Filters to export non-resource files/folders`.
+3. Keep `Embed PCK` enabled so the game ships as one self-contained `.exe`; otherwise the `.pck` file must always sit next to the executable.
+4. Use `Export Project...` for a release build (uncheck "Export With Debug" in the file dialog).
+
+If a build ever shows terrain but no country data again, check the include filter first.
+
+## 8. Optional: use the addon in your own scene
 
 1. Add the plugin by placing `addons/map_editor/` in the project.
 2. Create a `CountryData` resource if needed.
