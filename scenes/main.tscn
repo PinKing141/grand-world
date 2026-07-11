@@ -20832,6 +20832,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MapHUD" parent="." node_paths=PackedStringArray("province_selector", "country_data") instance=ExtResource("13_hud")]
+[node name="MapHUD" parent="." node_paths=PackedStringArray("province_selector", "country_data", "map_render", "camera_controller") instance=ExtResource("13_hud")]
 province_selector = NodePath("../Map/ProvinceSelector")
 country_data = NodePath("../Map/ProvinceSelector/CountryData")
+map_render = NodePath("../Map")
+camera_controller = NodePath("../CameraController")

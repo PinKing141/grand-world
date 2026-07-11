@@ -113,6 +113,8 @@ func _ready():
 	province_selector.selection_cleared.connect(_on_selection_cleared)
 	final_material.set_shader_parameter("hover_enabled", false)
 	final_material.set_shader_parameter("selection_enabled", false)
+	final_material.set_shader_parameter("country_selection_enabled", false)
+	final_material.set_shader_parameter("map_mode", 0)
 
 	province_field.render_target_update_mode = SubViewport.UPDATE_ONCE
 	await RenderingServer.frame_post_draw
@@ -170,12 +172,39 @@ func _on_province_selected(info: Dictionary) -> void:
 	selected_country = info["owner_tag"]
 	final_material.set_shader_parameter("selected_province", _province_lookup_coordinate(selected_province_id))
 	final_material.set_shader_parameter("selection_enabled", true)
+	if info.get("is_playable", false):
+		highlight_country(selected_country)
+	else:
+		clear_country_highlight()
 
 
 func _on_selection_cleared() -> void:
 	selected_province_id = -1
 	selected_country = ""
 	final_material.set_shader_parameter("selection_enabled", false)
+	clear_country_highlight()
+
+
+func highlight_country(tag: String) -> void:
+	# The final shader matches territory by the country's political colour in
+	# the subviewport image, so no per-province state is required.
+	if not country_data.country_id_to_color.has(tag):
+		clear_country_highlight()
+		return
+	var color: Color = country_data.country_id_to_color[tag]
+	final_material.set_shader_parameter("selected_country_color", Color(color.r, color.g, color.b, 1.0))
+	final_material.set_shader_parameter("country_selection_enabled", true)
+
+
+func clear_country_highlight() -> void:
+	final_material.set_shader_parameter("country_selection_enabled", false)
+
+
+func set_map_mode(mode: int) -> void:
+	# 0 = political, 1 = terrain, 2 = debug province IDs. A uniform switch on
+	# the final material: no distance-field or political texture rebuilds.
+	final_material.set_shader_parameter("map_mode", clampi(mode, 0, 2))
+	is_political = mode == 0
 
 
 func debug_change_selected_province_owner() -> bool:

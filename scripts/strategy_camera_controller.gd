@@ -59,6 +59,17 @@ func reset_camera() -> void:
 	_keyboard_velocity = Vector3.ZERO
 
 
+func focus_world_position(target: Vector3) -> void:
+	# Pan so the screen centre lands on the target map point, keeping height.
+	var center_intersection := _screen_to_map_plane(get_viewport().get_visible_rect().size * 0.5)
+	if center_intersection.is_empty():
+		return
+	var center: Vector3 = center_intersection["point"]
+	global_position += Vector3(target.x - center.x, 0.0, target.z - center.z)
+	_keyboard_velocity = Vector3.ZERO
+	_clamp_to_map_bounds()
+
+
 func _update_keyboard_pan(delta: float) -> void:
 	if _keyboard_focus_blocks_movement():
 		_keyboard_velocity = _keyboard_velocity.move_toward(Vector3.ZERO, keyboard_deceleration * delta)

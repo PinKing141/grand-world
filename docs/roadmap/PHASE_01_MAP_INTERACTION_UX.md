@@ -28,14 +28,26 @@ Implemented in the current build:
 - Automated `tests/phase_1a_smoke.gd` coverage for the interaction contract.
 - A performance-regression assertion that interaction never requests full-map viewport updates.
 
-Remaining before the full Map UX Gate:
+## Phase 1B Implementation Status
 
-- Selected-country territory highlighting and country panel.
-- Controller, terrain, region, and coastal-status data.
-- Search and camera focus.
-- Terrain and debug province-ID map modes (the shader-side layer split below is the groundwork; the mode-switching UI and colour providers remain).
-- Mouse-drag camera movement, zoom-limit review, and horizontal wrapping decision.
-- UI scale and tiny-island QA across target resolutions.
+Implemented in the current build (July 2026):
+
+- Selected-country territory highlighting: selecting a playable province lights the whole owning country. The final shader matches the country's political colour in the subviewport image, so highlighting needs no per-province state and no texture rebuilds.
+- Country panel: name, tag, colour swatch, owned-province count, capital placeholder, and a focus-territory button that centres the camera on the country's pixel-weighted centroid. Opened from the province panel or from search.
+- Search: countries by name/tag and provinces by name/ID from one field (`/` or Ctrl+F to focus, Enter selects the first result). Province results focus the camera on the centroid and select the province; country results focus and highlight the country.
+- Map modes: Political (1), Terrain (2), and debug Province IDs (3) via a button bar with a mode legend. Modes are a single `map_mode` uniform on the final material; the smoke test asserts no distance-field or political-texture rebuilds on switch.
+- Tooltip and province panel now show terrain (biome) and coastal status from `assets/province_metadata.csv`, baked by `tools/map_metadata/build_province_metadata.py` (centroids, pixel counts, biome, bitmap-derived coastal flag). Controller mirrors the owner until the military simulation exists; region remains a controlled placeholder because no region data set exists yet.
+- Camera focus API (`focus_world_position`) with bounds clamping, used by search and the country panel.
+
+Decisions recorded:
+
+- Horizontal wrapping: rejected for this map. The imported projection is a cropped Mercator with hard east/west edges; province data does not cross the seam, and the camera clamps to map bounds. Revisit only if a globe presentation is ever wanted.
+- Zoom limits: reviewed at 0.8–13.0 camera height. The minimum stays safely above the tallest displaced terrain (`terrain_height_scale` 0.35), so the camera cannot clip into mountains.
+
+Remaining before the full Map UX Gate (manual QA only):
+
+- UI scale and tiny-island QA across target resolutions and window sizes.
+- Rapid mode-switch, accent/case search queries, and map-corner spot checks from the QA Focus list.
 
 ## Map Presentation Layer Status
 

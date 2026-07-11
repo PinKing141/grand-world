@@ -79,6 +79,13 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.84, 0.87, 0.91, 1)
 text = "Owner"
 
+[node name="TooltipTerrain" type="Label" parent="ProvinceTooltip/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.72, 0.66, 1)
+theme_override_font_sizes/font_size = 12
+text = "Terrain"
+
 [node name="ProvincePanel" type="PanelContainer" parent="."]
 unique_name_in_owner = true
 visible = false
@@ -156,6 +163,13 @@ theme_override_font_sizes/font_size = 18
 text = "Owner"
 autowrap_mode = 2
 
+[node name="OpenCountryButton" type="Button" parent="ProvincePanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+text = "Open country panel"
+tooltip_text = "Show the owning country's details"
+
 [node name="Separator2" type="HSeparator" parent="ProvincePanel/Margin/Content"]
 layout_mode = 2
 
@@ -170,6 +184,54 @@ layout_mode = 2
 theme_override_constants/h_separation = 14
 theme_override_constants/v_separation = 9
 columns = 2
+
+[node name="ControllerLabel" type="Label" parent="ProvincePanel/Margin/Content/Metadata"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.63, 0.7, 1)
+text = "Controller"
+
+[node name="ControllerValue" type="Label" parent="ProvincePanel/Margin/Content/Metadata"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Not yet classified"
+text_overrun_behavior = 3
+
+[node name="TerrainLabel" type="Label" parent="ProvincePanel/Margin/Content/Metadata"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.63, 0.7, 1)
+text = "Terrain"
+
+[node name="TerrainValue" type="Label" parent="ProvincePanel/Margin/Content/Metadata"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Not yet classified"
+text_overrun_behavior = 3
+
+[node name="RegionLabel" type="Label" parent="ProvincePanel/Margin/Content/Metadata"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.63, 0.7, 1)
+text = "Region"
+
+[node name="RegionValue" type="Label" parent="ProvincePanel/Margin/Content/Metadata"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Not yet classified"
+text_overrun_behavior = 3
+
+[node name="CoastalLabel" type="Label" parent="ProvincePanel/Margin/Content/Metadata"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.63, 0.7, 1)
+text = "Coastal"
+
+[node name="CoastalValue" type="Label" parent="ProvincePanel/Margin/Content/Metadata"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Not yet classified"
+text_overrun_behavior = 3
 
 [node name="CapitalLabel" type="Label" parent="ProvincePanel/Margin/Content/Metadata"]
 layout_mode = 2
@@ -232,6 +294,169 @@ theme_override_font_sizes/font_size = 11
 text = "Economy, population, buildings and unrest arrive in later phases."
 autowrap_mode = 2
 
+[node name="CountryPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 92.0
+offset_right = 338.0
+offset_bottom = -62.0
+grow_vertical = 2
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="Margin" type="MarginContainer" parent="CountryPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 18
+
+[node name="Content" type="VBoxContainer" parent="CountryPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="HBoxContainer" parent="CountryPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="CountrySwatch" type="ColorRect" parent="CountryPanel/Margin/Content/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0.5, 0.5, 0.5, 1)
+
+[node name="CountryTitle" type="Label" parent="CountryPanel/Margin/Content/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.94, 0.97, 1, 1)
+theme_override_font_sizes/font_size = 20
+text = "Country"
+text_overrun_behavior = 3
+
+[node name="CloseCountryButton" type="Button" parent="CountryPanel/Margin/Content/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(34, 34)
+layout_mode = 2
+focus_mode = 0
+text = "×"
+tooltip_text = "Close country panel"
+
+[node name="CountryProvinceCount" type="Label" parent="CountryPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.9, 0.69, 1)
+text = "0 provinces"
+
+[node name="CapitalGrid" type="GridContainer" parent="CountryPanel/Margin/Content"]
+layout_mode = 2
+theme_override_constants/h_separation = 14
+columns = 2
+
+[node name="CountryCapitalLabel" type="Label" parent="CountryPanel/Margin/Content/CapitalGrid"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.63, 0.7, 1)
+text = "Capital"
+
+[node name="CountryCapital" type="Label" parent="CountryPanel/Margin/Content/CapitalGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Not yet classified"
+
+[node name="FocusCountryButton" type="Button" parent="CountryPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+text = "Focus territory"
+tooltip_text = "Centre the camera on this country's provinces"
+
+[node name="CountrySpacer" type="Control" parent="CountryPanel/Margin/Content"]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="CountryPhaseNote" type="Label" parent="CountryPanel/Margin/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.42, 0.5, 0.57, 1)
+theme_override_font_sizes/font_size = 11
+text = "Ruler, economy, diplomacy, armies and technology arrive in later phases."
+autowrap_mode = 2
+
+[node name="MapModeBar" type="PanelContainer" parent="."]
+layout_mode = 1
+offset_left = 18.0
+offset_top = 18.0
+offset_right = 358.0
+offset_bottom = 68.0
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_tooltip")
+
+[node name="Modes" type="VBoxContainer" parent="MapModeBar"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Buttons" type="HBoxContainer" parent="MapModeBar/Modes"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ModePolitical" type="Button" parent="MapModeBar/Modes/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+disabled = true
+text = "Political (1)"
+tooltip_text = "Country ownership colours"
+
+[node name="ModeTerrain" type="Button" parent="MapModeBar/Modes/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+text = "Terrain (2)"
+tooltip_text = "Physical terrain only"
+
+[node name="ModeDebug" type="Button" parent="MapModeBar/Modes/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+text = "Province IDs (3)"
+tooltip_text = "Debug province lookup IDs"
+
+[node name="ModeLegend" type="Label" parent="MapModeBar/Modes"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.7, 0.77, 1)
+theme_override_font_sizes/font_size = 11
+text = "Political: country colours over terrain."
+autowrap_mode = 2
+
+[node name="SearchBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -220.0
+offset_top = 18.0
+offset_right = 220.0
+offset_bottom = 58.0
+grow_horizontal = 2
+theme_override_constants/separation = 4
+
+[node name="SearchField" type="LineEdit" parent="SearchBox"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Search countries and provinces  ( / )"
+clear_button_enabled = true
+
+[node name="SearchResults" type="ItemList" parent="SearchBox"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 240)
+layout_mode = 2
+
 [node name="HintBar" type="PanelContainer" parent="."]
 layout_mode = 1
 anchor_top = 1.0
@@ -251,5 +476,5 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.71, 0.77, 0.82, 1)
 theme_override_font_sizes/font_size = 12
-text = "Click: select     Drag: pan     Wheel: zoom     WASD / arrows: move     Home: reset     Right click / Esc: clear"
+text = "Click: select     Drag: pan     Wheel: zoom     WASD / arrows: move     Home: reset     1/2/3: map mode     /: search     Right click / Esc: clear"
 horizontal_alignment = 1

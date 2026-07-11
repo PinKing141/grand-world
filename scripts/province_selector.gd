@@ -86,6 +86,16 @@ func get_province_at_screen_position(screen_position: Vector2) -> Dictionary:
 	}
 
 
+func select_at_screen_position(screen_position: Vector2) -> void:
+	# Programmatic selection used by search focus; bypasses the UI-hover guard
+	# because the request came from the UI itself.
+	var info := get_province_at_screen_position(screen_position)
+	if info.is_empty():
+		return
+	selected_province_id = info["province_id"]
+	province_selected.emit(info)
+
+
 func clear_selection() -> void:
 	if selected_province_id == INVALID_PROVINCE_ID:
 		return

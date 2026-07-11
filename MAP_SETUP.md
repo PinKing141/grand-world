@@ -36,8 +36,10 @@ The project should contain these folders:
    - WASD or arrow keys: move the camera
    - `+` / `-` or Page Up / Page Down: keyboard zoom
    - Home: reset the camera view
-   - Hover: inspect a province and its owner
-   - Left click: select a province and open its information panel
+   - Hover: inspect a province, its owner, and its terrain
+   - Left click: select a province and open its information panel; the owning country's territory lights up
+   - `1` / `2` / `3`: switch between the political, terrain, and debug province-ID map modes
+   - `/` or Ctrl+F: search countries and provinces; Enter focuses the first result
    - Right click or Escape: clear the current selection
 
 Normal map interaction no longer changes province ownership. Ownership editing is disabled by default and is available only through the explicit debug settings on the `Map` node.
@@ -71,7 +73,7 @@ Run the automated map-UX smoke test from the project folder:
 & "C:\path\to\Godot.exe" --headless --path . --script res://tests/phase_1a_smoke.gd
 ~~~
 
-The test verifies tooltip updates, selection highlighting, province metadata, clearing selection, and non-mutating normal clicks.
+The test verifies tooltip updates, selection and country highlighting, province metadata (including terrain and coastal status), map-mode switching without viewport rebuilds, search indexing, camera focus, clearing selection, and non-mutating normal clicks.
 
 ## 7. Optional: use the addon in your own scene
 

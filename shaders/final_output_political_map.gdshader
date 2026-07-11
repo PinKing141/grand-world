@@ -34,6 +34,12 @@ uniform vec2 hovered_province = vec2(-1.0);
 uniform vec2 selected_province = vec2(-1.0);
 uniform vec4 hover_color : source_color = vec4(1.0, 0.83, 0.25, 1.0);
 uniform vec4 selection_color : source_color = vec4(0.2, 0.85, 1.0, 1.0);
+// 0 = political, 1 = terrain, 2 = debug province IDs.
+uniform int map_mode = 0;
+// Selected-country territory highlight: matches the country's political
+// colour in the subviewport image, so no per-province state is needed.
+uniform bool country_selection_enabled = false;
+uniform vec4 selected_country_color : source_color = vec4(0.0);
 
 uniform sampler2D distance_field : filter_linear;
 uniform sampler2D noise_texture : filter_linear;
@@ -143,8 +149,15 @@ void fragment()
 		// its saturation; only a small amount of true ground colour bleeds in.
 		float ground_luma = dot(ground_rgb, vec3(0.2126, 0.7152, 0.0722));
 		vec3 mapmode_rgb = s.rgb * mix(1.0, 0.72 + 0.56 * ground_luma, terrain_texture_strength);
-		s.rgb = mix(ground_rgb, mapmode_rgb, overlay_strength);
+		float active_overlay = map_mode == 0 ? overlay_strength : 0.0;
+		bool country_matches_selection = country_selection_enabled
+			&& all(lessThan(abs(original_color.rgb - selected_country_color.rgb), vec3(0.02)));
+		s.rgb = mix(ground_rgb, mapmode_rgb, active_overlay);
 		s.rgb *= 1.0 + (relief_shade + elevation * relief_elevation_lift) * relief_owned_factor;
+		if (map_mode == 0 && country_matches_selection)
+		{
+			s.rgb = mix(s.rgb, s.rgb * 1.32 + vec3(0.07), 0.55);
+		}
 		s.a = 1.0;
 
 		float df_province = texture(distance_field, UV).r;
@@ -177,6 +190,11 @@ void fragment()
 	}
 
 	vec2 encoded_province = texture(lookup_map, UV).rg;
+	if (map_mode == 2)
+	{
+		// Debug view: raw province IDs from the lookup texture.
+		s.rgb = terrain_class < 0.17 ? vec3(0.04, 0.07, 0.11) : vec3(encoded_province, 0.35);
+	}
 	if (hover_enabled && province_matches(encoded_province, hovered_province))
 	{
 		s.rgb = mix(s.rgb, hover_color.rgb, 0.38);
