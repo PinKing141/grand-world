@@ -41,11 +41,19 @@ static func load_world(world: CampaignWorldState, path: String) -> Dictionary:
 		}
 	if not json.data is Dictionary:
 		return {"ok": false, "message": "The save root must be an object."}
+	var save_data: Dictionary = json.data
+	var migrated := int(save_data.get("schema_version", -1)) < CampaignWorldState.SAVE_SCHEMA_VERSION
+	if migrated:
+		save_data = CampaignWorldState.migrate_save_data(save_data)
 	var rollback_data := world.to_save_dict("rollback")
-	var apply_error := world.apply_save_dict(json.data)
+	var apply_error := world.apply_save_dict(save_data)
 	if not apply_error.is_empty():
 		return {"ok": false, "message": apply_error}
-	var expected_checksum := String((json.data as Dictionary).get("checksum", ""))
+	if migrated:
+		# The stored checksum covers the old schema; the migrated state is
+		# revalidated by apply_save_dict instead.
+		return {"ok": true, "message": "Campaign loaded (migrated from an older save format).", "checksum": world.checksum()}
+	var expected_checksum := String(save_data.get("checksum", ""))
 	if expected_checksum.is_empty() or expected_checksum != world.checksum():
 		world.apply_save_dict(rollback_data)
 		return {"ok": false, "message": "The save checksum does not match its campaign state."}

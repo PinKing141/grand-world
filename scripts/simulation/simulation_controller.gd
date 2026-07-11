@@ -12,6 +12,10 @@ const SetGameSpeedCommand = preload("res://scripts/simulation/commands/set_game_
 const PauseCommand = preload("res://scripts/simulation/commands/pause_command.gd")
 const CampaignSaveService = preload("res://scripts/simulation/campaign_save_service.gd")
 const SimulationDate = preload("res://scripts/simulation/simulation_date.gd")
+const MoveArmyCommandScript = preload("res://scripts/simulation/commands/move_army_command.gd")
+const CancelArmyMovementCommandScript = preload("res://scripts/simulation/commands/cancel_army_movement_command.gd")
+const ArmyMovementSystemScript = preload("res://scripts/simulation/army_movement_system.gd")
+const ProvincePathfinderScript = preload("res://scripts/simulation/province_pathfinder.gd")
 
 signal simulation_ready(world: CampaignWorldState)
 signal save_completed(success: bool, message: String)
@@ -90,6 +94,42 @@ func change_province_owner_for_testing(province_id: int, new_owner: String) -> i
 
 func set_game_speed(speed: int) -> int:
 	return submit_command(SetGameSpeedCommand.new(speed))
+
+
+func order_army_move(army_id: String, destination_province_id: int, issuing_country: String) -> int:
+	return submit_command(MoveArmyCommandScript.new(army_id, destination_province_id, issuing_country))
+
+
+func cancel_army_movement(army_id: String, issuing_country: String) -> int:
+	return submit_command(CancelArmyMovementCommandScript.new(army_id, issuing_country))
+
+
+func preview_army_route(army_id: String, destination_province_id: int) -> Dictionary:
+	# Presentation-only: identical pathfinder call to what the command will
+	# execute, so the previewed route and arrival date match the real order.
+	if not initialized:
+		return {"exists": false, "failure_reason": "Simulation is not ready."}
+	var army := world.get_army(army_id)
+	if army.is_empty():
+		return {"exists": false, "failure_reason": "The army no longer exists."}
+	var graph := ProvinceGraph.load_default()
+	var owner := String(army.get("owner_country_id", ""))
+	var current := int(army.get("current_province_id", -1))
+	var route := ProvincePathfinderScript.find_route(graph, world, owner, current, destination_province_id)
+	if bool(route["exists"]):
+		var arrival := world.current_day
+		var path: PackedInt32Array = route["path"]
+		for index in range(path.size() - 1):
+			arrival += ProvincePathfinderScript.leg_cost_days(graph, path[index], path[index + 1])
+		route["arrival_day"] = arrival
+		route["arrival_text"] = SimulationDate.format_day(arrival)
+	return route
+
+
+func day_fraction() -> float:
+	# How far the current day has progressed in real time; presentation uses
+	# this to interpolate army markers without touching authoritative state.
+	return clampf(_day_accumulator, 0.0, 1.0) if initialized and not world.paused else 0.0
 
 
 func set_paused(should_pause: bool) -> int:
@@ -187,6 +227,10 @@ func _bootstrap_scenario() -> void:
 		campaign_seed
 	)
 	scheduler = SimulationScheduler.new(world, event_bus)
+	scheduler.daily_systems.append(
+		func(day_world: CampaignWorldState) -> void:
+			ArmyMovementSystemScript.advance_day(day_world, event_bus)
+	)
 	initialized = true
 	_sync_all_owners_to_presentation()
 	simulation_ready.emit(world)

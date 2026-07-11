@@ -216,6 +216,87 @@ layout_mode = 2
 text = "Test ownership command"
 tooltip_text = "Phase 2 controlled command used to verify WorldState → map updates"
 
+[node name="SelectArmyButton" type="Button" parent="SelectionActions/SelectionMargin/SelectionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Select army"
+tooltip_text = "Select the army stationed in this province"
+
+[node name="ArmyPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = -190.0
+offset_right = 348.0
+offset_bottom = -60.0
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_sim_bar")
+
+[node name="ArmyMargin" type="MarginContainer" parent="ArmyPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="ArmyColumn" type="VBoxContainer" parent="ArmyPanel/ArmyMargin"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ArmyHeader" type="HBoxContainer" parent="ArmyPanel/ArmyMargin/ArmyColumn"]
+layout_mode = 2
+
+[node name="ArmyTitle" type="Label" parent="ArmyPanel/ArmyMargin/ArmyColumn/ArmyHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 15
+text = "Army"
+text_overrun_behavior = 3
+
+[node name="ArmyCloseButton" type="Button" parent="ArmyPanel/ArmyMargin/ArmyColumn/ArmyHeader"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+focus_mode = 0
+text = "×"
+tooltip_text = "Deselect army"
+
+[node name="ArmyStatus" type="Label" parent="ArmyPanel/ArmyMargin/ArmyColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Idle"
+autowrap_mode = 2
+
+[node name="ArmyRouteInfo" type="Label" parent="ArmyPanel/ArmyMargin/ArmyColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.85, 0.92, 1)
+theme_override_font_sizes/font_size = 12
+text = "Ready for orders."
+autowrap_mode = 2
+
+[node name="ArmyButtons" type="HBoxContainer" parent="ArmyPanel/ArmyMargin/ArmyColumn"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ArmyMoveButton" type="Button" parent="ArmyPanel/ArmyMargin/ArmyColumn/ArmyButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Set destination"
+tooltip_text = "Then click a province on the map to order the march"
+
+[node name="ArmyCancelButton" type="Button" parent="ArmyPanel/ArmyMargin/ArmyColumn/ArmyButtons"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+text = "Cancel movement"
+tooltip_text = "Stop in the current province and discard the route"
+
 [node name="DebugPanel" type="PanelContainer" parent="."]
 unique_name_in_owner = true
 visible = false

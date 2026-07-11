@@ -1,0 +1,5 @@
+operation,province_a,province_b,x,y,note
+mark_strait,226,1751,,,Strait of Gibraltar: Gibraltar <-> Ceuta
+mark_strait,6,12,,,Oresund: Skane <-> Sjaelland
+mark_strait,12,14,,,Great Belt: Sjaelland <-> Fyn
+mark_strait,14,15,,,Little Belt: Fyn <-> Midtjylland

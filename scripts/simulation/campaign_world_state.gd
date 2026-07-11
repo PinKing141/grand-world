@@ -3,8 +3,12 @@ extends RefCounted
 
 const DeterministicRng = preload("res://scripts/simulation/deterministic_rng.gd")
 
-const SAVE_SCHEMA_VERSION := 1
+const SAVE_SCHEMA_VERSION := 2
 const DEFAULT_SCENARIO_ID := "grand_world_1444"
+
+const ARMY_STATUS_IDLE := "idle"
+const ARMY_STATUS_MOVING := "moving"
+const ARMY_STATUS_BLOCKED := "blocked"
 
 var scenario_id := DEFAULT_SCENARIO_ID
 var current_day := 0
@@ -64,6 +68,92 @@ func initialize(
 			"controller": owner,
 		}
 	_rebuild_country_index()
+	_create_default_armies()
+
+
+func _create_default_armies() -> void:
+	# Phase 3 test setup: every country with territory fields one army at its
+	# lowest-ID province. Deterministic: sorted tags, sorted province lists.
+	army_registry.clear()
+	var country_tags := country_to_provinces.keys()
+	country_tags.sort()
+	for raw_tag in country_tags:
+		var tag := String(raw_tag)
+		var provinces: Array = country_to_provinces[raw_tag]
+		if provinces.is_empty():
+			continue
+		var army_id := "a_%s" % tag
+		army_registry[army_id] = make_army_record(army_id, tag, int(provinces[0]))
+
+
+static func make_army_record(army_id: String, owner_tag: String, province_id: int) -> Dictionary:
+	return {
+		"army_id": army_id,
+		"owner_country_id": owner_tag,
+		"current_province_id": province_id,
+		"destination_province_id": -1,
+		"remaining_path": [],
+		"path_index": 0,
+		"movement_start_day": -1,
+		"next_arrival_day": -1,
+		"movement_progress": 0.0,
+		"movement_locked": false,
+		"status": ARMY_STATUS_IDLE,
+	}
+
+
+func get_army(army_id: String) -> Dictionary:
+	return army_registry.get(army_id, {})
+
+
+func armies_in_province(province_id: int) -> Array[String]:
+	var found: Array[String] = []
+	var army_ids := army_registry.keys()
+	army_ids.sort()
+	for raw_army_id in army_ids:
+		var army: Dictionary = army_registry[raw_army_id]
+		if int(army.get("current_province_id", -1)) == province_id:
+			found.append(String(raw_army_id))
+	return found
+
+
+func country_armies(country_tag: String) -> Array[String]:
+	var found: Array[String] = []
+	var army_ids := army_registry.keys()
+	army_ids.sort()
+	for raw_army_id in army_ids:
+		var army: Dictionary = army_registry[raw_army_id]
+		if String(army.get("owner_country_id", "")) == country_tag:
+			found.append(String(raw_army_id))
+	return found
+
+
+static func migrate_save_data(save_data: Dictionary) -> Dictionary:
+	# Schema 1 (Phase 2) predates armies. Recreate the scenario's default army
+	# setup from the saved ownership so old campaigns stay loadable.
+	if int(save_data.get("schema_version", -1)) != 1:
+		return save_data
+	var migrated := save_data.duplicate(true)
+	var owners: Dictionary = migrated.get("province_owners", {})
+	var first_province := {}
+	var province_keys := owners.keys()
+	province_keys.sort_custom(func(a, b): return int(a) < int(b))
+	for key in province_keys:
+		var owner := String(owners[key])
+		if owner.is_empty() or first_province.has(owner):
+			continue
+		first_province[owner] = int(key)
+	var armies := {}
+	var tags := first_province.keys()
+	tags.sort()
+	for raw_tag in tags:
+		var tag := String(raw_tag)
+		var army_id := "a_%s" % tag
+		armies[army_id] = make_army_record(army_id, tag, int(first_province[raw_tag]))
+	migrated["army_registry"] = armies
+	migrated["schema_version"] = SAVE_SCHEMA_VERSION
+	migrated["migrated_from_schema"] = 1
+	return migrated
 
 
 func has_province(province_id: int) -> bool:
@@ -226,6 +316,21 @@ func apply_save_dict(save_data: Dictionary) -> String:
 		if not controller.is_empty() and not country_states.has(controller):
 			return "Province %d has an unknown controller %s." % [province_id, controller]
 		loaded_provinces[province_id] = {"owner": owner, "controller": controller}
+
+	var armies_variant = save_data.get("army_registry", {})
+	if not armies_variant is Dictionary:
+		return "The save contains an invalid army registry."
+	var loaded_armies: Dictionary = armies_variant
+	for raw_army_id in loaded_armies.keys():
+		if not loaded_armies[raw_army_id] is Dictionary:
+			return "Army %s has invalid state." % raw_army_id
+		var army: Dictionary = loaded_armies[raw_army_id]
+		var army_owner := String(army.get("owner_country_id", ""))
+		if not army_owner.is_empty() and not country_states.has(army_owner):
+			return "Army %s belongs to unknown country %s." % [raw_army_id, army_owner]
+		var army_province := int(army.get("current_province_id", -1))
+		if not province_states.has(army_province):
+			return "Army %s sits in unknown province %d." % [raw_army_id, army_province]
 
 	var loaded_country_states := country_states.duplicate(true)
 	var runtime_values_variant = save_data.get("country_runtime_values", {})

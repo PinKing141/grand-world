@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://7wy63ksjvub3"
+
+[deps]
+
+files=["res://tools/map_graph/graph_overrides.province.translation", "res://tools/map_graph/graph_overrides.province.translation", "res://tools/map_graph/graph_overrides.note.translation"]
+
+source_file="res://tools/map_graph/graph_overrides.csv"
+dest_files=["res://tools/map_graph/graph_overrides.province.translation", "res://tools/map_graph/graph_overrides.province.translation", "res://tools/map_graph/graph_overrides.note.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

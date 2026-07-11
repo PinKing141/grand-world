@@ -12,6 +12,11 @@ signal command_rejected(command_id: int, command_type: String, reason: String)
 signal pause_changed(paused: bool)
 signal speed_changed(speed: int)
 signal world_reloaded(checksum: String)
+signal army_movement_ordered(army_id: String, path: PackedInt32Array, arrival_day: int)
+signal army_moved(army_id: String, from_province: int, to_province: int)
+signal army_movement_completed(army_id: String, province_id: int)
+signal army_movement_blocked(army_id: String, province_id: int, reason: String)
+signal army_movement_cancelled(army_id: String)
 
 
 func publish_date(day_count: int) -> void:
