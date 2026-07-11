@@ -1,5 +1,9 @@
 # Roadmap Index
 
+## Current Milestone
+
+**Phase 2 — Deterministic Simulation Core is active.** Phase 1 has been accepted for progression; remaining UI-scale, search-polish, and packaged Map UX checks are tracked as non-blocking deferred work and may be addressed without reopening the map architecture.
+
 The roadmap converts the long-term grand-strategy vision into smaller production phases with explicit gates.
 
 ## Product and Production Direction
@@ -54,4 +58,3 @@ Use one of these states:
 - Deferred.
 
 Only one major gameplay phase should be the critical-path production focus at a time. Supporting workstreams may operate in parallel when their dependencies are clear.
-

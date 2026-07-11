@@ -53,6 +53,8 @@ const MODE_LEGENDS: Array[String] = [
 @onready var mode_legend: Label = %ModeLegend
 @onready var search_field: LineEdit = %SearchField
 @onready var search_results: ItemList = %SearchResults
+@onready var map_mode_bar: PanelContainer = $MapModeBar
+@onready var search_box: VBoxContainer = $SearchBox
 
 var _tooltip_screen_position := Vector2.ZERO
 var _tooltip_province_id := -1
@@ -338,6 +340,8 @@ func _on_province_hover_cleared() -> void:
 
 
 func _on_province_selected(info: Dictionary) -> void:
+	tooltip.hide()
+	_tooltip_province_id = -1
 	_last_selection_info = info
 	var province_id: int = info["province_id"]
 	var details := _get_province_details(province_id)
@@ -368,16 +372,45 @@ func _on_selection_cleared() -> void:
 	_close_country_panel()
 
 
+func refresh_authoritative_ownership(changed_province_id: int) -> void:
+	# CountryData is a presentation mirror in Phase 2; WorldState owns mutation.
+	_country_province_counts.clear()
+	if _last_selection_info.is_empty():
+		return
+	var selected_province_id := int(_last_selection_info.get("province_id", -1))
+	if changed_province_id >= 0 and selected_province_id != changed_province_id:
+		if country_panel.visible and not _panel_country_tag.is_empty():
+			_show_country_panel(_panel_country_tag)
+		return
+	var owner_tag: String = country_data.province_id_to_owner.get(selected_province_id, "No Owner")
+	_last_selection_info["owner_tag"] = owner_tag
+	_last_selection_info["owner_name"] = country_data.country_id_to_country_name.get(owner_tag, "")
+	_last_selection_info["is_playable"] = not owner_tag.is_empty() and owner_tag not in ["No Owner", "Ocean"]
+	_on_province_selected(_last_selection_info)
+
+
 func _process(_delta: float) -> void:
 	if not tooltip.visible:
 		return
 	var viewport_size := get_viewport_rect().size
 	var desired_position := _tooltip_screen_position + Vector2(18.0, 20.0)
 	var maximum_position := viewport_size - tooltip.size - Vector2(10.0, 10.0)
-	tooltip.position = Vector2(
+	var resolved_position := Vector2(
 		clampf(desired_position.x, 10.0, maxf(10.0, maximum_position.x)),
 		clampf(desired_position.y, 10.0, maxf(10.0, maximum_position.y))
 	)
+	var top_blockers: Array[Control] = [map_mode_bar, search_box]
+	var simulation_top_bar := get_node_or_null("../SimulationHUD/TopBar") as Control
+	if simulation_top_bar != null:
+		top_blockers.append(simulation_top_bar)
+	for blocker in top_blockers:
+		if not blocker.visible:
+			continue
+		var tooltip_rect := Rect2(resolved_position, tooltip.size)
+		if tooltip_rect.intersects(blocker.get_global_rect()):
+			resolved_position.y = blocker.get_global_rect().end.y + 10.0
+	resolved_position.y = clampf(resolved_position.y, 10.0, maxf(10.0, maximum_position.y))
+	tooltip.position = resolved_position
 
 
 # --- Data loading ------------------------------------------------------------

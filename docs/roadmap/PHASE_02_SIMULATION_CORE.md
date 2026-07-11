@@ -8,6 +8,39 @@ Create the authoritative campaign state and time-processing framework that every
 
 First Playable.
 
+## Implementation Status — Phase 2 Foundation
+
+Implemented in the current build (11 July 2026):
+
+- Immutable `CampaignScenarioDefinition` snapshot built from the imported 1444 data. Source definitions are copied into campaign state and are never rewritten by normal play.
+- Authoritative `CampaignWorldState` with stable province and country IDs, owner/controller state, player country, current day, pause/speed state, global flags/counters, named RNG stream state, and prepared diplomacy/army/war registries.
+- Proleptic-Gregorian integer-day calendar beginning on 11 November 1444, including leap-year, month, year, formatting, and round-trip conversion tests.
+- Bounded five-speed clock. Speed processing has a maximum ticks-per-frame cap so high speed cannot create an unbounded frame loop.
+- Stable scheduler ordering with a scheduled command queue, deterministic command IDs, daily/monthly/yearly hooks, event publication, and prepared AI hooks.
+- Command contract plus `SelectPlayerCountryCommand`, `ChangeProvinceOwnerCommand`, `SetGameSpeedCommand`, and `PauseCommand`. Invalid commands publish structured rejection reasons.
+- Structured event bus for dates, month/year boundaries, ownership, player-country changes, command rejection, pause/speed changes, and world reloads.
+- Deterministic xorshift32 named RNG streams derived from the campaign seed without using `String.hash()` or global random functions.
+- Versioned, atomic quick-save skeleton with schema/scenario validation, province/reference validation, state checksum validation, rollback on failed load, presentation-index rebuild, and useful failure messages.
+- SHA-256 authoritative world checksum built from explicitly sorted IDs and canonical dictionary ordering.
+- `WorldState` → political-map integration. `CountryData` is now only a source/presentation mirror; ownership commands update the map from authoritative events, and load performs one batched colour-LUT rebuild.
+- First Playable HUD: date, pause/resume, speeds 1–5, single-day step, next-month jump, quick save/load, player country, tick cost, checksum, country selection, and controlled ownership-transfer verification.
+- Debug API for province/country state dumps and session command history.
+
+Automated evidence:
+
+- Core calendar, command validation, event boundary, owner-index, RNG replay, corrupted-save, and checksum round-trip test.
+- 30 FPS versus 120 FPS clock/replay test produces the same day and authoritative checksum.
+- Full 3,924-province ten-year soak completes without registry or uncommanded ownership corruption.
+- Full-scene integration verifies country selection, ownership mutation, map mirroring, pause/speed, stepping, save/load, and checksum restoration.
+- Phase 1 interaction and camera regressions remain passing after the simulation integration.
+
+Remaining before the full First Playable gate:
+
+- Manual UX pass for the new campaign clock and country-selection controls at target resolutions.
+- Packaged-build quick-save and recovery test on the reference machine.
+- Record a maximum-speed responsiveness and tick-time capture in the milestone report.
+- Add schema migration only when a second supported save schema actually exists; version 1 currently rejects unsupported versions safely.
+
 ## Player Outcome
 
 The player can choose a country, pause and advance time from 11 November 1444, issue at least one validated world-changing command, save, load, and observe the same state after loading.
@@ -189,4 +222,3 @@ This proves the complete data-to-simulation-to-presentation path.
 - Strategic AI.
 - Final save compression.
 - Multiplayer networking.
-

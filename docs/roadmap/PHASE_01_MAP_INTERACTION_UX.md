@@ -8,6 +8,10 @@ Turn the rendered world into an understandable strategic interface.
 
 Map UX Gate.
 
+## Gate Decision
+
+Accepted for progression on 11 July 2026. The map interaction, presentation, search, panel, camera, and map-mode architecture is stable enough to support the simulation. Remaining manual UI-scale, tiny-island, accent-search, performance-capture, and packaged-build checks are deferred polish rather than Phase 2 blockers.
+
 ## Phase 1A Implementation Status
 
 Implemented in the current build:
@@ -44,7 +48,7 @@ Decisions recorded:
 - Horizontal wrapping: rejected for this map. The imported projection is a cropped Mercator with hard east/west edges; province data does not cross the seam, and the camera clamps to map bounds. Revisit only if a globe presentation is ever wanted.
 - Zoom limits: reviewed at 0.8–13.0 camera height. The minimum stays safely above the tallest displaced terrain (`terrain_height_scale` 0.35), so the camera cannot clip into mountains.
 
-Remaining before the full Map UX Gate (manual QA only):
+Deferred Map UX follow-up (manual QA only):
 
 - UI scale and tiny-island QA across target resolutions and window sizes.
 - Rapid mode-switch, accent/case search queries, and map-corner spot checks from the QA Focus list.

@@ -74,8 +74,28 @@ func update_viewports_dynamic():
 func update_color_map(province_id, new_color):
 	var witdh = color_map.get_width()
 	var x = province_id % witdh
-	var y = province_id / witdh
+	var y = floori(float(province_id) / witdh)
 	color_map.set_pixel(x, y, new_color)
+	color_texture.update(color_map)
+	update_material_dynamic_parameters("color_map", color_texture)
+	update_viewports_dynamic()
+
+
+func apply_world_state_owners(province_owners: Dictionary) -> void:
+	# WorldState is authoritative. Rebuild the presentation LUT in one batch so
+	# loading a campaign never triggers thousands of GPU updates.
+	if color_map == null or color_map.is_empty() or color_texture == null:
+		return
+	var width := color_map.get_width()
+	var province_ids := province_owners.keys()
+	province_ids.sort()
+	for raw_province_id in province_ids:
+		var province_id := int(raw_province_id)
+		if province_id < 0 or province_id >= color_map.get_width() * color_map.get_height():
+			continue
+		var owner := String(province_owners[raw_province_id])
+		var owner_color: Color = country_data.country_id_to_color.get(owner, Color(0.0, 0.0, 0.0, 0.0))
+		color_map.set_pixel(province_id % width, floori(float(province_id) / width), owner_color)
 	color_texture.update(color_map)
 	update_material_dynamic_parameters("color_map", color_texture)
 	update_viewports_dynamic()

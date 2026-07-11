@@ -1,4 +1,4 @@
-[gd_scene load_steps=29 format=3 uid="uid://cgoxd520waiho"]
+[gd_scene load_steps=31 format=3 uid="uid://cgoxd520waiho"]
 
 [ext_resource type="Texture2D" uid="uid://c7x6n8v5pq0qm" path="res://assets/provinces.bmp" id="1_o5qli"]
 [ext_resource type="Shader" uid="uid://huxgtaoxjfut" path="res://shaders/final_output_political_map.gdshader" id="1_tipki"]
@@ -17,6 +17,8 @@
 [ext_resource type="Texture2D" path="res://assets/terrain_class_map.png" id="15_terrain"]
 [ext_resource type="Texture2D" path="res://assets/terrain_base_map.png" id="16_ground"]
 [ext_resource type="Texture2D" path="res://assets/heightmap.png" id="17_height"]
+[ext_resource type="Script" path="res://scripts/simulation/simulation_controller.gd" id="18_sim"]
+[ext_resource type="PackedScene" path="res://scenes/ui/simulation_hud.tscn" id="19_sim_hud"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_eb6dy"]
 viewport_path = NodePath("Map/Subviewports/CountryDistanceField")
@@ -20832,8 +20834,20 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="SimulationController" type="Node" parent="." node_paths=PackedStringArray("country_data", "map_render", "province_selector", "map_hud")]
+script = ExtResource("18_sim")
+country_data = NodePath("../Map/ProvinceSelector/CountryData")
+map_render = NodePath("../Map")
+province_selector = NodePath("../Map/ProvinceSelector")
+map_hud = NodePath("../MapHUD")
+
 [node name="MapHUD" parent="." node_paths=PackedStringArray("province_selector", "country_data", "map_render", "camera_controller") instance=ExtResource("13_hud")]
 province_selector = NodePath("../Map/ProvinceSelector")
 country_data = NodePath("../Map/ProvinceSelector/CountryData")
 map_render = NodePath("../Map")
 camera_controller = NodePath("../CameraController")
+
+[node name="SimulationHUD" parent="." node_paths=PackedStringArray("simulation_controller", "province_selector", "country_data") instance=ExtResource("19_sim_hud")]
+simulation_controller = NodePath("../SimulationController")
+province_selector = NodePath("../Map/ProvinceSelector")
+country_data = NodePath("../Map/ProvinceSelector/CountryData")

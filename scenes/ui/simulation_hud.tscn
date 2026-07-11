@@ -1,0 +1,254 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/simulation_hud.gd" id="1_sim_hud"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sim_bar"]
+bg_color = Color(0.035, 0.045, 0.06, 0.95)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.2, 0.34, 0.46, 0.95)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+shadow_color = Color(0, 0, 0, 0.42)
+shadow_size = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sim_toast"]
+bg_color = Color(0.045, 0.06, 0.078, 0.96)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.35, 0.52, 0.65, 0.95)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="SimulationHUD" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_sim_hud")
+
+[node name="TopBar" type="PanelContainer" parent="."]
+layout_mode = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -450.0
+offset_top = 8.0
+offset_right = 450.0
+offset_bottom = 54.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_sim_bar")
+
+[node name="Margin" type="MarginContainer" parent="TopBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 9
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 9
+theme_override_constants/margin_bottom = 5
+
+[node name="Row" type="HBoxContainer" parent="TopBar/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="PlayerLabel" type="Label" parent="TopBar/Margin/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(125, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Observer"
+text_overrun_behavior = 3
+
+[node name="DateLabel" type="Label" parent="TopBar/Margin/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "11 November 1444"
+horizontal_alignment = 1
+
+[node name="PauseButton" type="Button" parent="TopBar/Margin/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(42, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "▶"
+tooltip_text = "Pause or resume the authoritative campaign clock (Space)"
+
+[node name="Speed1" type="Button" parent="TopBar/Margin/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "1"
+tooltip_text = "Run at speed 1"
+
+[node name="Speed2" type="Button" parent="TopBar/Margin/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "2"
+tooltip_text = "Run at speed 2"
+
+[node name="Speed3" type="Button" parent="TopBar/Margin/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "3"
+tooltip_text = "Run at speed 3"
+
+[node name="Speed4" type="Button" parent="TopBar/Margin/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "4"
+tooltip_text = "Run at speed 4"
+
+[node name="Speed5" type="Button" parent="TopBar/Margin/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "5"
+tooltip_text = "Run at speed 5"
+
+[node name="StepButton" type="Button" parent="TopBar/Margin/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(42, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "+D"
+tooltip_text = "Pause and advance exactly one deterministic day"
+
+[node name="MonthButton" type="Button" parent="TopBar/Margin/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(42, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "+M"
+tooltip_text = "Pause and advance to the first day of the next month"
+
+[node name="SaveButton" type="Button" parent="TopBar/Margin/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Save"
+tooltip_text = "Write the Phase 2 quick save"
+
+[node name="LoadButton" type="Button" parent="TopBar/Margin/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Load"
+tooltip_text = "Load the Phase 2 quick save"
+
+[node name="StatusPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -146.0
+offset_right = 300.0
+offset_bottom = -108.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_sim_toast")
+
+[node name="StatusLabel" type="Label" parent="StatusPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = ""
+horizontal_alignment = 1
+
+[node name="SelectionActions" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -220.0
+offset_top = -100.0
+offset_right = 220.0
+offset_bottom = -56.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_sim_bar")
+
+[node name="SelectionMargin" type="MarginContainer" parent="SelectionActions"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 5
+
+[node name="SelectionRow" type="HBoxContainer" parent="SelectionActions/SelectionMargin"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="PlayAsButton" type="Button" parent="SelectionActions/SelectionMargin/SelectionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Play as selected country"
+
+[node name="TransferButton" type="Button" parent="SelectionActions/SelectionMargin/SelectionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Test ownership command"
+tooltip_text = "Phase 2 controlled command used to verify WorldState → map updates"
+
+[node name="DebugPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -220.0
+offset_top = -106.0
+offset_right = -10.0
+offset_bottom = -56.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_sim_bar")
+
+[node name="DebugColumn" type="VBoxContainer" parent="DebugPanel"]
+layout_mode = 2
+
+[node name="ChecksumLabel" type="Label" parent="DebugPanel/DebugColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "State  ----------"
+horizontal_alignment = 1
+
+[node name="TickLabel" type="Label" parent="DebugPanel/DebugColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Tick  0.00 ms"
+horizontal_alignment = 1
+
+[node name="StatusTimer" type="Timer" parent="."]
+unique_name_in_owner = true
+wait_time = 4.0
+one_shot = true
