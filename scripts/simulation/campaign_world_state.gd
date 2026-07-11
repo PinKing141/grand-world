@@ -9,6 +9,9 @@ const DEFAULT_SCENARIO_ID := "grand_world_1444"
 const ARMY_STATUS_IDLE := "idle"
 const ARMY_STATUS_MOVING := "moving"
 const ARMY_STATUS_BLOCKED := "blocked"
+const ARMY_STATUS_BATTLE := "battle"
+const ARMY_STATUS_RETREATING := "retreating"
+const ARMY_STATUS_RECOVERING := "recovering"
 
 var scenario_id := DEFAULT_SCENARIO_ID
 var current_day := 0
@@ -108,6 +111,15 @@ static func make_army_record(army_id: String, owner_tag: String, province_id: in
 		"unit_id": "infantry_regiment",
 		"regiment_count": 1,
 		"strength": 1000,
+		"maximum_strength": 1000,
+		"morale_bp": 10000,
+		"maximum_morale_bp": 10000,
+		"attack": 100,
+		"defence": 100,
+		"commander_id": "",
+		"battle_id": "",
+		"retreating": false,
+		"recovery_until_day": -1,
 		"base_monthly_maintenance": 500,
 	}
 
@@ -227,6 +239,14 @@ func set_province_owner(province_id: int, new_owner: String) -> String:
 		new_provinces.sort()
 		country_to_provinces[new_owner] = new_provinces
 	return old_owner
+
+
+func set_province_controller(province_id: int, new_controller: String) -> String:
+	var state: Dictionary = province_states[province_id]
+	var old_controller := String(state.get("controller", ""))
+	state["controller"] = new_controller
+	province_states[province_id] = state
+	return old_controller
 
 
 func get_country_provinces(country_tag: String) -> Array:
@@ -404,9 +424,46 @@ func apply_save_dict(save_data: Dictionary) -> String:
 		merged_runtime.merge((runtime_values[raw_tag] as Dictionary).duplicate(true), true)
 		loaded_country_states[tag]["runtime_values"] = merged_runtime
 
-	for registry_key in ["construction_registry", "recruitment_registry", "loan_registry"]:
+	for registry_key in ["construction_registry", "recruitment_registry", "loan_registry", "diplomatic_relations", "war_registry"]:
 		if not save_data.get(registry_key, {}) is Dictionary:
 			return "The save contains an invalid %s." % registry_key.replace("_", " ")
+	var loaded_relations: Dictionary = save_data.get("diplomatic_relations", {})
+	for raw_relation_key in loaded_relations:
+		if not loaded_relations[raw_relation_key] is Dictionary:
+			return "Diplomatic relationship %s has invalid state." % raw_relation_key
+		var relation_countries: Array = loaded_relations[raw_relation_key].get("countries", [])
+		if relation_countries.size() != 2:
+			return "Diplomatic relationship %s has invalid participants." % raw_relation_key
+		for raw_country in relation_countries:
+			if not country_states.has(String(raw_country)):
+				return "Diplomatic relationship %s references an unknown country." % raw_relation_key
+	var loaded_wars: Dictionary = save_data.get("war_registry", {})
+	for raw_war_id in loaded_wars:
+		if not loaded_wars[raw_war_id] is Dictionary:
+			return "War %s has invalid state." % raw_war_id
+		var war: Dictionary = loaded_wars[raw_war_id]
+		if String(war.get("status", "")) not in ["active", "ended"]:
+			return "War %s has an invalid status." % raw_war_id
+		var participants: Array = (war.get("attackers", []) as Array) + (war.get("defenders", []) as Array)
+		if participants.size() < 2:
+			return "War %s is missing participants." % raw_war_id
+		var seen_participants := {}
+		for raw_country in participants:
+			var country := String(raw_country)
+			if not country_states.has(country) or seen_participants.has(country):
+				return "War %s has an unknown or duplicated participant." % raw_war_id
+			seen_participants[country] = true
+		var goal = war.get("war_goal", null)
+		if not goal is Dictionary or not province_states.has(int((goal as Dictionary).get("province_id", -1))):
+			return "War %s has an invalid war goal." % raw_war_id
+		if not war.get("battles", {}) is Dictionary or not war.get("occupied_provinces", {}) is Dictionary or not war.get("peace_offers", {}) is Dictionary:
+			return "War %s contains an invalid conflict registry." % raw_war_id
+		for battle in (war.get("battles", {}) as Dictionary).values():
+			if not battle is Dictionary or not province_states.has(int((battle as Dictionary).get("province_id", -1))):
+				return "War %s contains an invalid battle." % raw_war_id
+		for raw_province in (war.get("occupied_provinces", {}) as Dictionary):
+			if not province_states.has(int(raw_province)):
+				return "War %s contains an invalid occupation." % raw_war_id
 
 	province_states = loaded_provinces
 	country_states = loaded_country_states

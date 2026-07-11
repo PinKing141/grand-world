@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/simulation_hud.gd" id="1_sim_hud"]
+[ext_resource type="Script" path="res://scripts/ui/draggable_panel.gd" id="2_drag"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sim_bar"]
 bg_color = Color(0.035, 0.045, 0.06, 0.95)
@@ -234,6 +235,7 @@ offset_right = 348.0
 offset_bottom = -60.0
 grow_vertical = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_sim_bar")
+script = ExtResource("2_drag")
 
 [node name="ArmyMargin" type="MarginContainer" parent="ArmyPanel"]
 layout_mode = 2

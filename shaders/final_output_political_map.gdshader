@@ -50,28 +50,6 @@ uniform float min_center : hint_range(0.0, 0.16, 0.01) = 0.16;
 uniform float noise_strength : hint_range(0.0, 1.0, 0.01) = 0.0;
 
 
-// Parameters
-uniform float threshold = 0.00001;
-uniform float aa_scale = 17.6;
-uniform float base_line_thickness = 0.38197;
-const int ML = 0;
-
-// Diagonal line blending logic
-bool diag(inout vec4 sum, vec2 ip, vec2 p1, vec2 p2, float thickness)
-{
-	vec4 v1 = texelFetch(subview_image, ivec2(ip + p1), ML);
-	vec4 v2 = texelFetch(subview_image, ivec2(ip + p2), ML);
-
-	if (length(v1 - v2) < threshold)
-	{
-		vec2 dir = normalize(vec2((p2 - p1).y, -(p2 - p1).x));
-		vec2 lp = ip - (floor(ip + p1) + vec2(0.5));
-		float l = clamp((thickness - dot(lp, dir)) * aa_scale, 0.0, 1.0);
-		sum = mix(sum, v1, l);
-		return true;
-	}
-	return false;
-}
 bool province_matches(vec2 encoded_id, vec2 target_id)
 {
 	vec2 tolerance = vec2(0.5 / 255.0);
@@ -86,33 +64,14 @@ void fragment()
 {
 
 
-	// Apply smoothing
+	// The political lookup is hardware-filtered in one sample. Province and
+	// country distance fields draw the authoritative borders, so the former
+	// multi-tap diagonal reconstruction only added full-screen GPU cost.
 	vec2 tex_size = vec2(textureSize(subview_image, 0));
 	vec2 ip = UV * tex_size;
 
-	vec4 original_color =  texelFetch(subview_image, ivec2(ip), ML);
+	vec4 original_color = texture(subview_image, UV);
 	vec4 s = original_color;
-
-	if (diag(s, ip, vec2(-1, 0), vec2(0, 1), base_line_thickness))
-	{
-		diag(s, ip, vec2(-1, 0), vec2(1, 1), 0.25);
-		diag(s, ip, vec2(-1, -1), vec2(0, 1), 0.25);
-	}
-	if (diag(s, ip, vec2(0, 1), vec2(1, 0), base_line_thickness))
-	{
-		diag(s, ip, vec2(0, 1), vec2(1, -1), 0.25);
-		diag(s, ip, vec2(-1, 1), vec2(1, 0), 0.25);
-	}
-	if (diag(s, ip, vec2(1, 0), vec2(0, -1), base_line_thickness))
-	{
-		diag(s, ip, vec2(1, 0), vec2(-1, -1), 0.25);
-		diag(s, ip, vec2(1, 1), vec2(0, -1), 0.25);
-	}
-	if (diag(s, ip, vec2(0, -1), vec2(-1, 0), base_line_thickness))
-	{
-		diag(s, ip, vec2(0, -1), vec2(-1, 1), 0.25);
-		diag(s, ip, vec2(1, -1), vec2(-1, 0), 0.25);
-	}
 
 
 	// The CPU-baked class texture is authoritative. Its red channel encodes:
@@ -122,19 +81,14 @@ void fragment()
 	vec3 terrain_rgb = texture(ocean_texture, UV).rgb;
 	vec3 ground_rgb = texture(terrain_base_map, UV).rgb;
 
-	// Hillshade from the baked elevation texture, lit from the northwest.
-	// Two slope scales combine crisp ridge lines with the broad swell of a
-	// mountain range, like classic hand-shaded strategy maps.
+	// Low-cost northwest hillshade. The prior eight-neighbour filter was the
+	// largest shader cost while panning; this diagonal gradient preserves the
+	// raised-relief read with only two neighbouring samples.
 	vec2 height_texel = 1.0 / vec2(textureSize(height_map, 0));
-	vec2 light_dir = normalize(vec2(-1.0, -1.0));
 	float elevation = texture(height_map, UV).r;
-	vec2 slope_fine = vec2(
-		texture(height_map, UV + vec2(height_texel.x, 0.0)).r - texture(height_map, UV - vec2(height_texel.x, 0.0)).r,
-		texture(height_map, UV + vec2(0.0, height_texel.y)).r - texture(height_map, UV - vec2(0.0, height_texel.y)).r);
-	vec2 slope_broad = vec2(
-		texture(height_map, UV + vec2(height_texel.x * 3.0, 0.0)).r - texture(height_map, UV - vec2(height_texel.x * 3.0, 0.0)).r,
-		texture(height_map, UV + vec2(0.0, height_texel.y * 3.0)).r - texture(height_map, UV - vec2(0.0, height_texel.y * 3.0)).r);
-	float directional = dot(slope_fine, light_dir) * 0.62 + dot(slope_broad, light_dir) * 0.38;
+	float elevation_nw = texture(height_map, UV - height_texel * 2.0).r;
+	float elevation_se = texture(height_map, UV + height_texel * 2.0).r;
+	float directional = elevation_nw - elevation_se;
 	float relief_shade = clamp(directional * relief_strength, -relief_max, relief_max);
 
 	if (terrain_class < 0.17)
@@ -160,17 +114,14 @@ void fragment()
 		}
 		s.a = 1.0;
 
-		float df_province = texture(distance_field, UV).r;
-
-		float center_factor = smoothstep(min_center, 1.0, df_province);
-
-		float noise = texture(noise_texture, UV).r;
-
-		float noise_factor = smoothstep(noise_threshold, 1.0, noise); // Wider range = softer
-
-		float white_amount = center_factor * noise_factor * noise_strength;
-
-		s.rgb = mix(s.rgb, vec3(1.0), white_amount);
+		if (noise_strength > 0.001)
+		{
+			float df_province = texture(distance_field, UV).r;
+			float center_factor = smoothstep(min_center, 1.0, df_province);
+			float noise = texture(noise_texture, UV).r;
+			float noise_factor = smoothstep(noise_threshold, 1.0, noise);
+			s.rgb = mix(s.rgb, vec3(1.0), center_factor * noise_factor * noise_strength);
+		}
 	}
 	else if (terrain_class < 0.83)
 	{

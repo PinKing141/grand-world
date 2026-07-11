@@ -1,0 +1,197 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/war_hud.gd" id="1_war"]
+[ext_resource type="Script" path="res://scripts/ui/draggable_panel.gd" id="2_drag"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_war"]
+bg_color = Color(0.035, 0.045, 0.06, 0.97)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.36, 0.22, 0.19, 0.95)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.48)
+shadow_size = 7
+
+[node name="WarHUD" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_war")
+
+[node name="DiplomacyButton" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 366.0
+offset_top = 112.0
+offset_right = 496.0
+offset_bottom = 146.0
+theme_override_font_sizes/font_size = 13
+text = "Diplomacy & War"
+tooltip_text = "Open country relations, active wars, maps, and peace negotiations"
+
+[node name="DiplomacyPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -210.0
+offset_right = 250.0
+offset_bottom = 210.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBox_war")
+script = ExtResource("2_drag")
+
+[node name="Margin" type="MarginContainer" parent="DiplomacyPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 12
+
+[node name="Column" type="VBoxContainer" parent="DiplomacyPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Header" type="HBoxContainer" parent="DiplomacyPanel/Margin/Column"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="DiplomacyPanel/Margin/Column/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 17
+text = "Diplomacy and Warfare"
+
+[node name="CloseButton" type="Button" parent="DiplomacyPanel/Margin/Column/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(26, 26)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "×"
+
+[node name="TargetTitle" type="Label" parent="DiplomacyPanel/Margin/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Select another country's province"
+
+[node name="RelationSummary" type="Label" parent="DiplomacyPanel/Margin/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Relationship summary"
+autowrap_mode = 2
+
+[node name="DiplomacyActions" type="HBoxContainer" parent="DiplomacyPanel/Margin/Column"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ImproveButton" type="Button" parent="DiplomacyPanel/Margin/Column/DiplomacyActions"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Improve +10"
+
+[node name="AllianceButton" type="Button" parent="DiplomacyPanel/Margin/Column/DiplomacyActions"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Form alliance"
+
+[node name="AccessButton" type="Button" parent="DiplomacyPanel/Margin/Column/DiplomacyActions"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Request access"
+
+[node name="DeclareWarButton" type="Button" parent="DiplomacyPanel/Margin/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Declare conquest war"
+
+[node name="Separator" type="HSeparator" parent="DiplomacyPanel/Margin/Column"]
+layout_mode = 2
+
+[node name="WarHeading" type="Label" parent="DiplomacyPanel/Margin/Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Active war"
+
+[node name="WarOption" type="OptionButton" parent="DiplomacyPanel/Margin/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+
+[node name="WarSummary" type="Label" parent="DiplomacyPanel/Margin/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "No active war."
+autowrap_mode = 2
+
+[node name="MapActions" type="HBoxContainer" parent="DiplomacyPanel/Margin/Column"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="RelationsMapButton" type="Button" parent="DiplomacyPanel/Margin/Column/MapActions"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Relations map"
+
+[node name="WarMapButton" type="Button" parent="DiplomacyPanel/Margin/Column/MapActions"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "War map"
+
+[node name="AccessMapButton" type="Button" parent="DiplomacyPanel/Margin/Column/MapActions"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Access map"
+
+[node name="PeaceActions" type="HBoxContainer" parent="DiplomacyPanel/Margin/Column"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="WhitePeaceButton" type="Button" parent="DiplomacyPanel/Margin/Column/PeaceActions"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Offer white peace"
+
+[node name="DemandGoalButton" type="Button" parent="DiplomacyPanel/Margin/Column/PeaceActions"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Demand war goal"
+
+[node name="AcceptOfferButton" type="Button" parent="DiplomacyPanel/Margin/Column/PeaceActions"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Accept incoming offer"
+
+[node name="DetailsLabel" type="Label" parent="DiplomacyPanel/Margin/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 12
+text = "Battle, siege, occupation, and peace status."
+autowrap_mode = 2
+vertical_alignment = 1

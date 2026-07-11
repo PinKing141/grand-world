@@ -9,21 +9,42 @@ extends RefCounted
 ## dictionary iteration order, no randomness.
 
 const CampaignWorldState = preload("res://scripts/simulation/campaign_world_state.gd")
+const DiplomacySystemScript = preload("res://scripts/simulation/diplomacy_system.gd")
 
 # Foreign territory currently allows passage: wars, access treaties, and
 # hostility arrive with the diplomacy phase. The rule lives here so every
 # future restriction changes exactly one function.
-static func can_enter(graph: ProvinceGraph, _world: CampaignWorldState, _country: String, province_id: int) -> bool:
-	return graph.is_land(province_id)
+static func can_enter(graph: ProvinceGraph, world: CampaignWorldState, country: String, province_id: int) -> bool:
+	if not graph.is_land(province_id):
+		return false
+	# Legacy/unit worlds intentionally retain unrestricted Phase 3 traversal.
+	# Real campaigns opt into diplomatic access during bootstrap.
+	if not bool(world.global_flags.get("enforce_military_access", false)):
+		return true
+	var controller := world.get_province_controller(province_id)
+	var owner := world.get_province_owner(province_id)
+	var host := controller if not controller.is_empty() else owner
+	if host.is_empty() or host == country:
+		return true
+	if DiplomacySystemScript.are_at_war(world, country, host):
+		return true
+	if DiplomacySystemScript.are_allied(world, country, host):
+		return true
+	return DiplomacySystemScript.has_access(world, country, host)
 
 
-static func entry_failure_reason(graph: ProvinceGraph, _world: CampaignWorldState, _country: String, province_id: int) -> String:
+static func entry_failure_reason(graph: ProvinceGraph, world: CampaignWorldState, country: String, province_id: int) -> String:
 	if not graph.has_province(province_id):
 		return "Unknown destination province."
 	if graph.classification(province_id) == "water":
 		return "Naval transport required."
 	if graph.is_impassable(province_id):
 		return "Destination is impassable."
+	if not can_enter(graph, world, country, province_id):
+		var host := world.get_province_controller(province_id)
+		if host.is_empty():
+			host = world.get_province_owner(province_id)
+		return "Military access from %s is required." % host
 	return ""
 
 

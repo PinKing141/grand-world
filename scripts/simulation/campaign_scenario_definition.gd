@@ -8,9 +8,9 @@ var _country_names: Dictionary = {}
 
 func initialize_from_country_data(
 	country_data: CountryData,
-	scenario_id: String
+	p_scenario_id: String
 ) -> void:
-	_scenario_id = scenario_id
+	_scenario_id = p_scenario_id
 	var country_tags := country_data.country_id_to_country_name.keys()
 	country_tags.sort()
 	for raw_tag in country_tags:

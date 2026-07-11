@@ -141,6 +141,14 @@ func set_economy_map_mode(mode_name: String, legend: String, values: Dictionary)
 	_apply_mode_to_buttons()
 
 
+func set_strategy_map_overlay(mode_name: String, legend: String, colors: Dictionary) -> void:
+	_external_map_mode = mode_name
+	if map_render != null and map_render.has_method("apply_strategy_overlay"):
+		map_render.apply_strategy_overlay(colors)
+	mode_legend.text = legend
+	_apply_mode_to_buttons()
+
+
 func _unhandled_key_input(event: InputEvent) -> void:
 	var key_event := event as InputEventKey
 	if key_event == null or not key_event.pressed or key_event.echo:

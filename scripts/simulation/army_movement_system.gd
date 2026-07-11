@@ -19,7 +19,7 @@ static func advance_day(world: CampaignWorldState, events: SimulationEventBus) -
 	for raw_army_id in army_ids:
 		var army_id := String(raw_army_id)
 		var army: Dictionary = world.army_registry[raw_army_id]
-		if String(army.get("status", "")) != CampaignWorldState.ARMY_STATUS_MOVING:
+		if String(army.get("status", "")) not in [CampaignWorldState.ARMY_STATUS_MOVING, CampaignWorldState.ARMY_STATUS_RETREATING]:
 			continue
 		var arrival_day := int(army.get("next_arrival_day", -1))
 		if arrival_day < 0 or world.current_day < arrival_day:
@@ -71,12 +71,19 @@ static func _update_progress(world: CampaignWorldState, army: Dictionary) -> voi
 
 
 static func _finish(world: CampaignWorldState, events: SimulationEventBus, army_id: String, army: Dictionary) -> void:
+	var was_retreating := bool(army.get("retreating", false))
 	army["destination_province_id"] = -1
 	army["remaining_path"] = []
 	army["path_index"] = 0
 	army["movement_start_day"] = -1
 	army["next_arrival_day"] = -1
 	army["movement_progress"] = 0.0
-	army["status"] = CampaignWorldState.ARMY_STATUS_IDLE
+	army["retreating"] = false
+	if was_retreating:
+		army["status"] = CampaignWorldState.ARMY_STATUS_RECOVERING
+		army["recovery_until_day"] = world.current_day + 5
+		army["movement_locked"] = true
+	else:
+		army["status"] = CampaignWorldState.ARMY_STATUS_IDLE
 	world.army_registry[army_id] = army
 	events.army_movement_completed.emit(army_id, int(army.get("current_province_id", -1)))

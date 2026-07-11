@@ -211,8 +211,8 @@ func _army_issuing_country(army: Dictionary) -> String:
 	# The observer may command any army during Phase 3 testing; a chosen
 	# player country may only command its own.
 	var player_country := simulation_controller.world.player_country
-	var owner := String(army.get("owner_country_id", ""))
-	return owner if player_country.is_empty() else player_country
+	var owner_tag := String(army.get("owner_country_id", ""))
+	return owner_tag if player_country.is_empty() else player_country
 
 
 func _select_army_in_province() -> void:
@@ -295,12 +295,13 @@ func _refresh_army_panel() -> void:
 	if army.is_empty():
 		_deselect_army()
 		return
-	var owner := String(army.get("owner_country_id", ""))
-	var owner_name: String = country_data.country_id_to_country_name.get(owner, owner)
+	var owner_tag := String(army.get("owner_country_id", ""))
+	var owner_name: String = country_data.country_id_to_country_name.get(owner_tag, owner_tag)
 	army_title.text = "%s army  ·  %s" % [owner_name, _selected_army_id]
 	var status := String(army.get("status", "idle"))
-	army_economy_info.text = "%d regiment  ·  strength %d  ·  maintenance %s/month" % [
+	army_economy_info.text = "%d regiment  ·  strength %d  ·  morale %d%%  ·  maintenance %s/month" % [
 		int(army.get("regiment_count", 1)), int(army.get("strength", 1000)),
+		int(army.get("morale_bp", 10000)) / 100,
 		EconomySystemScript.format_money(int(army.get("base_monthly_maintenance", 500))),
 	]
 	var graph := ProvinceGraph.load_default()
@@ -318,10 +319,26 @@ func _refresh_army_panel() -> void:
 			army_status.text = "Blocked in %s" % graph.province_name(current)
 			army_route_info.text = "Movement was interrupted."
 			army_cancel_button.visible = false
+		"battle":
+			army_status.text = "In battle at %s" % graph.province_name(current)
+			army_route_info.text = "Combat resolves on deterministic daily rounds."
+			army_cancel_button.visible = false
+		"retreating":
+			var destination := int(army.get("destination_province_id", -1))
+			army_status.text = "Retreating from %s" % graph.province_name(current)
+			army_route_info.text = "Falling back to %s." % graph.province_name(destination)
+			army_cancel_button.visible = false
+		"recovering":
+			army_status.text = "Recovering in %s" % graph.province_name(current)
+			army_route_info.text = "Orders unlock after morale recovery."
+			army_cancel_button.visible = false
 		_:
 			army_status.text = "Idle in %s" % graph.province_name(current)
 			army_route_info.text = "Ready for orders."
 			army_cancel_button.visible = false
+	var can_order := status in ["idle", "moving", "blocked"] and String(army.get("owner_country_id", "")) == _army_issuing_country(army)
+	army_move_button.disabled = not can_order
+	army_disband_button.disabled = status != "idle" or String(army.get("owner_country_id", "")) != _army_issuing_country(army)
 	army_panel.show()
 
 

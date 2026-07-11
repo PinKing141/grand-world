@@ -25,8 +25,8 @@ func validate(world: CampaignWorldState) -> String:
 		return "Unknown army."
 	if String(army.get("owner_country_id", "")) != country_tag:
 		return "This country does not control the army."
-	if String(army.get("status", "idle")) == CampaignWorldState.ARMY_STATUS_MOVING:
-		return "Stop the army before disbanding it."
+	if String(army.get("status", "idle")) != CampaignWorldState.ARMY_STATUS_IDLE:
+		return "The army must be idle before it can be disbanded."
 	return ""
 
 

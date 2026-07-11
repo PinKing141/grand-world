@@ -1,6 +1,7 @@
 extends SceneTree
 
 const SimulationHUDScript = preload("res://scripts/ui/simulation_hud.gd")
+const WarHUDScript = preload("res://scripts/ui/war_hud.gd")
 
 
 func _initialize() -> void:
@@ -38,6 +39,7 @@ func _check_layout(scene: Node, viewport_size: Vector2i) -> void:
 	var resource_bar := scene.get_node("EconomyHUD/ResourceBar") as Control
 	var economy_panel := scene.get_node("EconomyHUD/EconomyPanel") as Control
 	var province_economy := scene.get_node("EconomyHUD/ProvinceEconomyPanel") as Control
+	var diplomacy_panel := scene.get_node("WarHUD/DiplomacyPanel") as Control
 	_disjoint(top_bar, map_modes, "campaign bar and map modes at %s" % viewport_size)
 	_disjoint(top_bar, search, "campaign bar and search at %s" % viewport_size)
 	_disjoint(map_modes, search, "map modes and search at %s" % viewport_size)
@@ -49,6 +51,9 @@ func _check_layout(scene: Node, viewport_size: Vector2i) -> void:
 		_disjoint(status_panel, selection_actions, "notification and selection actions at %s" % viewport_size)
 	if province_panel.visible:
 		_disjoint(province_panel, search, "province panel and search at %s" % viewport_size)
+		_disjoint(province_panel, resource_bar, "province panel and economy resources at %s" % viewport_size)
+		if province_economy.visible:
+			_disjoint(province_panel, province_economy, "province panel and province economy at %s" % viewport_size)
 		_require(province_panel.get_global_rect().encloses(province_content.get_global_rect()), "province content escapes its panel at %s: %s / %s" % [
 			viewport_size,
 			province_panel.get_global_rect(),
@@ -64,8 +69,15 @@ func _check_layout(scene: Node, viewport_size: Vector2i) -> void:
 		_disjoint(resource_bar, search, "economy resources and search at %s" % viewport_size)
 	if province_economy.visible:
 		_disjoint(province_economy, map_modes, "province economy and map modes at %s" % viewport_size)
+		_disjoint(province_economy, search, "province economy and search at %s" % viewport_size)
 	if economy_panel.visible:
-		_require(Rect2(Vector2.ZERO, Vector2(viewport_size)).encloses(economy_panel.get_global_rect()), "economy window escapes viewport at %s" % viewport_size)
+		# The stretch canvas keeps the 1920x1080 design size regardless of the
+		# window size, so panels must be measured against the canvas rect.
+		var canvas_rect := Rect2(Vector2.ZERO, Vector2(root.get_visible_rect().size))
+		_require(canvas_rect.encloses(economy_panel.get_global_rect()), "economy window escapes canvas at %s" % viewport_size)
+	if diplomacy_panel.visible:
+		var diplomacy_canvas := Rect2(Vector2.ZERO, Vector2(root.get_visible_rect().size))
+		_require(diplomacy_canvas.encloses(diplomacy_panel.get_global_rect()), "diplomacy window escapes canvas at %s" % viewport_size)
 
 
 func _run() -> void:
@@ -80,6 +92,7 @@ func _run() -> void:
 	var map_hud := scene.get_node("MapHUD") as MapHUD
 	var economy_hud := scene.get_node("EconomyHUD") as EconomyHUD
 	var simulation := scene.get_node("SimulationController") as GrandWorldSimulationController
+	var war_hud := scene.get_node("WarHUD") as WarHUDScript
 	var info := {
 		"province_id": 1,
 		"province_name": "Stockholm",
@@ -99,6 +112,7 @@ func _run() -> void:
 	simulation.scheduler.process_commands()
 	economy_hud._on_province_selected(info)
 	economy_hud.economy_panel.show()
+	war_hud.diplomacy_panel.show()
 	economy_hud._refresh_all()
 	await _check_layout(scene, Vector2i(1700, 960))
 	await _check_layout(scene, Vector2i(1152, 648))

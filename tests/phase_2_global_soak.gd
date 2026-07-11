@@ -43,7 +43,7 @@ func _run() -> void:
 	_require(int(simulation.world.country_runtime("CAS").get("last_economy_day", -1)) > 0, "global soak must process monthly economies")
 	_require((simulation.world.country_runtime("CAS").get("ledger", {}) as Dictionary).has("balance"), "country ledgers must survive the soak")
 	_require(elapsed_ms < 60000.0, "ten-year headless simulation must remain under the provisional 60-second budget")
-	print("Global Phase 4 ten-year soak passed in %.2f ms. checksum=%s" % [
+	print("Global Phase 5 ten-year soak passed in %.2f ms. checksum=%s" % [
 		elapsed_ms,
 		simulation.world.checksum().left(16),
 	])

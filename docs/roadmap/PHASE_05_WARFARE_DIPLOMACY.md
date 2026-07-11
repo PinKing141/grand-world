@@ -8,6 +8,23 @@ Complete the core conflict loop from diplomatic intent to war declaration, movem
 
 War Loop Gate.
 
+## Implementation Status
+
+Implemented as the first complete deterministic land-war vertical slice in version `0.5.0-phase5`.
+
+Delivered:
+
+- Canonical bilateral opinions, alliances, access requests/grants, truces, rivalry placeholder, and subject placeholder state.
+- Validated improve-relations, alliance, access, declaration, peace-offer, and peace-acceptance commands.
+- Conquer-province war goals, deterministic ally participation, stable war/battle/offer IDs, war history, and cached score components.
+- Daily seeded battles with terrain, casualties, morale, reinforcement, retreat, recovery, army destruction, and explainable results.
+- Deterministic sieges, occupation, liberation, economic control penalties, and strict legal owner versus military controller separation.
+- Province transfer, money demands, white peace, transactional acceptance, war cleanup, and five-year dated truces.
+- Diplomacy and war UI, incoming-offer acceptance, battle-result summaries, notifications, relations overlay, and war/occupation/goal overlay.
+- Exact active-war and pending-peace save/load, malformed-reference rejection, deterministic replay tests, repeated-war tests, responsive UI tests, global soak coverage, and export/startup validation.
+
+Deferred scope remains the list at the end of this document: naval war, coalitions, advanced fort zones, detailed unit composition, aggressive expansion, and full subject diplomacy.
+
 ## Player Outcome
 
 The player can form a relationship, declare a valid war, move armies, fight battles, occupy provinces, negotiate peace, and legally transfer territory.
@@ -234,4 +251,3 @@ The phase proves one complete war loop. Defer:
 - Advanced fort zones of control.
 - Aggressive expansion networks.
 - Full subject diplomacy.
-

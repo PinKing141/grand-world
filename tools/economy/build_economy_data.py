@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 from collections import Counter
@@ -81,7 +82,7 @@ def as_nonnegative_int(value: str | None) -> int:
         return 0
 
 
-def main() -> None:
+def main(check_only: bool = False) -> None:
     graph = json.loads(GRAPH.read_text(encoding="utf-8"))
     graph_provinces = graph["provinces"]
     histories = {}
@@ -149,7 +150,7 @@ def main() -> None:
         "units": {key: UNITS[key] for key in sorted(UNITS)},
         "provinces": provinces,
     }
-    OUTPUT.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    output_text = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
     total_tax = sum(p["base_tax"] for p in provinces.values())
     total_production = sum(p["base_production"] for p in provinces.values())
@@ -171,9 +172,25 @@ def main() -> None:
     if unknown_goods:
         lines.extend(["", "## Unknown source trade goods", ""])
         lines.extend(f"- `{good}`: {count}" for good, count in sorted(unknown_goods.items()))
-    REPORT.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    report_text = "\n".join(lines) + "\n"
+    if check_only:
+        output_matches = OUTPUT.exists() and OUTPUT.read_text(encoding="utf-8") == output_text
+        report_matches = REPORT.exists() and REPORT.read_text(encoding="utf-8") == report_text
+        if not output_matches or not report_matches:
+            stale = []
+            if not output_matches:
+                stale.append(str(OUTPUT.relative_to(ROOT)))
+            if not report_matches:
+                stale.append(str(REPORT.relative_to(ROOT)))
+            raise SystemExit("Stale generated economy data: %s. Run the baker without --check." % ", ".join(stale))
+        print("Economy definitions are current.")
+        return
+    OUTPUT.write_text(output_text, encoding="utf-8")
+    REPORT.write_text(report_text, encoding="utf-8")
     print(f"Baked {len(provinces)} province economies to {OUTPUT.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check", action="store_true", help="Fail if committed generated data differs from source inputs.")
+    main(parser.parse_args().check)

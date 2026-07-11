@@ -25,12 +25,22 @@ const DisbandArmyCommandScript = preload("res://scripts/simulation/commands/disb
 const SetArmyMaintenanceCommandScript = preload("res://scripts/simulation/commands/set_army_maintenance_command.gd")
 const TakeLoanCommandScript = preload("res://scripts/simulation/commands/take_loan_command.gd")
 const RepayLoanCommandScript = preload("res://scripts/simulation/commands/repay_loan_command.gd")
+const DiplomacySystemScript = preload("res://scripts/simulation/diplomacy_system.gd")
+const WarfareSystemScript = preload("res://scripts/simulation/warfare_system.gd")
+const ImproveRelationsCommandScript = preload("res://scripts/simulation/commands/improve_relations_command.gd")
+const FormAllianceCommandScript = preload("res://scripts/simulation/commands/form_alliance_command.gd")
+const BreakAllianceCommandScript = preload("res://scripts/simulation/commands/break_alliance_command.gd")
+const RequestMilitaryAccessCommandScript = preload("res://scripts/simulation/commands/request_military_access_command.gd")
+const GrantMilitaryAccessCommandScript = preload("res://scripts/simulation/commands/grant_military_access_command.gd")
+const DeclareWarCommandScript = preload("res://scripts/simulation/commands/declare_war_command.gd")
+const OfferPeaceCommandScript = preload("res://scripts/simulation/commands/offer_peace_command.gd")
+const AcceptPeaceCommandScript = preload("res://scripts/simulation/commands/accept_peace_command.gd")
 
 signal simulation_ready(world: CampaignWorldState)
 signal save_completed(success: bool, message: String)
 signal load_completed(success: bool, message: String)
 
-const GAME_VERSION := "0.4.0-phase4"
+const GAME_VERSION := "0.5.0-phase5"
 const QUICK_SAVE_PATH := "user://saves/quick_save.json"
 const SPEED_DAYS_PER_SECOND: Array[float] = [0.0, 1.0, 3.0, 10.0, 30.0, 90.0]
 
@@ -46,6 +56,7 @@ const SPEED_DAYS_PER_SECOND: Array[float] = [0.0, 1.0, 3.0, 10.0, 30.0, 90.0]
 
 @export_group("Clock")
 @export_range(1, 32, 1) var maximum_ticks_per_frame := 8
+@export_range(1000, 16000, 250) var simulation_frame_budget_usec := 5000
 
 var world := CampaignWorldState.new()
 var scenario_definition: CampaignScenarioDefinition
@@ -53,6 +64,7 @@ var event_bus: SimulationEventBus
 var scheduler: SimulationScheduler
 var initialized := false
 var last_tick_cost_usec := 0
+var last_frame_tick_count := 0
 var _day_accumulator := 0.0
 
 
@@ -61,6 +73,7 @@ func _ready() -> void:
 	event_bus.name = "SimulationEventBus"
 	add_child(event_bus)
 	event_bus.province_owner_changed.connect(_on_province_owner_changed)
+	event_bus.province_controller_changed.connect(_on_province_controller_changed)
 	event_bus.world_reloaded.connect(_on_world_reloaded)
 	_bootstrap_scenario()
 
@@ -71,6 +84,7 @@ func _process(delta: float) -> void:
 	scheduler.process_commands()
 	if world.paused:
 		_day_accumulator = 0.0
+		last_frame_tick_count = 0
 		return
 	var days_per_second := SPEED_DAYS_PER_SECOND[world.game_speed]
 	_day_accumulator = minf(
@@ -81,10 +95,15 @@ func _process(delta: float) -> void:
 	if ticks_due <= 0:
 		return
 	var started_usec := Time.get_ticks_usec()
+	var processed_ticks := 0
 	for tick in range(ticks_due):
 		scheduler.advance_one_day()
-	_day_accumulator -= ticks_due
+		processed_ticks += 1
+		if processed_ticks < ticks_due and Time.get_ticks_usec() - started_usec >= simulation_frame_budget_usec:
+			break
+	_day_accumulator -= processed_ticks
 	last_tick_cost_usec = Time.get_ticks_usec() - started_usec
+	last_frame_tick_count = processed_ticks
 
 
 func submit_command(command: SimulationCommand) -> int:
@@ -141,6 +160,46 @@ func repay_loan(country_tag: String, loan_id: String) -> int:
 	return submit_command(RepayLoanCommandScript.new(country_tag, loan_id))
 
 
+func improve_relations(country_tag: String, target_tag: String) -> int:
+	return submit_command(ImproveRelationsCommandScript.new(country_tag, target_tag))
+
+
+func form_alliance(country_tag: String, target_tag: String) -> int:
+	return submit_command(FormAllianceCommandScript.new(country_tag, target_tag))
+
+
+func break_alliance(country_tag: String, target_tag: String) -> int:
+	return submit_command(BreakAllianceCommandScript.new(country_tag, target_tag))
+
+
+func request_military_access(country_tag: String, host_tag: String) -> int:
+	return submit_command(RequestMilitaryAccessCommandScript.new(country_tag, host_tag))
+
+
+func grant_military_access(host_tag: String, country_tag: String) -> int:
+	return submit_command(GrantMilitaryAccessCommandScript.new(host_tag, country_tag))
+
+
+func declare_war(attacker_tag: String, defender_tag: String, target_province_id: int) -> int:
+	return submit_command(DeclareWarCommandScript.new(attacker_tag, defender_tag, target_province_id))
+
+
+func offer_peace(war_id: String, offerer: String, receiver: String, terms: Array) -> int:
+	return submit_command(OfferPeaceCommandScript.new(war_id, offerer, receiver, terms))
+
+
+func accept_peace(war_id: String, offer_id: String, accepting_country: String) -> int:
+	return submit_command(AcceptPeaceCommandScript.new(war_id, offer_id, accepting_country))
+
+
+func relationship(country_tag: String, target_tag: String) -> Dictionary:
+	return DiplomacySystemScript.relation(world, country_tag, target_tag) if initialized else {}
+
+
+func country_wars(country_tag: String) -> Array[String]:
+	return DiplomacySystemScript.country_wars(world, country_tag) if initialized else []
+
+
 func country_economy(country_tag: String) -> Dictionary:
 	return world.country_runtime(country_tag) if initialized and world.has_country(country_tag) else {}
 
@@ -185,9 +244,9 @@ func preview_army_route(army_id: String, destination_province_id: int) -> Dictio
 	if army.is_empty():
 		return {"exists": false, "failure_reason": "The army no longer exists."}
 	var graph := ProvinceGraph.load_default()
-	var owner := String(army.get("owner_country_id", ""))
+	var owner_tag := String(army.get("owner_country_id", ""))
 	var current := int(army.get("current_province_id", -1))
-	var route := ProvincePathfinderScript.find_route(graph, world, owner, current, destination_province_id)
+	var route := ProvincePathfinderScript.find_route(graph, world, owner_tag, current, destination_province_id)
 	if bool(route["exists"]):
 		var arrival := world.current_day
 		var path: PackedInt32Array = route["path"]
@@ -252,6 +311,8 @@ func quick_load() -> Dictionary:
 	if result["ok"]:
 		scheduler.clear_pending_commands()
 		_day_accumulator = 0.0
+		world.global_flags["enforce_military_access"] = true
+		WarfareSystemScript.initialize_armies(world)
 		_sync_all_owners_to_presentation()
 		if String(result.get("message", "")).contains("migrated"):
 			EconomySystemScript.recalculate_all(world)
@@ -300,15 +361,21 @@ func _bootstrap_scenario() -> void:
 		scenario_definition.scenario_id(),
 		campaign_seed
 	)
+	world.global_flags["enforce_military_access"] = true
 	var economy_definitions = EconomyDefinitionsScript.load_default()
 	if not economy_definitions.is_valid():
 		push_error("SimulationController requires valid Phase 4 economy definitions.")
 		return
 	EconomySystemScript.initialize_world(world, economy_definitions)
+	WarfareSystemScript.initialize_armies(world)
 	scheduler = SimulationScheduler.new(world, event_bus)
 	scheduler.daily_systems.append(
 		func(day_world: CampaignWorldState) -> void:
 			ArmyMovementSystemScript.advance_day(day_world, event_bus)
+	)
+	scheduler.daily_systems.append(
+		func(day_world: CampaignWorldState) -> void:
+			WarfareSystemScript.advance_day(day_world, event_bus)
 	)
 	scheduler.start_of_day_systems.append(
 		func(day_world: CampaignWorldState) -> void:
@@ -341,12 +408,20 @@ func _on_world_reloaded(_checksum: String) -> void:
 		map_hud.refresh_authoritative_ownership(-1)
 
 
-func _sync_owner_to_presentation(province_id: int, owner: String) -> void:
-	var presentation_owner := owner if not owner.is_empty() else "No Owner"
+func _on_province_controller_changed(province_id: int, _old_controller: String, _new_controller: String) -> void:
+	var owner := world.get_province_owner(province_id)
+	if not owner.is_empty():
+		EconomySystemScript.recalculate_country(world, owner)
+	if map_hud != null and map_hud.has_method("refresh_authoritative_ownership"):
+		map_hud.refresh_authoritative_ownership(province_id)
+
+
+func _sync_owner_to_presentation(province_id: int, owner_tag: String) -> void:
+	var presentation_owner := owner_tag if not owner_tag.is_empty() else "No Owner"
 	country_data.province_id_to_owner[province_id] = presentation_owner
 	if map_render == null or not map_render.has_method("update_color_map"):
 		return
-	var owner_color: Color = country_data.country_id_to_color.get(owner, Color(0.0, 0.0, 0.0, 0.0))
+	var owner_color: Color = country_data.country_id_to_color.get(owner_tag, Color(0.0, 0.0, 0.0, 0.0))
 	map_render.update_color_map(province_id, owner_color)
 
 
@@ -356,8 +431,8 @@ func _sync_all_owners_to_presentation() -> void:
 	province_ids.sort()
 	for raw_province_id in province_ids:
 		var province_id := int(raw_province_id)
-		var owner := world.get_province_owner(province_id)
-		presentation_owners[province_id] = owner
-		country_data.province_id_to_owner[province_id] = owner if not owner.is_empty() else "No Owner"
+		var owner_tag := world.get_province_owner(province_id)
+		presentation_owners[province_id] = owner_tag
+		country_data.province_id_to_owner[province_id] = owner_tag if not owner_tag.is_empty() else "No Owner"
 	if map_render != null and map_render.has_method("apply_world_state_owners"):
 		map_render.apply_world_state_owners(presentation_owners)

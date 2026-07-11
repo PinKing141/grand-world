@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/map_hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://scripts/ui/draggable_panel.gd" id="2_drag"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tooltip"]
 bg_color = Color(0.055, 0.065, 0.078, 0.96)
@@ -92,16 +93,16 @@ visible = false
 layout_mode = 1
 anchor_left = 1.0
 anchor_right = 1.0
-anchor_bottom = 1.0
 offset_left = -358.0
 offset_top = 70.0
 offset_right = -18.0
-offset_bottom = -62.0
+offset_bottom = 545.0
 grow_horizontal = 0
 grow_vertical = 2
 mouse_filter = 0
 theme_override_font_sizes/font_size = 13
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+script = ExtResource("2_drag")
 
 [node name="Margin" type="MarginContainer" parent="ProvincePanel"]
 layout_mode = 2
@@ -122,13 +123,13 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.94, 0.97, 1, 1)
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 17
 text = "Province"
 text_overrun_behavior = 3
 
 [node name="CloseButton" type="Button" parent="ProvincePanel/Margin/Content/Header"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 focus_mode = 0
 text = "×"
@@ -160,7 +161,7 @@ text = "POLITICAL CONTROL"
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.9, 0.69, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 15
 text = "Owner"
 autowrap_mode = 2
 
@@ -285,7 +286,7 @@ text_overrun_behavior = 3
 [node name="Spacer" type="Control" parent="ProvincePanel/Margin/Content"]
 custom_minimum_size = Vector2(0, 4)
 layout_mode = 2
-size_flags_vertical = 3
+size_flags_vertical = 0
 mouse_filter = 2
 
 [node name="PhaseNote" type="Label" parent="ProvincePanel/Margin/Content"]
@@ -299,15 +300,15 @@ autowrap_mode = 2
 unique_name_in_owner = true
 visible = false
 layout_mode = 1
-anchor_bottom = 1.0
 offset_left = 18.0
-offset_top = 145.0
+offset_top = 180.0
 offset_right = 338.0
-offset_bottom = -62.0
+offset_bottom = 465.0
 grow_vertical = 2
 mouse_filter = 0
 theme_override_font_sizes/font_size = 13
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+script = ExtResource("2_drag")
 
 [node name="Margin" type="MarginContainer" parent="CountryPanel"]
 layout_mode = 2
@@ -335,13 +336,13 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.94, 0.97, 1, 1)
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 17
 text = "Country"
 text_overrun_behavior = 3
 
 [node name="CloseCountryButton" type="Button" parent="CountryPanel/Margin/Content/Header"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
 focus_mode = 0
 text = "×"

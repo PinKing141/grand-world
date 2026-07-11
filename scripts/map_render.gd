@@ -98,8 +98,8 @@ func apply_world_state_owners(province_owners: Dictionary) -> void:
 		var province_id := int(raw_province_id)
 		if province_id < 0 or province_id >= color_map.get_width() * color_map.get_height():
 			continue
-		var owner := String(province_owners[raw_province_id])
-		var owner_color: Color = country_data.country_id_to_color.get(owner, Color(0.0, 0.0, 0.0, 0.0))
+		var owner_tag := String(province_owners[raw_province_id])
+		var owner_color: Color = country_data.country_id_to_color.get(owner_tag, Color(0.0, 0.0, 0.0, 0.0))
 		if political_color_map != null:
 			political_color_map.set_pixel(province_id % width, floori(float(province_id) / width), owner_color)
 		if display_uses_political_colors:
@@ -127,6 +127,26 @@ func apply_economy_heatmap(values: Dictionary) -> void:
 		var normalized := clampf(float(values[raw_id]) / maximum, 0.0, 1.0) if maximum > 0.0 else 0.0
 		var heat := Color(0.16, 0.22, 0.34).lerp(Color(0.95, 0.77, 0.18), sqrt(normalized))
 		color_map.set_pixel(province_id % width, floori(float(province_id) / width), heat)
+	color_texture.update(color_map)
+	update_material_dynamic_parameters("color_map", color_texture)
+	final_material.set_shader_parameter("map_mode", 0)
+	clear_country_highlight()
+	update_viewports_dynamic()
+
+
+func apply_strategy_overlay(colors: Dictionary) -> void:
+	if political_color_map == null or color_texture == null:
+		return
+	display_uses_political_colors = false
+	color_map = _copy_image(political_color_map)
+	var width := color_map.get_width()
+	var ids := colors.keys()
+	ids.sort()
+	for raw_id in ids:
+		var province_id := int(raw_id)
+		if province_id < 0 or province_id >= color_map.get_width() * color_map.get_height():
+			continue
+		color_map.set_pixel(province_id % width, floori(float(province_id) / width), colors[raw_id])
 	color_texture.update(color_map)
 	update_material_dynamic_parameters("color_map", color_texture)
 	final_material.set_shader_parameter("map_mode", 0)

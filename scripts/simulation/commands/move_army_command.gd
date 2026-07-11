@@ -40,6 +40,8 @@ func validate(world: CampaignWorldState) -> String:
 		return "%s does not control this army." % issuing_country
 	if bool(army.get("movement_locked", false)):
 		return "The army is movement-locked."
+	if String(army.get("status", CampaignWorldState.ARMY_STATUS_IDLE)) in [CampaignWorldState.ARMY_STATUS_BATTLE, CampaignWorldState.ARMY_STATUS_RETREATING, CampaignWorldState.ARMY_STATUS_RECOVERING]:
+		return "The army cannot receive orders in its current state."
 	var graph := ProvinceGraph.load_default()
 	var current := int(army.get("current_province_id", -1))
 	if destination_province_id == current:

@@ -7,7 +7,9 @@ const SimulationDateScript = preload("res://scripts/simulation/simulation_date.g
 const EconomyDefinitionsScript = preload("res://scripts/simulation/economy_definitions.gd")
 const EconomySystemScript = preload("res://scripts/simulation/economy_system.gd")
 const ConstructBuildingCommandScript = preload("res://scripts/simulation/commands/construct_building_command.gd")
+const CancelConstructionCommandScript = preload("res://scripts/simulation/commands/cancel_construction_command.gd")
 const RecruitUnitCommandScript = preload("res://scripts/simulation/commands/recruit_unit_command.gd")
+const DisbandArmyCommandScript = preload("res://scripts/simulation/commands/disband_army_command.gd")
 const SetArmyMaintenanceCommandScript = preload("res://scripts/simulation/commands/set_army_maintenance_command.gd")
 const TakeLoanCommandScript = preload("res://scripts/simulation/commands/take_loan_command.gd")
 const RepayLoanCommandScript = preload("res://scripts/simulation/commands/repay_loan_command.gd")
@@ -96,6 +98,39 @@ func _run() -> void:
 	var tax_after := int(EconomySystemScript.province_outputs(world.province_states[MADRID]["economy"])["tax"])
 	_require(tax_after > tax_before, "tax office must increase authoritative tax output")
 
+	# Duplicate buildings reject without mutation. Cancellation returns the
+	# declared deterministic refund and removes only the selected project.
+	var checksum_before_duplicate := world.checksum()
+	scheduler.submit(ConstructBuildingCommandScript.new("CAS", MADRID, "tax_office"))
+	scheduler.process_commands()
+	_require(world.checksum() == checksum_before_duplicate, "duplicate building orders must be immutable rejections")
+	runtime = world.country_runtime("CAS")
+	runtime["treasury"] = 500000
+	world.set_country_runtime("CAS", runtime)
+	scheduler.submit(ConstructBuildingCommandScript.new("CAS", TOLEDO, "workshop"))
+	scheduler.process_commands()
+	var cancelled_id := String(world.construction_registry.keys()[0])
+	scheduler.submit(CancelConstructionCommandScript.new("CAS", cancelled_id))
+	scheduler.process_commands()
+	_require(world.construction_registry.is_empty(), "cancelled construction must leave the queue")
+	_require(int(world.country_runtime("CAS")["treasury"]) == 470000, "cancellation must return the configured 50% refund")
+
+	# Losing a construction province pauses completion one day at a time; it
+	# resumes safely after ownership returns instead of completing for a rival.
+	scheduler.submit(ConstructBuildingCommandScript.new("CAS", TOLEDO, "workshop"))
+	scheduler.process_commands()
+	var paused_construction_id := String(world.construction_registry.keys()[0])
+	var paused_completion := int(world.construction_registry[paused_construction_id]["completion_day"])
+	world.set_province_owner(TOLEDO, "GRA")
+	while world.current_day < paused_completion:
+		scheduler.advance_one_day()
+	_require(world.construction_registry.has(paused_construction_id), "ownership loss must pause active construction")
+	_require(not (world.province_states[TOLEDO]["economy"]["buildings"] as Array).has("workshop"), "a rival cannot receive the paused building")
+	world.set_province_owner(TOLEDO, "CAS")
+	scheduler.advance_one_day()
+	_require(not world.construction_registry.has(paused_construction_id), "restored ownership must allow construction to resume")
+	_require((world.province_states[TOLEDO]["economy"]["buildings"] as Array).has("workshop"), "resumed construction must complete for its original country")
+
 	# Recruitment reserves money/manpower and produces an authoritative army.
 	runtime = world.country_runtime("CAS")
 	runtime["treasury"] = 500000
@@ -110,10 +145,43 @@ func _run() -> void:
 	while world.current_day < int(recruitment["completion_day"]):
 		scheduler.advance_one_day()
 	_require(world.country_armies("CAS").size() == armies_before + 1, "completed recruitment must create an army")
+	var recruited_army_id := ""
+	for candidate in world.country_armies("CAS"):
+		if String(candidate) != "a_CAS":
+			recruited_army_id = String(candidate)
+			break
+	_require(not recruited_army_id.is_empty(), "recruitment must allocate a stable new army ID")
 	var maintenance_at_full := int(world.country_runtime("CAS")["ledger"]["army_maintenance"])
 	scheduler.submit(SetArmyMaintenanceCommandScript.new("CAS", 2500))
 	scheduler.process_commands()
 	_require(int(world.country_runtime("CAS")["ledger"]["army_maintenance"]) < maintenance_at_full, "maintenance policy must change monthly expenses")
+	var manpower_before_disband := int(world.country_runtime("CAS")["manpower"])
+	scheduler.submit(DisbandArmyCommandScript.new("CAS", recruited_army_id))
+	scheduler.process_commands()
+	_require(not world.army_registry.has(recruited_army_id), "disbanding must remove the authoritative army")
+	_require(int(world.country_runtime("CAS")["manpower"]) > manpower_before_disband, "disbanding must return part of the unit's manpower")
+
+	# Recruitment also pauses if the province is no longer controlled, then
+	# completes on the first valid start-of-day after control is restored.
+	runtime = world.country_runtime("CAS")
+	runtime["treasury"] = 500000
+	runtime["manpower"] = int(runtime["maximum_manpower"])
+	world.set_country_runtime("CAS", runtime)
+	scheduler.submit(RecruitUnitCommandScript.new("CAS", TOLEDO))
+	scheduler.process_commands()
+	var paused_recruitment_id := String(world.recruitment_registry.keys()[0])
+	var recruitment_completion := int(world.recruitment_registry[paused_recruitment_id]["completion_day"])
+	var toledo_state: Dictionary = world.province_states[TOLEDO]
+	toledo_state["controller"] = "GRA"
+	world.province_states[TOLEDO] = toledo_state
+	while world.current_day < recruitment_completion:
+		scheduler.advance_one_day()
+	_require(world.recruitment_registry.has(paused_recruitment_id), "loss of control must pause recruitment")
+	toledo_state = world.province_states[TOLEDO]
+	toledo_state["controller"] = "CAS"
+	world.province_states[TOLEDO] = toledo_state
+	scheduler.advance_one_day()
+	_require(not world.recruitment_registry.has(paused_recruitment_id), "restored control must resume recruitment")
 
 	# Rejected spending is immutable.
 	runtime = world.country_runtime("GRA")
@@ -135,6 +203,25 @@ func _run() -> void:
 	scheduler.submit(RepayLoanCommandScript.new("CAS", loan_id))
 	scheduler.process_commands()
 	_require(int(world.country_runtime("CAS")["debt"]) == 0 and world.loan_registry.is_empty(), "repayment must remove principal and loan record")
+
+	# A country unable to pay recurring expenses automatically borrows only up
+	# to the hard debt limit. Further explicit borrowing is rejected without a
+	# partial mutation.
+	var granada_army: Dictionary = world.army_registry["a_GRA"]
+	granada_army["base_monthly_maintenance"] = 2000000
+	world.army_registry["a_GRA"] = granada_army
+	runtime = world.country_runtime("GRA")
+	runtime["treasury"] = 0
+	runtime["debt"] = 0
+	world.set_country_runtime("GRA", runtime)
+	EconomySystemScript.recalculate_country(world, "GRA")
+	EconomySystemScript.process_month(world, events)
+	_require(int(world.country_runtime("GRA")["debt"]) == EconomySystemScript.MAXIMUM_DEBT, "automatic borrowing must stop at maximum debt")
+	_require(int(world.country_runtime("GRA")["treasury"]) < 0, "unpayable expenses must remain visible after the debt ceiling")
+	var checksum_before_debt_rejection := world.checksum()
+	scheduler.submit(TakeLoanCommandScript.new("GRA"))
+	scheduler.process_commands()
+	_require(world.checksum() == checksum_before_debt_rejection, "borrowing beyond maximum debt must be an immutable rejection")
 
 	# JSON save round-trip preserves exact checksum and active Phase 4 state.
 	var saved := world.to_save_dict("phase4-test")
