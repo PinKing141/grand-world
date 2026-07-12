@@ -458,7 +458,17 @@ static func _combat_power(world: CampaignWorldState, army_ids: Array, stat: Stri
 	var total := 0
 	for raw_id in army_ids:
 		var army := world.get_army(String(raw_id))
-		total += int(army.get("strength", 0)) * int(army.get(stat, 100)) / 100
+		var power := int(army.get("strength", 0)) * int(army.get(stat, 100)) / 100
+		var commander_id := String(army.get("commander_id", ""))
+		if world.character_registry.has(commander_id):
+			var commander: Dictionary = world.character_registry[commander_id]
+			if bool(commander.get("alive", false)):
+				var martial := int((commander.get("skills", {}) as Dictionary).get("martial", 5))
+				var commander_bp := 10000 + (martial - 5) * 500
+				if (commander.get("traits", []) as Array).has("brave"):
+					commander_bp += 300
+				power = power * maxi(commander_bp, 5000) / 10000
+		total += power
 	return total
 
 

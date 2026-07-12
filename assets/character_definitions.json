@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "scenario_id": "iberia_1444_character_slice",
+  "dynasties": {
+    "d_trastamara_castile": {"name": "House of Trastámara (Castile)", "founder_id": "ch_cas_juan_ii", "renown": 120},
+    "d_trastamara_aragon": {"name": "House of Trastámara (Aragon)", "founder_id": "ch_ara_alfonso_v", "renown": 130},
+    "d_aviz": {"name": "House of Aviz", "founder_id": "ch_por_afonso_v", "renown": 115},
+    "d_nasrid": {"name": "Nasrid Dynasty", "founder_id": "ch_gra_muhammad_ix", "renown": 105},
+    "d_foix": {"name": "House of Foix", "founder_id": "ch_nav_blanca", "renown": 95}
+  },
+  "characters": {
+    "ch_cas_juan_ii": {
+      "name": "Juan II", "sex": "male", "birth": {"year": 1405, "month": 3, "day": 6},
+      "culture": "Castilian", "religion": "Catholic", "dynasty_id": "d_trastamara_castile",
+      "spouse_id": "ch_cas_maria", "children": ["ch_cas_enrique"], "employer_country": "CAS",
+      "skills": {"diplomacy": 7, "martial": 5, "stewardship": 6, "intrigue": 4, "learning": 7},
+      "traits": ["scholar", "cautious"], "health_bp": 7600, "fertility_bp": 4200
+    },
+    "ch_cas_maria": {
+      "name": "María of Aragon", "sex": "female", "birth": {"year": 1396, "month": 6, "day": 29},
+      "culture": "Aragonese", "religion": "Catholic", "dynasty_id": "d_trastamara_aragon",
+      "spouse_id": "ch_cas_juan_ii", "children": ["ch_cas_enrique"], "employer_country": "CAS",
+      "skills": {"diplomacy": 6, "martial": 2, "stewardship": 7, "intrigue": 5, "learning": 6},
+      "traits": ["diligent"], "health_bp": 6200, "fertility_bp": 2500
+    },
+    "ch_cas_enrique": {
+      "name": "Enrique", "sex": "male", "birth": {"year": 1425, "month": 1, "day": 5},
+      "culture": "Castilian", "religion": "Catholic", "dynasty_id": "d_trastamara_castile",
+      "father_id": "ch_cas_juan_ii", "mother_id": "ch_cas_maria", "employer_country": "CAS",
+      "skills": {"diplomacy": 5, "martial": 4, "stewardship": 4, "intrigue": 5, "learning": 5},
+      "traits": ["patient"], "health_bp": 8800, "fertility_bp": 6500
+    },
+    "ch_ara_alfonso_v": {
+      "name": "Alfonso V", "sex": "male", "birth": {"year": 1396, "month": 1, "day": 24},
+      "culture": "Aragonese", "religion": "Catholic", "dynasty_id": "d_trastamara_aragon",
+      "spouse_id": "ch_ara_maria", "employer_country": "ARA",
+      "skills": {"diplomacy": 8, "martial": 8, "stewardship": 6, "intrigue": 6, "learning": 8},
+      "traits": ["brave", "ambitious"], "health_bp": 7900, "fertility_bp": 3500
+    },
+    "ch_ara_maria": {
+      "name": "María of Castile", "sex": "female", "birth": {"year": 1401, "month": 9, "day": 14},
+      "culture": "Castilian", "religion": "Catholic", "dynasty_id": "d_trastamara_castile",
+      "spouse_id": "ch_ara_alfonso_v", "employer_country": "ARA",
+      "skills": {"diplomacy": 7, "martial": 3, "stewardship": 8, "intrigue": 6, "learning": 7},
+      "traits": ["just", "diligent"], "health_bp": 8000, "fertility_bp": 3000
+    },
+    "ch_ara_juan": {
+      "name": "Juan", "sex": "male", "birth": {"year": 1398, "month": 6, "day": 29},
+      "culture": "Aragonese", "religion": "Catholic", "dynasty_id": "d_trastamara_aragon",
+      "employer_country": "ARA", "children": ["ch_nav_carlos"],
+      "skills": {"diplomacy": 6, "martial": 7, "stewardship": 6, "intrigue": 8, "learning": 5},
+      "traits": ["ambitious"], "health_bp": 8200, "fertility_bp": 5000
+    },
+    "ch_por_afonso_v": {
+      "name": "Afonso V", "sex": "male", "birth": {"year": 1432, "month": 1, "day": 15},
+      "culture": "Portuguese", "religion": "Catholic", "dynasty_id": "d_aviz",
+      "employer_country": "POR", "skills": {"diplomacy": 5, "martial": 6, "stewardship": 5, "intrigue": 4, "learning": 5},
+      "traits": ["brave"], "health_bp": 9300, "fertility_bp": 0
+    },
+    "ch_por_fernando": {
+      "name": "Fernando", "sex": "male", "birth": {"year": 1433, "month": 11, "day": 17},
+      "culture": "Portuguese", "religion": "Catholic", "dynasty_id": "d_aviz",
+      "employer_country": "POR", "skills": {"diplomacy": 5, "martial": 6, "stewardship": 5, "intrigue": 5, "learning": 6},
+      "traits": ["patient"], "health_bp": 9200, "fertility_bp": 0
+    },
+    "ch_gra_muhammad_ix": {
+      "name": "Muhammad IX", "sex": "male", "birth": {"year": 1396, "month": 1, "day": 1},
+      "culture": "Andalusian", "religion": "Sunni", "dynasty_id": "d_nasrid",
+      "children": ["ch_gra_yusuf"], "employer_country": "GRA",
+      "skills": {"diplomacy": 6, "martial": 6, "stewardship": 5, "intrigue": 8, "learning": 7},
+      "traits": ["cautious", "zealous"], "health_bp": 7100, "fertility_bp": 4000
+    },
+    "ch_gra_yusuf": {
+      "name": "Yusuf", "sex": "male", "birth": {"year": 1420, "month": 1, "day": 1},
+      "culture": "Andalusian", "religion": "Sunni", "dynasty_id": "d_nasrid",
+      "father_id": "ch_gra_muhammad_ix", "employer_country": "GRA",
+      "skills": {"diplomacy": 5, "martial": 6, "stewardship": 4, "intrigue": 6, "learning": 6},
+      "traits": ["ambitious"], "health_bp": 8600, "fertility_bp": 6000
+    },
+    "ch_nav_blanca": {
+      "name": "Blanca", "sex": "female", "birth": {"year": 1424, "month": 6, "day": 9},
+      "culture": "Navarrese", "religion": "Catholic", "dynasty_id": "d_foix",
+      "employer_country": "NAV", "skills": {"diplomacy": 7, "martial": 3, "stewardship": 7, "intrigue": 6, "learning": 7},
+      "traits": ["just"], "health_bp": 8800, "fertility_bp": 6500
+    },
+    "ch_nav_carlos": {
+      "name": "Carlos of Viana", "sex": "male", "birth": {"year": 1421, "month": 5, "day": 29},
+      "culture": "Navarrese", "religion": "Catholic", "dynasty_id": "d_trastamara_aragon",
+      "father_id": "ch_ara_juan", "employer_country": "NAV",
+      "skills": {"diplomacy": 7, "martial": 5, "stewardship": 6, "intrigue": 5, "learning": 8},
+      "traits": ["scholar"], "health_bp": 8500, "fertility_bp": 6000
+    }
+  },
+  "titles": {
+    "k_castile": {"name": "Kingdom of Castile", "rank": "kingdom", "country_tag": "CAS", "holder_id": "ch_cas_juan_ii", "capital_province_id": 219, "province_ids": [206, 215, 217, 219, 224, 225], "succession_law": "absolute_primogeniture"},
+    "k_aragon": {"name": "Crown of Aragon", "rank": "kingdom", "country_tag": "ARA", "holder_id": "ch_ara_alfonso_v", "capital_province_id": 214, "province_ids": [211, 212, 214, 220], "succession_law": "absolute_primogeniture"},
+    "k_portugal": {"name": "Kingdom of Portugal", "rank": "kingdom", "country_tag": "POR", "holder_id": "ch_por_afonso_v", "capital_province_id": 227, "province_ids": [227, 228, 231], "succession_law": "absolute_primogeniture"},
+    "k_granada": {"name": "Emirate of Granada", "rank": "kingdom", "country_tag": "GRA", "holder_id": "ch_gra_muhammad_ix", "capital_province_id": 223, "province_ids": [222, 223, 226, 4546], "succession_law": "absolute_primogeniture"},
+    "k_navarre": {"name": "Kingdom of Navarre", "rank": "kingdom", "country_tag": "NAV", "holder_id": "ch_nav_blanca", "capital_province_id": 210, "province_ids": [210], "succession_law": "absolute_primogeniture"}
+  },
+  "country_rulers": {
+    "CAS": {"ruler_id": "ch_cas_juan_ii", "heir_id": "ch_cas_enrique", "primary_title_id": "k_castile"},
+    "ARA": {"ruler_id": "ch_ara_alfonso_v", "heir_id": "ch_ara_juan", "primary_title_id": "k_aragon"},
+    "POR": {"ruler_id": "ch_por_afonso_v", "heir_id": "ch_por_fernando", "primary_title_id": "k_portugal"},
+    "GRA": {"ruler_id": "ch_gra_muhammad_ix", "heir_id": "ch_gra_yusuf", "primary_title_id": "k_granada"},
+    "NAV": {"ruler_id": "ch_nav_blanca", "heir_id": "ch_nav_carlos", "primary_title_id": "k_navarre"}
+  },
+  "claims": {
+    "claim_cas_granada": {"claimant_id": "ch_cas_enrique", "title_id": "k_granada", "type": "strong", "inheritable": true},
+    "claim_gra_castile": {"claimant_id": "ch_gra_yusuf", "title_id": "k_castile", "type": "weak", "inheritable": true}
+  }
+}

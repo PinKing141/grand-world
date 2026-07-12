@@ -183,12 +183,20 @@ func _refresh_war() -> void:
 		return
 	var war: Dictionary = simulation_controller.world.war_registry[_current_war_id]
 	var goal: Dictionary = war.get("war_goal", {})
-	war_summary.text = "%s vs %s  ·  War score %+d  ·  Goal province %d" % [
+	var goal_text := "Province %d" % int(goal.get("province_id", -1))
+	if String(goal.get("type", "")) == "press_claim":
+		var title: Dictionary = simulation_controller.world.title_registry.get(String(goal.get("title_id", "")), {})
+		var claimant: Dictionary = simulation_controller.world.character_registry.get(String(goal.get("claimant_id", "")), {})
+		goal_text = "Press %s's claim on %s" % [String(claimant.get("name", "claimant")), String(title.get("name", goal.get("title_id", "title")))]
+	war_summary.text = "%s vs %s  ·  War score %+d  ·  %s" % [
 		_country_name(String(war["attacker_leader"])),
 		_country_name(String(war["defender_leader"])),
 		int(war.get("total_war_score", 0)),
-		int(goal.get("province_id", -1)),
+		goal_text,
 	]
+	demand_goal_button.text = "Enforce claim" if String(goal.get("type", "")) == "press_claim" else "Demand war goal"
+	if String(goal.get("type", "")) == "press_claim" and DiplomacySystemScript.side_in_war(war, _player_country()) < 0:
+		demand_goal_button.disabled = true
 	var active_battles := 0
 	for battle in (war.get("battles", {}) as Dictionary).values():
 		if String((battle as Dictionary).get("status", "")) == "active":
@@ -256,8 +264,13 @@ func _offer_white_peace() -> void:
 
 func _offer_war_goal() -> void:
 	var war: Dictionary = simulation_controller.world.war_registry[_current_war_id]
-	var province_id := int((war.get("war_goal", {}) as Dictionary).get("province_id", -1))
-	simulation_controller.offer_peace(_current_war_id, _player_country(), _opposing_leader(war), [{"type": "transfer_province", "province_id": province_id, "to": _player_country()}])
+	var goal: Dictionary = war.get("war_goal", {})
+	var terms: Array = []
+	if String(goal.get("type", "")) == "press_claim":
+		terms = [{"type": "press_claim", "claim_id": String(goal.get("claim_id", ""))}]
+	else:
+		terms = [{"type": "transfer_province", "province_id": int(goal.get("province_id", -1)), "to": _player_country()}]
+	simulation_controller.offer_peace(_current_war_id, _player_country(), _opposing_leader(war), terms)
 
 
 func _incoming_offer_id(war: Dictionary) -> String:

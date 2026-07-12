@@ -27,6 +27,7 @@ static func relation(world: CampaignWorldState, country_a: String, country_b: St
 		"access_requests": (stored.get("access_requests", {}) as Dictionary).duplicate(true),
 		"truce_until_day": int(stored.get("truce_until_day", -1)),
 		"subject": (stored.get("subject", {}) as Dictionary).duplicate(true),
+		"marriage_ties": int(stored.get("marriage_ties", 0)),
 	}
 
 

@@ -8,6 +8,55 @@ Prove that the planned game can sustain a representative autonomous regional cam
 
 Vertical Slice.
 
+## Current Status
+
+**Validation.** The systemic Phase 6 implementation is integrated in build `0.6.0-phase6`. Automated gates pass for deterministic decision-making, economic/diplomatic/military commands, AI-state save/load replay, campaign UI, objective overlays, data validation, responsive layout, and the full 20-year unattended regional campaign.
+
+The Vertical Slice gate is not labelled complete until hands-on balance, clarity, presentation, and packaged-build checks are approved.
+
+## Implemented Foundation
+
+- Data-driven profiles for Castile, Aragon, Portugal, Granada, and Navarre in `assets/ai_definitions.json`.
+- Unique staggered scheduling slots for tactical, military, diplomacy, economy, and quarterly strategic reviews.
+- Persistent goals, postures, target countries/provinces, reserve targets, force targets, recent orders, decision counts, and bounded histories.
+- Economic AI for maintenance, reserve protection, recruitment, building investment, emergency borrowing, and debt repayment.
+- Diplomatic AI for relations, alliances, military access, strength/risk-gated declarations, truces, offers, and peace acceptance.
+- Military AI for capital defence, war-goal attack/defence, liberation, enemy engagement, route validation, retreat-aware caution, and anti-oscillation order memory.
+- All autonomous actions pass through the existing authoritative player command API and its validation rules.
+- Deterministic tie-breaking and replay; wall-clock profiling data is kept outside authoritative checksums.
+- Country objectives, victory/defeat/completion states, observer completion, pause-on-player-finish, and an end summary.
+- A Campaign & AI inspector showing goals, plans, threats, scored alternatives, rejection reasons, schedules, decision cost, deterministic seeds, and recent decisions.
+- A military-objective map overlay for capitals, targets, and active destinations.
+- Malformed AI profile validation and clear project-startup failure messages.
+
+## Automated Evidence
+
+- `tests/phase_6_ai_test.gd`: command coverage, player-country exclusion, rejection budget, malformed-data rejection, deterministic replay, save/load continuation, and bounded debug state.
+- `tests/phase_6_integration_smoke.gd`: packaged main-scene integration, five-country UI, objectives, scheduled decisions, overlay restoration, and exact AI-state quick save/load.
+- `tests/phase_6_regional_soak.gd`: full 7,305-day observer campaign, campaign summary, sustained decisions, warfare/peace/economy coverage, rejection budget, bounded AI caches, and second-half memory-growth budget.
+- `tests/ui_layout_smoke.gd`: Campaign & AI panel containment at 1700×960 and 1152×648 windows.
+- `tools/testing/run_all_tests.py`: unified Phase 1–6 regression, regional/global soaks, export-content verification, and exported-build startup.
+
+## Adding a Sixth Regional AI Country
+
+1. Ensure the country and its 1444 provinces exist in the scenario data.
+2. Add one profile to `assets/ai_definitions.json` with a unique three-letter tag, owned capital, unused non-negative schedule slot, strategy, objective, targets/allies, and economic/military policy values.
+3. Add any starting relationship records using tags that exist in the same profile file.
+4. Run `tests/phase_6_ai_test.gd`; malformed tags, duplicate slots, missing capitals/strategies/objectives, and unknown country references fail validation.
+5. Extend the controlled Iberian fixtures when the sixth country is required by the vertical-slice acceptance scenario.
+6. Run `python tools/testing/run_all_tests.py` and complete a hands-on observer/player balance pass.
+
+The planner, scheduler, debugger, campaign summary, and save system discover valid profiles from data; adding a country does not require a new AI code path.
+
+## Remaining Validation Before Gate Approval
+
+- Play complete campaigns as multiple Iberian countries and rate pressure, readability, pacing, and recovery.
+- Tune country policy values, building returns, army targets, war thresholds, siege pacing, and peace behaviour from playtest evidence.
+- Confirm AI decision cost and maximum-speed responsiveness on reference hardware with the graphical build.
+- Review sound, music/ambience direction, icons, notifications, and final interaction feedback.
+- Verify the Windows export using mouse/keyboard at supported resolutions and record known issues.
+- Measure content-authoring throughput before committing to global AI/content production.
+
 ## Recommended Slice
 
 Iberia beginning on 11 November 1444:
@@ -203,4 +252,3 @@ Provide:
 - Final balance.
 - 1700–1821.
 - Multiplayer.
-

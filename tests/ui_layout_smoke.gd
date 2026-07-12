@@ -2,6 +2,8 @@ extends SceneTree
 
 const SimulationHUDScript = preload("res://scripts/ui/simulation_hud.gd")
 const WarHUDScript = preload("res://scripts/ui/war_hud.gd")
+const AIDebugHUDScript = preload("res://scripts/ui/ai_debug_hud.gd")
+const CharacterHUDScript = preload("res://scripts/ui/character_hud.gd")
 
 
 func _initialize() -> void:
@@ -40,6 +42,8 @@ func _check_layout(scene: Node, viewport_size: Vector2i) -> void:
 	var economy_panel := scene.get_node("EconomyHUD/EconomyPanel") as Control
 	var province_economy := scene.get_node("EconomyHUD/ProvinceEconomyPanel") as Control
 	var diplomacy_panel := scene.get_node("WarHUD/DiplomacyPanel") as Control
+	var ai_panel := scene.get_node("AIDebugHUD/AIPanel") as Control
+	var character_panel := scene.get_node("CharacterHUD/CharacterPanel") as Control
 	_disjoint(top_bar, map_modes, "campaign bar and map modes at %s" % viewport_size)
 	_disjoint(top_bar, search, "campaign bar and search at %s" % viewport_size)
 	_disjoint(map_modes, search, "map modes and search at %s" % viewport_size)
@@ -78,6 +82,12 @@ func _check_layout(scene: Node, viewport_size: Vector2i) -> void:
 	if diplomacy_panel.visible:
 		var diplomacy_canvas := Rect2(Vector2.ZERO, Vector2(root.get_visible_rect().size))
 		_require(diplomacy_canvas.encloses(diplomacy_panel.get_global_rect()), "diplomacy window escapes canvas at %s" % viewport_size)
+	if ai_panel.visible:
+		var ai_canvas := Rect2(Vector2.ZERO, Vector2(root.get_visible_rect().size))
+		_require(ai_canvas.encloses(ai_panel.get_global_rect()), "AI inspector escapes canvas at %s: %s / %s" % [viewport_size, ai_panel.get_global_rect(), ai_canvas])
+	if character_panel.visible:
+		var character_canvas := Rect2(Vector2.ZERO, Vector2(root.get_visible_rect().size))
+		_require(character_canvas.encloses(character_panel.get_global_rect()), "character window escapes canvas at %s: %s / %s" % [viewport_size, character_panel.get_global_rect(), character_canvas])
 
 
 func _run() -> void:
@@ -93,6 +103,8 @@ func _run() -> void:
 	var economy_hud := scene.get_node("EconomyHUD") as EconomyHUD
 	var simulation := scene.get_node("SimulationController") as GrandWorldSimulationController
 	var war_hud := scene.get_node("WarHUD") as WarHUDScript
+	var ai_hud := scene.get_node("AIDebugHUD") as AIDebugHUDScript
+	var character_hud := scene.get_node("CharacterHUD") as CharacterHUDScript
 	var info := {
 		"province_id": 1,
 		"province_name": "Stockholm",
@@ -113,6 +125,10 @@ func _run() -> void:
 	economy_hud._on_province_selected(info)
 	economy_hud.economy_panel.show()
 	war_hud.diplomacy_panel.show()
+	ai_hud.panel.show()
+	ai_hud._refresh_all()
+	character_hud.panel.show()
+	character_hud._refresh_all()
 	economy_hud._refresh_all()
 	await _check_layout(scene, Vector2i(1700, 960))
 	await _check_layout(scene, Vector2i(1152, 648))

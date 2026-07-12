@@ -1,0 +1,211 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/character_hud.gd" id="1_character"]
+[ext_resource type="Script" path="res://scripts/ui/draggable_panel.gd" id="2_drag"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_character"]
+bg_color = Color(0.035, 0.028, 0.045, 0.98)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.55, 0.4, 0.2, 0.95)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.55)
+shadow_size = 8
+
+[node name="CharacterHUD" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_character")
+
+[node name="CourtButton" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 30.0
+offset_top = 300.0
+offset_right = 174.0
+offset_bottom = 338.0
+text = "Court & Dynasty"
+tooltip_text = "Open rulers, families, titles, claims, opinions, and succession"
+
+[node name="CharacterPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -410.0
+offset_top = -390.0
+offset_right = 410.0
+offset_bottom = 390.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBox_character")
+script = ExtResource("2_drag")
+
+[node name="Margin" type="MarginContainer" parent="CharacterPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="Column" type="VBoxContainer" parent="CharacterPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Header" type="HBoxContainer" parent="CharacterPanel/Margin/Column"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="CharacterPanel/Margin/Column/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "Court, Dynasty & Succession"
+
+[node name="CloseButton" type="Button" parent="CharacterPanel/Margin/Column/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+text = "×"
+
+[node name="CountryOption" type="OptionButton" parent="CharacterPanel/Margin/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="RealmRow" type="HBoxContainer" parent="CharacterPanel/Margin/Column"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="PortraitFrame" type="PanelContainer" parent="CharacterPanel/Margin/Column/RealmRow"]
+custom_minimum_size = Vector2(100, 100)
+layout_mode = 2
+
+[node name="PortraitLabel" type="Label" parent="CharacterPanel/Margin/Column/RealmRow/PortraitFrame"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.78, 0.42, 1)
+theme_override_font_sizes/font_size = 28
+text = "R"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RulerLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/RealmRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 100)
+layout_mode = 2
+size_flags_horizontal = 3
+bbcode_enabled = true
+fit_content = false
+
+[node name="SuccessionLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/RealmRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(300, 100)
+layout_mode = 2
+size_flags_horizontal = 3
+bbcode_enabled = true
+fit_content = false
+scroll_active = true
+
+[node name="AILabel" type="Label" parent="CharacterPanel/Margin/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.72, 0.84, 1)
+text = "Character AI"
+text_overrun_behavior = 3
+
+[node name="Separator" type="HSeparator" parent="CharacterPanel/Margin/Column"]
+layout_mode = 2
+
+[node name="CharacterOption" type="OptionButton" parent="CharacterPanel/Margin/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="DetailsScroll" type="ScrollContainer" parent="CharacterPanel/Margin/Column"]
+custom_minimum_size = Vector2(0, 290)
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Details" type="VBoxContainer" parent="CharacterPanel/Margin/Column/DetailsScroll"]
+custom_minimum_size = Vector2(750, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 7
+
+[node name="IdentityLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/DetailsScroll/Details"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(750, 55)
+layout_mode = 2
+bbcode_enabled = true
+fit_content = false
+
+[node name="SkillsLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/DetailsScroll/Details"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(750, 58)
+layout_mode = 2
+bbcode_enabled = true
+fit_content = false
+
+[node name="FamilyLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/DetailsScroll/Details"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(750, 76)
+layout_mode = 2
+bbcode_enabled = true
+fit_content = false
+
+[node name="TitlesLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/DetailsScroll/Details"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(750, 90)
+layout_mode = 2
+bbcode_enabled = true
+fit_content = false
+
+[node name="OpinionRow" type="HBoxContainer" parent="CharacterPanel/Margin/Column/DetailsScroll/Details"]
+layout_mode = 2
+
+[node name="OpinionPrompt" type="Label" parent="CharacterPanel/Margin/Column/DetailsScroll/Details/OpinionRow"]
+layout_mode = 2
+text = "Opinion target"
+
+[node name="OpinionOption" type="OptionButton" parent="CharacterPanel/Margin/Column/DetailsScroll/Details/OpinionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="OpinionLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/DetailsScroll/Details"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(750, 120)
+layout_mode = 2
+bbcode_enabled = true
+fit_content = false
+
+[node name="ActionRow" type="HBoxContainer" parent="CharacterPanel/Margin/Column"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MarriageOption" type="OptionButton" parent="CharacterPanel/Margin/Column/ActionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MarriageButton" type="Button" parent="CharacterPanel/Margin/Column/ActionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Arrange marriage"
+
+[node name="ClaimButton" type="Button" parent="CharacterPanel/Margin/Column/ActionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "No pressable claim"

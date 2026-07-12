@@ -72,6 +72,10 @@ func advance_one_day() -> void:
 
 	for hook in ai_hooks:
 		hook.call(world)
+	# AI uses the same command queue as the player. Resolve its validated daily
+	# decisions before publishing the date so saves never capture an invisible,
+	# unsaved pending-AI queue at the end of a campaign day.
+	process_commands()
 	events.publish_date(world.current_day)
 
 

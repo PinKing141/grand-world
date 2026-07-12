@@ -238,7 +238,7 @@ func _run() -> void:
 	legacy.erase("recruitment_registry")
 	legacy.erase("loan_registry")
 	var migrated := CampaignWorldStateScript.migrate_save_data(legacy)
-	_require(int(migrated["schema_version"]) == 3, "schema 2 saves must migrate to schema 3")
+	_require(int(migrated["schema_version"]) == CampaignWorldStateScript.SAVE_SCHEMA_VERSION, "schema 2 saves must migrate to the current schema")
 	var migrated_world = _make_world()
 	_require(migrated_world.apply_save_dict(migrated).is_empty(), "migrated Phase 3 save must load")
 	_require(not migrated_world.country_runtime("CAS").is_empty(), "migration must retain initialized country economy")

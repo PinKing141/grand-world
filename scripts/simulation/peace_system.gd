@@ -4,6 +4,7 @@ extends RefCounted
 const DiplomacySystemScript = preload("res://scripts/simulation/diplomacy_system.gd")
 const WarfareSystemScript = preload("res://scripts/simulation/warfare_system.gd")
 const EconomySystemScript = preload("res://scripts/simulation/economy_system.gd")
+const CharacterSystemScript = preload("res://scripts/simulation/character_system.gd")
 
 
 static func term_cost(war: Dictionary, term: Dictionary) -> int:
@@ -16,6 +17,8 @@ static func term_cost(war: Dictionary, term: Dictionary) -> int:
 			return 15 if province_id == goal_id else 20
 		"money":
 			return clampi(int(term.get("amount", 0)) / 10000, 1, 25)
+		"press_claim":
+			return 35
 	return 999
 
 
@@ -74,6 +77,18 @@ static func validate_terms(world: CampaignWorldState, war_id: String, offerer: S
 					return "The money term has invalid countries or amount."
 				if int(world.country_runtime(payer).get("treasury", 0)) < amount:
 					return "%s cannot afford that payment." % payer
+			"press_claim":
+				var goal: Dictionary = war.get("war_goal", {})
+				var claim_id := String(term.get("claim_id", ""))
+				if String(goal.get("type", "")) != "press_claim" or claim_id != String(goal.get("claim_id", "")):
+					return "This war cannot enforce that claim."
+				if offerer_side != 1 or not world.claim_registry.has(claim_id):
+					return "Only the attacking side can enforce its valid claim."
+				var claim: Dictionary = world.claim_registry[claim_id]
+				var claimant := String(claim.get("claimant_id", ""))
+				var title_id := String(claim.get("title_id", ""))
+				if not world.character_registry.has(claimant) or not bool((world.character_registry[claimant] as Dictionary).get("alive", false)) or not world.title_registry.has(title_id):
+					return "The claimant or claimed title is no longer valid."
 			_:
 				return "Unsupported peace term: %s." % type
 		cost += term_cost(war, term)
@@ -123,6 +138,25 @@ static func apply_offer(world: CampaignWorldState, events: SimulationEventBus, w
 				recipient_runtime["treasury"] = int(recipient_runtime.get("treasury", 0)) + amount
 				world.set_country_runtime(payer, payer_runtime)
 				world.set_country_runtime(recipient, recipient_runtime)
+			"press_claim":
+				var claim_id := String(term["claim_id"])
+				var claim: Dictionary = world.claim_registry[claim_id]
+				var claimant := String(claim["claimant_id"])
+				var title_id := String(claim["title_id"])
+				CharacterSystemScript.grant_title(world, events, title_id, claimant)
+				claim["pressed"] = true
+				world.claim_registry[claim_id] = claim
+				var target_country := String((world.title_registry[title_id] as Dictionary).get("country_tag", ""))
+				if world.has_country(target_country):
+					var target_runtime := world.country_runtime(target_country)
+					target_runtime["ruler_character_id"] = claimant
+					target_runtime["personal_union_senior"] = offerer
+					target_runtime["reign_start_day"] = world.current_day
+					target_runtime["short_reign_until_day"] = world.current_day + CharacterSystemScript.SHORT_REIGN_DAYS
+					world.set_country_runtime(target_country, target_runtime)
+					CharacterSystemScript.refresh_country_heir(world, target_country)
+					CharacterSystemScript.recalculate_ruler_modifiers(world, target_country)
+				events.claim_pressed.emit(claim_id, title_id, claimant)
 
 	WarfareSystemScript.clear_war_occupations(world, events, war)
 	_cleanup_armies(world, war)

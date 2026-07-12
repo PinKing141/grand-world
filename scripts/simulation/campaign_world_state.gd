@@ -3,7 +3,7 @@ extends RefCounted
 
 const DeterministicRng = preload("res://scripts/simulation/deterministic_rng.gd")
 
-const SAVE_SCHEMA_VERSION := 3
+const SAVE_SCHEMA_VERSION := 4
 const DEFAULT_SCENARIO_ID := "grand_world_1444"
 
 const ARMY_STATUS_IDLE := "idle"
@@ -29,6 +29,10 @@ var war_registry: Dictionary = {}
 var construction_registry: Dictionary = {}
 var recruitment_registry: Dictionary = {}
 var loan_registry: Dictionary = {}
+var character_registry: Dictionary = {}
+var dynasty_registry: Dictionary = {}
+var title_registry: Dictionary = {}
+var claim_registry: Dictionary = {}
 var global_flags: Dictionary = {}
 var global_counters: Dictionary = {}
 var rng_stream_states: Dictionary = {}
@@ -54,6 +58,10 @@ func initialize(
 	construction_registry.clear()
 	recruitment_registry.clear()
 	loan_registry.clear()
+	character_registry.clear()
+	dynasty_registry.clear()
+	title_registry.clear()
+	claim_registry.clear()
 	global_flags.clear()
 	global_counters.clear()
 	rng_stream_states.clear()
@@ -182,6 +190,15 @@ static func migrate_save_data(save_data: Dictionary) -> Dictionary:
 		migrated["recruitment_registry"] = {}
 		migrated["loan_registry"] = {}
 		migrated["migrated_from_schema"] = int(save_data.get("schema_version", 2))
+		schema = 3
+	if schema == 3:
+		# Phase 7 character data is restored from scenario defaults when an old
+		# campaign is loaded. New registries remain explicit in schema 4 saves.
+		migrated["character_registry"] = {}
+		migrated["dynasty_registry"] = {}
+		migrated["title_registry"] = {}
+		migrated["claim_registry"] = {}
+		migrated["migrated_from_schema"] = int(save_data.get("schema_version", 3))
 	if schema < 1 or schema > SAVE_SCHEMA_VERSION:
 		return save_data
 	migrated["schema_version"] = SAVE_SCHEMA_VERSION
@@ -211,6 +228,29 @@ func has_province(province_id: int) -> bool:
 
 func has_country(country_tag: String) -> bool:
 	return country_states.has(country_tag)
+
+
+func has_character(character_id: String) -> bool:
+	return character_registry.has(character_id)
+
+
+func get_character(character_id: String) -> Dictionary:
+	return (character_registry.get(character_id, {}) as Dictionary).duplicate(true)
+
+
+func set_character(character_id: String, record: Dictionary) -> void:
+	character_registry[character_id] = record.duplicate(true)
+
+
+func living_characters_in_country(country_tag: String) -> Array[String]:
+	var result: Array[String] = []
+	var ids := character_registry.keys()
+	ids.sort()
+	for raw_id in ids:
+		var record: Dictionary = character_registry[raw_id]
+		if bool(record.get("alive", false)) and String(record.get("employer_country", "")) == country_tag:
+			result.append(String(raw_id))
+	return result
 
 
 func get_province_owner(province_id: int) -> String:
@@ -277,6 +317,10 @@ func checksum() -> String:
 		"construction=%s" % _canonical_variant(construction_registry),
 		"recruitment=%s" % _canonical_variant(recruitment_registry),
 		"loans=%s" % _canonical_variant(loan_registry),
+		"characters=%s" % _canonical_variant(character_registry),
+		"dynasties=%s" % _canonical_variant(dynasty_registry),
+		"titles=%s" % _canonical_variant(title_registry),
+		"claims=%s" % _canonical_variant(claim_registry),
 	]
 	var stream_names := rng_stream_states.keys()
 	stream_names.sort()
@@ -342,6 +386,10 @@ func to_save_dict(game_version: String) -> Dictionary:
 		"construction_registry": construction_registry.duplicate(true),
 		"recruitment_registry": recruitment_registry.duplicate(true),
 		"loan_registry": loan_registry.duplicate(true),
+		"character_registry": character_registry.duplicate(true),
+		"dynasty_registry": dynasty_registry.duplicate(true),
+		"title_registry": title_registry.duplicate(true),
+		"claim_registry": claim_registry.duplicate(true),
 		"checksum": checksum(),
 	}
 
@@ -456,6 +504,15 @@ func apply_save_dict(save_data: Dictionary) -> String:
 		var goal = war.get("war_goal", null)
 		if not goal is Dictionary or not province_states.has(int((goal as Dictionary).get("province_id", -1))):
 			return "War %s has an invalid war goal." % raw_war_id
+		if String((goal as Dictionary).get("type", "")) == "press_claim":
+			var goal_claim := String((goal as Dictionary).get("claim_id", ""))
+			var goal_title := String((goal as Dictionary).get("title_id", ""))
+			var goal_claimant := String((goal as Dictionary).get("claimant_id", ""))
+			var save_claims = save_data.get("claim_registry", {})
+			var save_titles = save_data.get("title_registry", {})
+			var save_characters = save_data.get("character_registry", {})
+			if not save_claims is Dictionary or not (save_claims as Dictionary).has(goal_claim) or not save_titles is Dictionary or not (save_titles as Dictionary).has(goal_title) or not save_characters is Dictionary or not (save_characters as Dictionary).has(goal_claimant):
+				return "War %s has an invalid character claim war goal." % raw_war_id
 		if not war.get("battles", {}) is Dictionary or not war.get("occupied_provinces", {}) is Dictionary or not war.get("peace_offers", {}) is Dictionary:
 			return "War %s contains an invalid conflict registry." % raw_war_id
 		for battle in (war.get("battles", {}) as Dictionary).values():
@@ -464,6 +521,25 @@ func apply_save_dict(save_data: Dictionary) -> String:
 		for raw_province in (war.get("occupied_provinces", {}) as Dictionary):
 			if not province_states.has(int(raw_province)):
 				return "War %s contains an invalid occupation." % raw_war_id
+
+	var loaded_characters_variant = save_data.get("character_registry", {})
+	var loaded_dynasties_variant = save_data.get("dynasty_registry", {})
+	var loaded_titles_variant = save_data.get("title_registry", {})
+	var loaded_claims_variant = save_data.get("claim_registry", {})
+	if not loaded_characters_variant is Dictionary or not loaded_dynasties_variant is Dictionary or not loaded_titles_variant is Dictionary or not loaded_claims_variant is Dictionary:
+		return "The save contains invalid Phase 7 registries."
+	var loaded_characters: Dictionary = loaded_characters_variant
+	var loaded_dynasties: Dictionary = loaded_dynasties_variant
+	var loaded_titles: Dictionary = loaded_titles_variant
+	var loaded_claims: Dictionary = loaded_claims_variant
+	if int(save_data.get("migrated_from_schema", SAVE_SCHEMA_VERSION)) < 4 and loaded_characters.is_empty():
+		loaded_characters = character_registry.duplicate(true)
+		loaded_dynasties = dynasty_registry.duplicate(true)
+		loaded_titles = title_registry.duplicate(true)
+		loaded_claims = claim_registry.duplicate(true)
+	var character_error := _validate_character_data(loaded_characters, loaded_dynasties, loaded_titles, loaded_claims, loaded_country_states, loaded_armies)
+	if not character_error.is_empty():
+		return character_error
 
 	province_states = loaded_provinces
 	country_states = loaded_country_states
@@ -481,8 +557,131 @@ func apply_save_dict(save_data: Dictionary) -> String:
 	construction_registry = (save_data.get("construction_registry", {}) as Dictionary).duplicate(true)
 	recruitment_registry = (save_data.get("recruitment_registry", {}) as Dictionary).duplicate(true)
 	loan_registry = (save_data.get("loan_registry", {}) as Dictionary).duplicate(true)
+	character_registry = loaded_characters.duplicate(true)
+	dynasty_registry = loaded_dynasties.duplicate(true)
+	title_registry = loaded_titles.duplicate(true)
+	claim_registry = loaded_claims.duplicate(true)
 	_rebuild_country_index()
 	return ""
+
+
+func _validate_character_data(
+	characters: Dictionary,
+	dynasties: Dictionary,
+	titles: Dictionary,
+	claims: Dictionary,
+	loaded_countries: Dictionary,
+	loaded_armies: Dictionary
+) -> String:
+	for raw_id in characters:
+		var character_id := String(raw_id)
+		if not characters[raw_id] is Dictionary:
+			return "Character %s has invalid state." % character_id
+		var character: Dictionary = characters[raw_id]
+		if String(character.get("character_id", character_id)) != character_id:
+			return "Character %s has a mismatched stable ID." % character_id
+		if not character.get("birth", {}) is Dictionary or not character.get("skills", {}) is Dictionary or not character.get("traits", []) is Array:
+			return "Character %s has malformed core data." % character_id
+		if not dynasties.has(String(character.get("dynasty_id", ""))):
+			return "Character %s references an unknown dynasty." % character_id
+		for field in ["father_id", "mother_id", "spouse_id"]:
+			var reference := String(character.get(field, ""))
+			if reference == character_id or (not reference.is_empty() and not characters.has(reference)):
+				return "Character %s has an invalid %s reference." % [character_id, field]
+		for raw_child in character.get("children", []):
+			var child_id := String(raw_child)
+			if not characters.has(child_id):
+				return "Character %s references an unknown child." % character_id
+			var child: Dictionary = characters[child_id]
+			if String(child.get("father_id", "")) != character_id and String(child.get("mother_id", "")) != character_id:
+				return "Character %s has a non-reciprocal child reference." % character_id
+		var spouse := String(character.get("spouse_id", ""))
+		if not spouse.is_empty() and String((characters[spouse] as Dictionary).get("spouse_id", "")) != character_id:
+			return "Marriage references are not symmetric for %s." % character_id
+		var employer := String(character.get("employer_country", ""))
+		if not employer.is_empty() and not loaded_countries.has(employer):
+			return "Character %s has an unknown employer." % character_id
+	if _has_character_ancestry_cycle(characters):
+		return "The saved character ancestry contains a cycle."
+	for raw_id in dynasties:
+		if not dynasties[raw_id] is Dictionary:
+			return "Dynasty %s has invalid state." % String(raw_id)
+		for raw_member in (dynasties[raw_id] as Dictionary).get("living_members", []):
+			if not characters.has(String(raw_member)) or not bool((characters[String(raw_member)] as Dictionary).get("alive", false)):
+				return "Dynasty %s has an invalid living member." % String(raw_id)
+	for raw_id in titles:
+		if not titles[raw_id] is Dictionary:
+			return "Title %s has invalid state." % String(raw_id)
+		var title: Dictionary = titles[raw_id]
+		var holder := String(title.get("holder_id", ""))
+		if not characters.has(holder) or not bool((characters[holder] as Dictionary).get("alive", false)):
+			return "Title %s has no valid living holder." % String(raw_id)
+		var country := String(title.get("country_tag", ""))
+		if not country.is_empty() and not loaded_countries.has(country):
+			return "Title %s references an unknown country." % String(raw_id)
+		var liege := String(title.get("liege_title_id", ""))
+		if not liege.is_empty() and not titles.has(liege):
+			return "Title %s references an unknown liege." % String(raw_id)
+	if _has_title_hierarchy_cycle(titles):
+		return "The saved title hierarchy contains a cycle."
+	for raw_id in claims:
+		if not claims[raw_id] is Dictionary:
+			return "Claim %s has invalid state." % String(raw_id)
+		var claim: Dictionary = claims[raw_id]
+		if not characters.has(String(claim.get("claimant_id", ""))) or not titles.has(String(claim.get("title_id", ""))):
+			return "Claim %s has an invalid character or title reference." % String(raw_id)
+	for raw_tag in loaded_countries:
+		var runtime: Dictionary = (loaded_countries[raw_tag] as Dictionary).get("runtime_values", {})
+		for field in ["ruler_character_id", "heir_character_id"]:
+			var character_id := String(runtime.get(field, ""))
+			if not character_id.is_empty() and (not characters.has(character_id) or not bool((characters[character_id] as Dictionary).get("alive", false))):
+				return "Country %s has an invalid %s." % [String(raw_tag), field]
+		var primary_title := String(runtime.get("primary_title_id", ""))
+		if not primary_title.is_empty() and not titles.has(primary_title):
+			return "Country %s has an invalid primary title." % String(raw_tag)
+	for raw_army_id in loaded_armies:
+		var commander := String((loaded_armies[raw_army_id] as Dictionary).get("commander_id", ""))
+		if not commander.is_empty() and (not characters.has(commander) or not bool((characters[commander] as Dictionary).get("alive", false))):
+			return "Army %s has an invalid commander." % String(raw_army_id)
+	return ""
+
+
+func _has_character_ancestry_cycle(characters: Dictionary) -> bool:
+	var fully_visited := {}
+	var ids := characters.keys()
+	ids.sort()
+	for raw_id in ids:
+		if _visit_character_ancestry(String(raw_id), characters, {}, fully_visited):
+			return true
+	return false
+
+
+func _visit_character_ancestry(character_id: String, characters: Dictionary, visiting: Dictionary, fully_visited: Dictionary) -> bool:
+	if visiting.has(character_id):
+		return true
+	if fully_visited.has(character_id):
+		return false
+	visiting[character_id] = true
+	var character: Dictionary = characters[character_id]
+	for field in ["father_id", "mother_id"]:
+		var parent := String(character.get(field, ""))
+		if not parent.is_empty() and _visit_character_ancestry(parent, characters, visiting, fully_visited):
+			return true
+	visiting.erase(character_id)
+	fully_visited[character_id] = true
+	return false
+
+
+func _has_title_hierarchy_cycle(titles: Dictionary) -> bool:
+	for raw_id in titles:
+		var current := String(raw_id)
+		var seen := {}
+		while not current.is_empty():
+			if seen.has(current):
+				return true
+			seen[current] = true
+			current = String((titles[current] as Dictionary).get("liege_title_id", ""))
+	return false
 
 
 func _rebuild_country_index() -> void:

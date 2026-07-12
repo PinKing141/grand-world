@@ -35,12 +35,22 @@ const GrantMilitaryAccessCommandScript = preload("res://scripts/simulation/comma
 const DeclareWarCommandScript = preload("res://scripts/simulation/commands/declare_war_command.gd")
 const OfferPeaceCommandScript = preload("res://scripts/simulation/commands/offer_peace_command.gd")
 const AcceptPeaceCommandScript = preload("res://scripts/simulation/commands/accept_peace_command.gd")
+const AIDefinitionsScript = preload("res://scripts/simulation/ai_definitions.gd")
+const StrategicAISystemScript = preload("res://scripts/simulation/strategic_ai_system.gd")
+const CampaignGoalSystemScript = preload("res://scripts/simulation/campaign_goal_system.gd")
+const CharacterDefinitionsScript = preload("res://scripts/simulation/character_definitions.gd")
+const CharacterSystemScript = preload("res://scripts/simulation/character_system.gd")
+const CharacterAISystemScript = preload("res://scripts/simulation/character_ai_system.gd")
+const ArrangeMarriageCommandScript = preload("res://scripts/simulation/commands/arrange_marriage_command.gd")
+const AssignCommanderCommandScript = preload("res://scripts/simulation/commands/assign_commander_command.gd")
+const GrantTitleCommandScript = preload("res://scripts/simulation/commands/grant_title_command.gd")
+const DeclareClaimWarCommandScript = preload("res://scripts/simulation/commands/declare_claim_war_command.gd")
 
 signal simulation_ready(world: CampaignWorldState)
 signal save_completed(success: bool, message: String)
 signal load_completed(success: bool, message: String)
 
-const GAME_VERSION := "0.5.0-phase5"
+const GAME_VERSION := "0.7.0-phase7"
 const QUICK_SAVE_PATH := "user://saves/quick_save.json"
 const SPEED_DAYS_PER_SECOND: Array[float] = [0.0, 1.0, 3.0, 10.0, 30.0, 90.0]
 
@@ -62,6 +72,10 @@ var world := CampaignWorldState.new()
 var scenario_definition: CampaignScenarioDefinition
 var event_bus: SimulationEventBus
 var scheduler: SimulationScheduler
+var ai_definitions: AIDefinitions
+var ai_system: StrategicAISystem
+var character_definitions: CharacterDefinitions
+var character_ai_system: CharacterAISystem
 var initialized := false
 var last_tick_cost_usec := 0
 var last_frame_tick_count := 0
@@ -75,7 +89,18 @@ func _ready() -> void:
 	event_bus.province_owner_changed.connect(_on_province_owner_changed)
 	event_bus.province_controller_changed.connect(_on_province_controller_changed)
 	event_bus.world_reloaded.connect(_on_world_reloaded)
+	event_bus.player_country_changed.connect(_on_character_player_changed)
 	_bootstrap_scenario()
+
+
+func _exit_tree() -> void:
+	# Break the scheduler <-> AI callable/reference cycle explicitly so campaign
+	# reloads and repeated headless runs release every Phase 6 object.
+	if scheduler != null:
+		scheduler.ai_hooks.clear()
+		scheduler.monthly_systems.clear()
+	ai_system = null
+	character_ai_system = null
 
 
 func _process(delta: float) -> void:
@@ -192,12 +217,69 @@ func accept_peace(war_id: String, offer_id: String, accepting_country: String) -
 	return submit_command(AcceptPeaceCommandScript.new(war_id, offer_id, accepting_country))
 
 
+func arrange_marriage(first_character_id: String, second_character_id: String, issuing_country := "") -> int:
+	return submit_command(ArrangeMarriageCommandScript.new(first_character_id, second_character_id, issuing_country))
+
+
+func assign_commander(country_tag: String, army_id: String, character_id: String) -> int:
+	return submit_command(AssignCommanderCommandScript.new(country_tag, army_id, character_id))
+
+
+func grant_title(country_tag: String, title_id: String, character_id: String) -> int:
+	return submit_command(GrantTitleCommandScript.new(country_tag, title_id, character_id))
+
+
+func declare_claim_war(attacker_tag: String, defender_tag: String, claim_id: String) -> int:
+	return submit_command(DeclareClaimWarCommandScript.new(attacker_tag, defender_tag, claim_id))
+
+
 func relationship(country_tag: String, target_tag: String) -> Dictionary:
 	return DiplomacySystemScript.relation(world, country_tag, target_tag) if initialized else {}
 
 
 func country_wars(country_tag: String) -> Array[String]:
 	return DiplomacySystemScript.country_wars(world, country_tag) if initialized else []
+
+
+func ai_debug_snapshot(country_tag: String) -> Dictionary:
+	return ai_system.debug_snapshot(world, country_tag) if initialized and ai_system != null else {}
+
+
+func ai_objective_map_values(country_tag: String) -> Dictionary:
+	return ai_system.objective_map_values(world, country_tag) if initialized and ai_system != null else {}
+
+
+func campaign_summary() -> Dictionary:
+	return CampaignGoalSystemScript.summary(world, ai_definitions) if initialized and ai_definitions != null else {}
+
+
+func country_ruler(country_tag: String) -> Dictionary:
+	return CharacterSystemScript.character_summary(world, CharacterSystemScript.ruler_id(world, country_tag)) if initialized else {}
+
+
+func country_heir(country_tag: String) -> Dictionary:
+	return CharacterSystemScript.character_summary(world, CharacterSystemScript.heir_id(world, country_tag)) if initialized else {}
+
+
+func character_summary(character_id: String) -> Dictionary:
+	return CharacterSystemScript.character_summary(world, character_id) if initialized else {}
+
+
+func dynasty_summary(dynasty_id: String) -> Dictionary:
+	return CharacterSystemScript.dynasty_summary(world, dynasty_id) if initialized else {}
+
+
+func character_opinion(source_id: String, target_id: String) -> Dictionary:
+	return CharacterSystemScript.opinion_breakdown(world, source_id, target_id) if initialized else {}
+
+
+func character_ai_snapshot(country_tag: String) -> Dictionary:
+	return character_ai_system.debug_snapshot(world, country_tag) if initialized and character_ai_system != null else {}
+
+
+func set_ai_enabled(enabled: bool) -> void:
+	if initialized:
+		world.global_flags["ai_enabled"] = enabled
 
 
 func country_economy(country_tag: String) -> Dictionary:
@@ -313,6 +395,12 @@ func quick_load() -> Dictionary:
 		_day_accumulator = 0.0
 		world.global_flags["enforce_military_access"] = true
 		WarfareSystemScript.initialize_armies(world)
+		if ai_system != null:
+			ai_system.ensure_world(world)
+		if ai_definitions != null:
+			CampaignGoalSystemScript.ensure_world(world, ai_definitions)
+		if character_definitions != null:
+			CharacterSystemScript.ensure_world(world, character_definitions)
 		_sync_all_owners_to_presentation()
 		if String(result.get("message", "")).contains("migrated"):
 			EconomySystemScript.recalculate_all(world)
@@ -368,6 +456,15 @@ func _bootstrap_scenario() -> void:
 		return
 	EconomySystemScript.initialize_world(world, economy_definitions)
 	WarfareSystemScript.initialize_armies(world)
+	character_definitions = CharacterDefinitionsScript.load_default()
+	if not character_definitions.is_valid():
+		push_error("SimulationController requires valid Phase 7 character definitions: %s" % character_definitions.error())
+		return
+	CharacterSystemScript.initialize_world(world, character_definitions)
+	ai_definitions = AIDefinitionsScript.load_default()
+	if not ai_definitions.is_valid():
+		push_error("SimulationController requires valid Phase 6 AI definitions: %s" % ai_definitions.error())
+		return
 	scheduler = SimulationScheduler.new(world, event_bus)
 	scheduler.daily_systems.append(
 		func(day_world: CampaignWorldState) -> void:
@@ -381,9 +478,23 @@ func _bootstrap_scenario() -> void:
 		func(day_world: CampaignWorldState) -> void:
 			EconomySystemScript.process_day(day_world, event_bus, economy_definitions)
 	)
+	character_ai_system = CharacterAISystemScript.new(scheduler, event_bus)
+	scheduler.monthly_systems.append(
+		func(month_world: CampaignWorldState) -> void:
+			CharacterSystemScript.process_month(month_world, event_bus)
+			character_ai_system.process_month(month_world)
+	)
 	scheduler.monthly_systems.append(
 		func(month_world: CampaignWorldState) -> void:
 			EconomySystemScript.process_month(month_world, event_bus, economy_definitions)
+	)
+	ai_system = StrategicAISystemScript.new(scheduler, event_bus, ai_definitions)
+	ai_system.initialize_world(world)
+	CampaignGoalSystemScript.initialize_world(world, ai_definitions)
+	scheduler.ai_hooks.append(
+		func(ai_world: CampaignWorldState) -> void:
+			CampaignGoalSystemScript.process_day(ai_world, event_bus, ai_definitions)
+			ai_system.process_day(ai_world)
 	)
 	initialized = true
 	_sync_all_owners_to_presentation()
@@ -406,6 +517,11 @@ func _on_province_owner_changed(province_id: int, old_owner: String, new_owner: 
 func _on_world_reloaded(_checksum: String) -> void:
 	if map_hud != null and map_hud.has_method("refresh_authoritative_ownership"):
 		map_hud.refresh_authoritative_ownership(-1)
+
+
+func _on_character_player_changed(_old_country: String, new_country: String) -> void:
+	if initialized:
+		CharacterSystemScript.mark_player_dynasty(world, new_country)
 
 
 func _on_province_controller_changed(province_id: int, _old_controller: String, _new_controller: String) -> void:

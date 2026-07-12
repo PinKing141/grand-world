@@ -181,6 +181,10 @@ static func recalculate_all(world: CampaignWorldState, definitions = null) -> vo
 		var runtime := world.country_runtime(tag)
 		var ledger: Dictionary = ledgers[tag]
 		ledger["interest"] = int(runtime.get("debt", 0)) * MONTHLY_INTEREST_BP / BASIS_POINTS
+		var ruler_modifiers: Dictionary = runtime.get("ruler_modifiers", {})
+		ledger["tax"] = int(ledger["tax"]) * (BASIS_POINTS + int(ruler_modifiers.get("tax_modifier_bp", 0))) / BASIS_POINTS
+		ledger["production"] = int(ledger["production"]) * (BASIS_POINTS + int(ruler_modifiers.get("production_modifier_bp", 0))) / BASIS_POINTS
+		maximum_manpower[tag] = int(maximum_manpower[tag]) * (BASIS_POINTS + int(ruler_modifiers.get("manpower_modifier_bp", 0))) / BASIS_POINTS
 		ledger["total_income"] = int(ledger["tax"]) + int(ledger["production"]) + int(ledger["subject_income"]) + int(ledger["event_income"])
 		ledger["total_expenses"] = int(ledger["army_maintenance"]) + int(ledger["fort_maintenance"]) + int(ledger["interest"]) + int(ledger["event_expenses"])
 		ledger["balance"] = int(ledger["total_income"]) - int(ledger["total_expenses"])
@@ -208,6 +212,10 @@ static func recalculate_country(world: CampaignWorldState, country_tag: String, 
 		(ledger["province_production"] as Dictionary)[str(province_id)] = outputs["production"]
 		maximum_manpower += int(outputs["maximum_manpower"])
 	var runtime := world.country_runtime(country_tag)
+	var ruler_modifiers: Dictionary = runtime.get("ruler_modifiers", {})
+	ledger["tax"] = int(ledger["tax"]) * (BASIS_POINTS + int(ruler_modifiers.get("tax_modifier_bp", 0))) / BASIS_POINTS
+	ledger["production"] = int(ledger["production"]) * (BASIS_POINTS + int(ruler_modifiers.get("production_modifier_bp", 0))) / BASIS_POINTS
+	maximum_manpower = maximum_manpower * (BASIS_POINTS + int(ruler_modifiers.get("manpower_modifier_bp", 0))) / BASIS_POINTS
 	var maintenance_bp := int(runtime.get("army_maintenance_bp", BASIS_POINTS))
 	var army_maintenance := 0
 	for army_id in world.country_armies(country_tag):

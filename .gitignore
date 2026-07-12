@@ -14,3 +14,6 @@ __pycache__/
 
 # Cached elevation source raster downloaded by build_heightmap.py.
 /tools/terrain/gebco_08_rev_elev_5400x2700.jpg
+
+# Transient headless/editor parser and run logs.
+*.log

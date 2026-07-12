@@ -1,4 +1,4 @@
-[gd_scene load_steps=34 format=3 uid="uid://cgoxd520waiho"]
+[gd_scene load_steps=36 format=3 uid="uid://cgoxd520waiho"]
 
 [ext_resource type="Texture2D" uid="uid://c7x6n8v5pq0qm" path="res://assets/provinces.bmp" id="1_o5qli"]
 [ext_resource type="Shader" uid="uid://huxgtaoxjfut" path="res://shaders/final_output_political_map.gdshader" id="1_tipki"]
@@ -22,6 +22,8 @@
 [ext_resource type="Script" path="res://scripts/ui/army_layer.gd" id="20_army"]
 [ext_resource type="PackedScene" path="res://scenes/ui/economy_hud.tscn" id="21_economy_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/war_hud.tscn" id="22_war_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/ai_debug_hud.tscn" id="23_ai_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/character_hud.tscn" id="24_character_hud"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_eb6dy"]
 viewport_path = NodePath("Map/Subviewports/CountryDistanceField")
@@ -20868,4 +20870,13 @@ notification_hud = NodePath("../SimulationHUD")
 simulation_controller = NodePath("../SimulationController")
 province_selector = NodePath("../Map/ProvinceSelector")
 map_hud = NodePath("../MapHUD")
+notification_hud = NodePath("../SimulationHUD")
+
+[node name="AIDebugHUD" parent="." node_paths=PackedStringArray("simulation_controller", "map_hud", "notification_hud") instance=ExtResource("23_ai_hud")]
+simulation_controller = NodePath("../SimulationController")
+map_hud = NodePath("../MapHUD")
+notification_hud = NodePath("../SimulationHUD")
+
+[node name="CharacterHUD" parent="." node_paths=PackedStringArray("simulation_controller", "notification_hud") instance=ExtResource("24_character_hud")]
+simulation_controller = NodePath("../SimulationController")
 notification_hud = NodePath("../SimulationHUD")

@@ -2,7 +2,7 @@
 
 ## Current Milestone
 
-**Phase 4 — Economy and Country Gameplay Loop is in validation.** Its authoritative economy, construction, recruitment, maintenance, loans, ledger, economic map modes, schema migration, UI, deterministic tests, and ten-year full-world soak are implemented. Remaining gate work is the manual Iberian UX/balance pass and final packaged-build interaction checklist.
+**Phase 7 — Characters, Dynasties, Titles, and Succession is in validation.** The Iberian slice now has authoritative rulers, heirs, families, dynasties, titles, claims, marriages, commanders, opinions, ruler modifiers, health, births, deaths, deterministic succession, character AI, claim wars, schema-4 saves, and a Court & Dynasty interface. Remaining gate work is hands-on balance, historical review, portrait/presentation direction, and packaged-build validation before the Character Loop gate can be called complete. Phase 6 balance and presentation validation remains a supporting workstream.
 
 The roadmap converts the long-term grand-strategy vision into smaller production phases with explicit gates.
 

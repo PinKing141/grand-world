@@ -23,23 +23,18 @@ static func days_in_month(year: int, month: int) -> int:
 
 
 static func day_to_date(day_count: int) -> Dictionary:
-	var remaining := maxi(day_count, 0)
-	var year := START_YEAR
-	var month := START_MONTH
-	var day := START_DAY
-	while remaining > 0:
-		var available := days_in_month(year, month) - day
-		if remaining <= available:
-			day += remaining
-			remaining = 0
-		else:
-			remaining -= available + 1
-			day = 1
-			month += 1
-			if month > 12:
-				month = 1
-				year += 1
-	return {"year": year, "month": month, "day": day}
+	var ordinal := _date_ordinal(START_YEAR, START_MONTH, START_DAY) + maxi(day_count, 0)
+	var year := START_YEAR + maxi(day_count, 0) / 365
+	while _date_ordinal(year, 1, 1) > ordinal:
+		year -= 1
+	while _date_ordinal(year + 1, 1, 1) <= ordinal:
+		year += 1
+	var day_of_year := ordinal - _date_ordinal(year, 1, 1)
+	var month := 1
+	while day_of_year >= days_in_month(year, month):
+		day_of_year -= days_in_month(year, month)
+		month += 1
+	return {"year": year, "month": month, "day": day_of_year + 1}
 
 
 static func date_to_day(year: int, month: int, day: int) -> int:
@@ -47,20 +42,7 @@ static func date_to_day(year: int, month: int, day: int) -> int:
 		return -1
 	if _compare_dates(year, month, day, START_YEAR, START_MONTH, START_DAY) < 0:
 		return -1
-	var current_year := START_YEAR
-	var current_month := START_MONTH
-	var current_day := START_DAY
-	var result := 0
-	while current_year != year or current_month != month or current_day != day:
-		result += 1
-		current_day += 1
-		if current_day > days_in_month(current_year, current_month):
-			current_day = 1
-			current_month += 1
-			if current_month > 12:
-				current_month = 1
-				current_year += 1
-	return result
+	return _date_ordinal(year, month, day) - _date_ordinal(START_YEAR, START_MONTH, START_DAY)
 
 
 static func is_valid_date(year: int, month: int, day: int) -> bool:
@@ -95,3 +77,11 @@ static func _compare_dates(
 	if day_a != day_b:
 		return -1 if day_a < day_b else 1
 	return 0
+
+
+static func _date_ordinal(year: int, month: int, day: int) -> int:
+	var previous_year := year - 1
+	var result := previous_year * 365 + previous_year / 4 - previous_year / 100 + previous_year / 400
+	for current_month in range(1, month):
+		result += days_in_month(year, current_month)
+	return result + day - 1

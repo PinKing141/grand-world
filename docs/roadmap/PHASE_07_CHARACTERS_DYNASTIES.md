@@ -8,6 +8,44 @@ Add a CK-style human and feudal layer on top of the proven country simulation wi
 
 Character Loop Gate.
 
+## Current Status
+
+**Validation.** The systemic Phase 7 character loop is integrated in build `0.7.0-phase7`. It remains country-first: characters influence and legally hold titles, while countries remain the authoritative owners of provinces, treasuries, armies, diplomacy, and player control.
+
+## Implemented Foundation
+
+- Validated, data-driven Iberian characters, dynasties, primary titles, ruler/heir assignments, and representative claims in `assets/character_definitions.json`.
+- Save schema 4 registries for characters, dynasties, titles, and claims, all included in deterministic checksums and exact save/load replay.
+- Schema-3 migration that restores scenario character defaults without corrupting older country/economy/war state.
+- Stable family references, symmetric marriages, living-dynasty indexes, title-holder indexes, character-title/claim reverse links, and ancestry/title-cycle rejection.
+- Derived age, skills, traits, health, fertility, stress, illness, court, offices, titles, claims, parents, spouses, former spouses, and children.
+- Batched monthly health, illness, fertility, birth, coming-of-age, death, trait-pressure, court-demographic, heir, and character-AI processing.
+- Deterministic absolute-primogeniture succession with child/dynasty ordering, short reign, legitimacy loss, ruler-modifier recalculation, commander cleanup, inheritable claims, and cadet-house continuity fallback.
+- Explainable character opinions from family, marriage, dynasty, culture, religion, traits, claims, recent title grants, and short reign.
+- Ruler stewardship/martial/traits modify economy and manpower; commander martial/traits modify battle power.
+- Authoritative marriage, commander, title-grant, and claim-war commands with rejection reasons.
+- Claim war goals, enforce-claim peace terms, title transfer, and initial personal-union placeholder state.
+- Periodic character AI for commander selection, scored marriages, succession awareness, and strength/truce-gated claim evaluation.
+- Court & Dynasty UI with portrait placeholder, ruler/heir, succession order, character sheet, dynasty/family data, skills, traits, health, titles, claims, opinions, marriage actions, claim actions, and character-AI reasoning.
+- Birth, illness, coming-of-age, marriage, death, succession, title, commander, claim, and AI events for UI and future event content.
+
+## Automated Evidence
+
+- `tests/phase_7_character_test.gd`: malformed ancestry rejection, initial content, marriage/kinship validation, commander ownership, opinion sources, deterministic death/succession, schema migration, exact save round-trip, claim war/peace, reproduction, and reference integrity.
+- `tests/phase_7_integration_smoke.gd`: packaged scene, Court & Dynasty UI, player marriage, player-country AI exclusion, character-AI review, exact quick save/load, claim-war peace UI, and live succession refresh.
+- `tests/phase_7_multigeneration_soak.gd`: one hundred simulated years with repeated marriages, births, illnesses, deaths, successions, midpoint deterministic replay, reference audits, final save round-trip, bounded AI history, and memory-growth budget.
+- `tests/ui_layout_smoke.gd`: character window containment at 1700×960 and 1152×648.
+- `tools/testing/run_all_tests.py`: unified Phase 1–7 regression, three campaign soaks, export-content verification, and exported-build startup.
+
+## Remaining Validation Before Gate Approval
+
+- Historically review and source the representative Iberian ruler, family, title, and claim setup; current data is a gameplay-validation slice rather than content lock.
+- Tune mortality, fertility, court arrivals, skills, traits, ruler modifiers, legitimacy, marriage scoring, and claim-war behaviour through repeated player and observer campaigns.
+- Replace initials with an approved portrait system and add the planned ruler/heir/consort/death/succession icon set.
+- Review family-tree navigation, opinion explanations, marriage controls, claim feedback, and death/succession notifications on supported displays.
+- Profile the graphical build during century-scale simulation and inspect save size/loading time as character populations grow.
+- Verify the Windows export with real mouse/keyboard interaction and record remaining P0/P1 defects.
+
 ## Player Outcome
 
 Countries have rulers with families, traits, skills, claims, opinions, and succession. Ruler death changes leadership and may alter legitimacy, diplomacy, vassal loyalty, and realm structure.
@@ -256,4 +294,3 @@ Save:
 - Complex regencies.
 - Playable dynasty mode.
 - Full 1444 world character database.
-
