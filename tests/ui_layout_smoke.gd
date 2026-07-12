@@ -4,6 +4,7 @@ const SimulationHUDScript = preload("res://scripts/ui/simulation_hud.gd")
 const WarHUDScript = preload("res://scripts/ui/war_hud.gd")
 const AIDebugHUDScript = preload("res://scripts/ui/ai_debug_hud.gd")
 const CharacterHUDScript = preload("res://scripts/ui/character_hud.gd")
+const CountryDepthHUDScript = preload("res://scripts/ui/country_depth_hud.gd")
 
 
 func _initialize() -> void:
@@ -44,6 +45,7 @@ func _check_layout(scene: Node, viewport_size: Vector2i) -> void:
 	var diplomacy_panel := scene.get_node("WarHUD/DiplomacyPanel") as Control
 	var ai_panel := scene.get_node("AIDebugHUD/AIPanel") as Control
 	var character_panel := scene.get_node("CharacterHUD/CharacterPanel") as Control
+	var country_depth_panel := scene.get_node("CountryDepthHUD/CountryStatePanel") as Control
 	_disjoint(top_bar, map_modes, "campaign bar and map modes at %s" % viewport_size)
 	_disjoint(top_bar, search, "campaign bar and search at %s" % viewport_size)
 	_disjoint(map_modes, search, "map modes and search at %s" % viewport_size)
@@ -88,6 +90,9 @@ func _check_layout(scene: Node, viewport_size: Vector2i) -> void:
 	if character_panel.visible:
 		var character_canvas := Rect2(Vector2.ZERO, Vector2(root.get_visible_rect().size))
 		_require(character_canvas.encloses(character_panel.get_global_rect()), "character window escapes canvas at %s: %s / %s" % [viewport_size, character_panel.get_global_rect(), character_canvas])
+	if country_depth_panel.visible:
+		var depth_canvas := Rect2(Vector2.ZERO, Vector2(root.get_visible_rect().size))
+		_require(depth_canvas.encloses(country_depth_panel.get_global_rect()), "country-depth window escapes canvas at %s: %s / %s" % [viewport_size, country_depth_panel.get_global_rect(), depth_canvas])
 
 
 func _run() -> void:
@@ -105,6 +110,7 @@ func _run() -> void:
 	var war_hud := scene.get_node("WarHUD") as WarHUDScript
 	var ai_hud := scene.get_node("AIDebugHUD") as AIDebugHUDScript
 	var character_hud := scene.get_node("CharacterHUD") as CharacterHUDScript
+	var country_depth_hud := scene.get_node("CountryDepthHUD") as CountryDepthHUDScript
 	var info := {
 		"province_id": 1,
 		"province_name": "Stockholm",
@@ -129,6 +135,8 @@ func _run() -> void:
 	ai_hud._refresh_all()
 	character_hud.panel.show()
 	character_hud._refresh_all()
+	country_depth_hud.panel.show()
+	country_depth_hud._refresh_all()
 	economy_hud._refresh_all()
 	await _check_layout(scene, Vector2i(1700, 960))
 	await _check_layout(scene, Vector2i(1152, 648))

@@ -45,12 +45,29 @@ const ArrangeMarriageCommandScript = preload("res://scripts/simulation/commands/
 const AssignCommanderCommandScript = preload("res://scripts/simulation/commands/assign_commander_command.gd")
 const GrantTitleCommandScript = preload("res://scripts/simulation/commands/grant_title_command.gd")
 const DeclareClaimWarCommandScript = preload("res://scripts/simulation/commands/declare_claim_war_command.gd")
+const CountryDepthDefinitionsScript = preload("res://scripts/simulation/country_depth_definitions.gd")
+const CountryDepthSystemScript = preload("res://scripts/simulation/country_depth_system.gd")
+const CountryDepthAISystemScript = preload("res://scripts/simulation/country_depth_ai_system.gd")
+const IncreaseStabilityCommandScript = preload("res://scripts/simulation/commands/increase_stability_command.gd")
+const AdvanceTechnologyCommandScript = preload("res://scripts/simulation/commands/advance_technology_command.gd")
+const ChangeGovernmentCommandScript = preload("res://scripts/simulation/commands/change_government_command.gd")
+const EnactGovernmentReformCommandScript = preload("res://scripts/simulation/commands/enact_government_reform_command.gd")
+const SelectIdeaGroupCommandScript = preload("res://scripts/simulation/commands/select_idea_group_command.gd")
+const StartProvinceConversionCommandScript = preload("res://scripts/simulation/commands/start_province_conversion_command.gd")
+const FabricateProvinceClaimCommandScript = preload("res://scripts/simulation/commands/fabricate_province_claim_command.gd")
+const AcceptCultureCommandScript = preload("res://scripts/simulation/commands/accept_culture_command.gd")
+const SuppressRebelsCommandScript = preload("res://scripts/simulation/commands/suppress_rebels_command.gd")
+const CreateSubjectCommandScript = preload("res://scripts/simulation/commands/create_subject_command.gd")
+const StartSubjectIntegrationCommandScript = preload("res://scripts/simulation/commands/start_subject_integration_command.gd")
+const ChooseCountryEventOptionCommandScript = preload("res://scripts/simulation/commands/choose_country_event_option_command.gd")
+const EnactCountryDecisionCommandScript = preload("res://scripts/simulation/commands/enact_country_decision_command.gd")
+const ReleaseCountryCommandScript = preload("res://scripts/simulation/commands/release_country_command.gd")
 
 signal simulation_ready(world: CampaignWorldState)
 signal save_completed(success: bool, message: String)
 signal load_completed(success: bool, message: String)
 
-const GAME_VERSION := "0.7.0-phase7"
+const GAME_VERSION := "0.8.0-phase8"
 const QUICK_SAVE_PATH := "user://saves/quick_save.json"
 const SPEED_DAYS_PER_SECOND: Array[float] = [0.0, 1.0, 3.0, 10.0, 30.0, 90.0]
 
@@ -76,6 +93,8 @@ var ai_definitions: AIDefinitions
 var ai_system: StrategicAISystem
 var character_definitions: CharacterDefinitions
 var character_ai_system: CharacterAISystem
+var country_depth_definitions: CountryDepthDefinitions
+var country_depth_ai_system: CountryDepthAISystem
 var initialized := false
 var last_tick_cost_usec := 0
 var last_frame_tick_count := 0
@@ -101,6 +120,7 @@ func _exit_tree() -> void:
 		scheduler.monthly_systems.clear()
 	ai_system = null
 	character_ai_system = null
+	country_depth_ai_system = null
 
 
 func _process(delta: float) -> void:
@@ -233,6 +253,62 @@ func declare_claim_war(attacker_tag: String, defender_tag: String, claim_id: Str
 	return submit_command(DeclareClaimWarCommandScript.new(attacker_tag, defender_tag, claim_id))
 
 
+func increase_stability(country_tag: String) -> int:
+	return submit_command(IncreaseStabilityCommandScript.new(country_tag))
+
+
+func advance_technology(country_tag: String, track: String) -> int:
+	return submit_command(AdvanceTechnologyCommandScript.new(country_tag, track))
+
+
+func change_government(country_tag: String, government_id: String) -> int:
+	return submit_command(ChangeGovernmentCommandScript.new(country_tag, government_id))
+
+
+func enact_government_reform(country_tag: String, reform_id: String) -> int:
+	return submit_command(EnactGovernmentReformCommandScript.new(country_tag, reform_id))
+
+
+func select_idea_group(country_tag: String, idea_group_id: String) -> int:
+	return submit_command(SelectIdeaGroupCommandScript.new(country_tag, idea_group_id))
+
+
+func start_province_conversion(country_tag: String, province_id: int, conversion_type: String, target_id: String) -> int:
+	return submit_command(StartProvinceConversionCommandScript.new(country_tag, province_id, conversion_type, target_id))
+
+
+func fabricate_province_claim(country_tag: String, province_id: int) -> int:
+	return submit_command(FabricateProvinceClaimCommandScript.new(country_tag, province_id))
+
+
+func accept_culture(country_tag: String, culture_id: String) -> int:
+	return submit_command(AcceptCultureCommandScript.new(country_tag, culture_id))
+
+
+func suppress_rebels(country_tag: String, faction_id: String) -> int:
+	return submit_command(SuppressRebelsCommandScript.new(country_tag, faction_id))
+
+
+func create_subject(overlord_tag: String, subject_tag: String, subject_type := "vassal") -> int:
+	return submit_command(CreateSubjectCommandScript.new(overlord_tag, subject_tag, subject_type))
+
+
+func start_subject_integration(overlord_tag: String, subject_id: String) -> int:
+	return submit_command(StartSubjectIntegrationCommandScript.new(overlord_tag, subject_id))
+
+
+func choose_country_event_option(country_tag: String, instance_id: String, option_id: String) -> int:
+	return submit_command(ChooseCountryEventOptionCommandScript.new(country_tag, instance_id, option_id))
+
+
+func enact_country_decision(country_tag: String, decision_id: String) -> int:
+	return submit_command(EnactCountryDecisionCommandScript.new(country_tag, decision_id))
+
+
+func release_country(releasing_tag: String, released_tag: String, province_ids: Array) -> int:
+	return submit_command(ReleaseCountryCommandScript.new(releasing_tag, released_tag, province_ids))
+
+
 func relationship(country_tag: String, target_tag: String) -> Dictionary:
 	return DiplomacySystemScript.relation(world, country_tag, target_tag) if initialized else {}
 
@@ -275,6 +351,92 @@ func character_opinion(source_id: String, target_id: String) -> Dictionary:
 
 func character_ai_snapshot(country_tag: String) -> Dictionary:
 	return character_ai_system.debug_snapshot(world, country_tag) if initialized and character_ai_system != null else {}
+
+
+func country_depth_ai_snapshot(country_tag: String) -> Dictionary:
+	return country_depth_ai_system.debug_snapshot(world, country_tag) if initialized and country_depth_ai_system != null else {}
+
+
+func country_depth_snapshot(country_tag: String) -> Dictionary:
+	if not initialized or not world.has_country(country_tag):
+		return {}
+	var result := world.country_runtime(country_tag).duplicate(true)
+	result["subjects"] = []
+	for raw_id in world.subject_registry:
+		var record: Dictionary = world.subject_registry[raw_id]
+		if String(record.get("overlord", "")) == country_tag or String(record.get("subject", "")) == country_tag:
+			(result["subjects"] as Array).append(record.duplicate(true))
+	result["rebel_factions"] = []
+	for raw_id in world.rebel_faction_registry:
+		var faction: Dictionary = world.rebel_faction_registry[raw_id]
+		if String(faction.get("country_tag", "")) == country_tag:
+			(result["rebel_factions"] as Array).append(faction.duplicate(true))
+	result["pending_event"] = CountryDepthSystemScript.pending_event_for_country(world, country_tag)
+	return result
+
+
+func country_depth_decisions() -> Dictionary:
+	return country_depth_definitions.decisions() if initialized and country_depth_definitions != null else {}
+
+
+func country_depth_catalog(kind: String) -> Dictionary:
+	if not initialized or country_depth_definitions == null:
+		return {}
+	match kind:
+		"cultures": return country_depth_definitions.cultures()
+		"religions": return country_depth_definitions.religions()
+		"ideas": return country_depth_definitions.idea_groups()
+		"governments": return country_depth_definitions.governments()
+	return {}
+
+
+func country_decision_validation(country_tag: String, decision_id: String) -> String:
+	if not initialized or country_depth_definitions == null:
+		return "Simulation is not ready."
+	return CountryDepthSystemScript.decision_validation(world, country_tag, decision_id, country_depth_definitions)
+
+
+func country_depth_localize(key: String) -> String:
+	return country_depth_definitions.localize(key) if initialized and country_depth_definitions != null else key
+
+
+func country_depth_definition(kind: String, id: String) -> Dictionary:
+	if not initialized or country_depth_definitions == null:
+		return {}
+	match kind:
+		"government": return country_depth_definitions.government(id)
+		"reform": return country_depth_definitions.reform(id)
+		"idea": return country_depth_definitions.idea_group(id)
+		"event": return country_depth_definitions.event(id)
+		"decision": return country_depth_definitions.decision(id)
+	return {}
+
+
+func country_depth_map_colors(mode: String) -> Dictionary:
+	var colors := {}
+	if not initialized:
+		return colors
+	var ids := world.province_states.keys()
+	ids.sort()
+	for raw_id in ids:
+		var province_id := int(raw_id)
+		var owner := world.get_province_owner(province_id)
+		var economy: Dictionary = world.province_states[province_id].get("economy", {})
+		match mode:
+			"unrest":
+				var unrest := clampf(float(economy.get("unrest_bp", 0)) / 10000.0, 0.0, 1.0)
+				colors[province_id] = Color(0.1 + unrest * 0.85, 0.65 - unrest * 0.55, 0.16)
+			"control":
+				var control := clampf(float(economy.get("control_bp", 0)) / 10000.0, 0.0, 1.0)
+				colors[province_id] = Color(0.75 - control * 0.55, 0.12 + control * 0.65, 0.18)
+			"culture": colors[province_id] = _stable_category_color(String(economy.get("culture", "unknown")))
+			"religion": colors[province_id] = _stable_category_color(String(economy.get("religion", "unknown")))
+			"technology":
+				var runtime := world.country_runtime(owner) if world.has_country(owner) else {}
+				var tech: Dictionary = runtime.get("technology", {})
+				var average := (int(tech.get("administrative", 0)) + int(tech.get("diplomatic", 0)) + int(tech.get("military", 0))) / 15.0
+				colors[province_id] = Color(0.12 + average * 0.22, 0.2 + average * 0.65, 0.55 + average * 0.35)
+	return colors
 
 
 func set_ai_enabled(enabled: bool) -> void:
@@ -401,6 +563,8 @@ func quick_load() -> Dictionary:
 			CampaignGoalSystemScript.ensure_world(world, ai_definitions)
 		if character_definitions != null:
 			CharacterSystemScript.ensure_world(world, character_definitions)
+		if country_depth_definitions != null:
+			CountryDepthSystemScript.ensure_world(world, country_depth_definitions)
 		_sync_all_owners_to_presentation()
 		if String(result.get("message", "")).contains("migrated"):
 			EconomySystemScript.recalculate_all(world)
@@ -461,6 +625,11 @@ func _bootstrap_scenario() -> void:
 		push_error("SimulationController requires valid Phase 7 character definitions: %s" % character_definitions.error())
 		return
 	CharacterSystemScript.initialize_world(world, character_definitions)
+	country_depth_definitions = CountryDepthDefinitionsScript.load_default()
+	if not country_depth_definitions.is_valid():
+		push_error("SimulationController requires valid Phase 8 country-depth definitions: %s" % country_depth_definitions.error())
+		return
+	CountryDepthSystemScript.initialize_world(world, country_depth_definitions)
 	ai_definitions = AIDefinitionsScript.load_default()
 	if not ai_definitions.is_valid():
 		push_error("SimulationController requires valid Phase 6 AI definitions: %s" % ai_definitions.error())
@@ -484,6 +653,12 @@ func _bootstrap_scenario() -> void:
 			CharacterSystemScript.process_month(month_world, event_bus)
 			character_ai_system.process_month(month_world)
 	)
+	country_depth_ai_system = CountryDepthAISystemScript.new(scheduler, event_bus, country_depth_definitions)
+	scheduler.monthly_systems.append(
+		func(month_world: CampaignWorldState) -> void:
+			CountryDepthSystemScript.process_month(month_world, event_bus, country_depth_definitions)
+			country_depth_ai_system.process_month(month_world)
+	)
 	scheduler.monthly_systems.append(
 		func(month_world: CampaignWorldState) -> void:
 			EconomySystemScript.process_month(month_world, event_bus, economy_definitions)
@@ -506,6 +681,8 @@ func _bootstrap_scenario() -> void:
 
 func _on_province_owner_changed(province_id: int, old_owner: String, new_owner: String) -> void:
 	_sync_owner_to_presentation(province_id, new_owner)
+	if bool(world.global_flags.get("country_depth_enabled", false)):
+		CountryDepthSystemScript.mark_province_dynamic(world, province_id)
 	if not old_owner.is_empty():
 		EconomySystemScript.recalculate_country(world, old_owner)
 	if not new_owner.is_empty():
@@ -552,3 +729,9 @@ func _sync_all_owners_to_presentation() -> void:
 		country_data.province_id_to_owner[province_id] = owner_tag if not owner_tag.is_empty() else "No Owner"
 	if map_render != null and map_render.has_method("apply_world_state_owners"):
 		map_render.apply_world_state_owners(presentation_owners)
+
+
+func _stable_category_color(category_id: String) -> Color:
+	var hash_value := absi(category_id.hash())
+	var hue := float(hash_value % 997) / 997.0
+	return Color.from_hsv(hue, 0.58, 0.88)

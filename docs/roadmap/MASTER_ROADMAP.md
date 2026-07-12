@@ -10,6 +10,10 @@
 - Initial player entity: country.
 - Character and dynasty layer: introduced after the country-level vertical slice.
 
+## Current Production Status
+
+Phase 8's complete thin-loop 1.0 system set is implemented in `0.8.0-phase8` and is undergoing Alpha validation. Phase 9 is the next production roadmap: reviewed global content, global-scale scheduling/performance, UI completion, onboarding/accessibility, Beta hardening, packaging, and release-candidate work.
+
 ## Roadmap Summary
 
 | Phase | Primary outcome | Production gate |
@@ -152,4 +156,3 @@ Regional First Playable
 ~~~
 
 The project should not scale content globally until the vertical slice proves that the gameplay, tools, UI, AI, saves, and performance form a sustainable production pipeline.
-

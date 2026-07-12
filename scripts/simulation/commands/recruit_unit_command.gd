@@ -29,6 +29,11 @@ func validate(world: CampaignWorldState) -> String:
 	var definition: Dictionary = EconomyDefinitionsScript.load_default().unit(unit_id)
 	if definition.is_empty():
 		return "Unknown unit: %s" % unit_id
+	if bool(world.global_flags.get("country_depth_enabled", false)):
+		var requirement: Dictionary = definition.get("required_technology", {})
+		var technology: Dictionary = world.country_runtime(country_tag).get("technology", {})
+		if int(technology.get(String(requirement.get("track", "military")), 0)) < int(requirement.get("level", 0)):
+			return "%s requires %s technology %d." % [unit_id, String(requirement.get("track", "military")), int(requirement.get("level", 0))]
 	var economy: Dictionary = world.province_states[province_id].get("economy", {})
 	if not bool(economy.get("economic_eligible", false)):
 		return "This province cannot recruit land units."

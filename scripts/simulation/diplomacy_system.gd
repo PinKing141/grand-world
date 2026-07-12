@@ -108,3 +108,25 @@ static func create_truce(world: CampaignWorldState, country_a: String, country_b
 	record["alliance"] = false
 	set_relation(world, country_a, country_b, record)
 	return end_day
+
+
+static func overlord_of(world: CampaignWorldState, subject_tag: String) -> String:
+	var ids := world.subject_registry.keys()
+	ids.sort()
+	for raw_id in ids:
+		var record: Dictionary = world.subject_registry[raw_id]
+		if String(record.get("status", "active")) == "active" and String(record.get("subject", "")) == subject_tag:
+			return String(record.get("overlord", ""))
+	return ""
+
+
+static func direct_subjects(world: CampaignWorldState, overlord_tag: String) -> Array[String]:
+	var result: Array[String] = []
+	var ids := world.subject_registry.keys()
+	ids.sort()
+	for raw_id in ids:
+		var record: Dictionary = world.subject_registry[raw_id]
+		if String(record.get("status", "active")) == "active" and String(record.get("overlord", "")) == overlord_tag and bool(record.get("war_participation", true)):
+			result.append(String(record.get("subject", "")))
+	result.sort()
+	return result

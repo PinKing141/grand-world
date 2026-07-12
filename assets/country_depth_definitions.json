@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "content_version": "phase8-iberia-1",
+  "localisation": {
+    "government.feudal_monarchy.name": "Feudal Monarchy",
+    "government.crown_monarchy.name": "Crown Monarchy",
+    "government.composite_monarchy.name": "Composite Monarchy",
+    "government.emirate.name": "Emirate",
+    "reform.centralized_crown.name": "Centralized Crown",
+    "reform.representative_cortes.name": "Representative Cortes",
+    "reform.religious_administration.name": "Religious Administration",
+    "idea.administrative.name": "Administrative Direction",
+    "idea.diplomatic.name": "Diplomatic Direction",
+    "idea.military.name": "Military Direction",
+    "idea.tolerance.name": "Tolerant Society",
+    "event.poor_harvest.title": "A Poor Harvest",
+    "event.poor_harvest.relief": "Fund relief",
+    "event.poor_harvest.taxes": "Demand the taxes",
+    "event.religious_tension.title": "Religious Tension",
+    "event.religious_tension.tolerate": "Protect local worship",
+    "event.religious_tension.enforce": "Enforce conformity",
+    "event.reform_petition.title": "Petition for Reform",
+    "event.reform_petition.hear": "Hear the petition",
+    "event.reform_petition.refuse": "The crown decides",
+    "decision.centralize_state.name": "Centralize the State",
+    "decision.embrace_tolerance.name": "Embrace Tolerance",
+    "decision.form_spain.name": "Form Spain"
+  },
+  "governments": {
+    "feudal_monarchy": {"name_key": "government.feudal_monarchy.name", "authority_name": "Legitimacy", "base_modifiers": {"tax_modifier_bp": 0, "manpower_modifier_bp": 300, "unrest_modifier_bp": 0}, "reforms": ["centralized_crown", "representative_cortes"]},
+    "crown_monarchy": {"name_key": "government.crown_monarchy.name", "authority_name": "Legitimacy", "base_modifiers": {"tax_modifier_bp": 300, "manpower_modifier_bp": 200, "unrest_modifier_bp": -100}, "reforms": ["centralized_crown", "representative_cortes"]},
+    "composite_monarchy": {"name_key": "government.composite_monarchy.name", "authority_name": "Legitimacy", "base_modifiers": {"tax_modifier_bp": 100, "manpower_modifier_bp": 200, "unrest_modifier_bp": -250}, "reforms": ["representative_cortes", "centralized_crown"]},
+    "emirate": {"name_key": "government.emirate.name", "authority_name": "Dynastic Authority", "base_modifiers": {"tax_modifier_bp": 200, "manpower_modifier_bp": 100, "unrest_modifier_bp": -100}, "reforms": ["religious_administration", "centralized_crown"]}
+  },
+  "reforms": {
+    "centralized_crown": {"name_key": "reform.centralized_crown.name", "required_admin_tech": 2, "authority_cost_bp": 1500, "treasury_cost": 100000, "modifiers": {"tax_modifier_bp": 500, "control_growth_bp": 100, "unrest_modifier_bp": 100}},
+    "representative_cortes": {"name_key": "reform.representative_cortes.name", "required_admin_tech": 1, "authority_cost_bp": 1000, "treasury_cost": 75000, "modifiers": {"tax_modifier_bp": 200, "stability_cost_modifier_bp": -1000, "unrest_modifier_bp": -300}},
+    "religious_administration": {"name_key": "reform.religious_administration.name", "required_admin_tech": 1, "authority_cost_bp": 800, "treasury_cost": 50000, "modifiers": {"conversion_speed_bp": 1000, "tax_modifier_bp": 200, "tolerance_own": 1}}
+  },
+  "cultures": {
+    "unknown": {"name": "Unknown", "group": "unknown"},
+    "castilian": {"name": "Castilian", "group": "iberian"},
+    "aragonese": {"name": "Aragonese", "group": "iberian"},
+    "portuguese": {"name": "Portuguese", "group": "iberian"},
+    "basque": {"name": "Basque", "group": "iberian"},
+    "andalusian": {"name": "Andalusian", "group": "andalusian"}
+  },
+  "religions": {
+    "unknown": {"name": "Unknown", "group": "unknown", "diplomacy_group": "unknown"},
+    "catholic": {"name": "Catholic", "group": "christian", "diplomacy_group": "christian"},
+    "sunni": {"name": "Sunni", "group": "muslim", "diplomacy_group": "muslim"}
+  },
+  "technology": {
+    "administrative": {"base_cost": 600, "levels": [
+      {"level": 0, "year": 1444, "unlocks": []},
+      {"level": 1, "year": 1460, "unlocks": ["building.courthouse"]},
+      {"level": 2, "year": 1490, "unlocks": ["building.temple", "government_reforms"]},
+      {"level": 3, "year": 1530, "unlocks": ["country_formations"]},
+      {"level": 4, "year": 1580, "unlocks": ["building.manufactory"]},
+      {"level": 5, "year": 1650, "unlocks": ["building.university"]}
+    ]},
+    "diplomatic": {"base_cost": 600, "levels": [
+      {"level": 0, "year": 1444, "unlocks": []},
+      {"level": 1, "year": 1460, "unlocks": ["building.marketplace"]},
+      {"level": 2, "year": 1490, "unlocks": ["accepted_culture_slot"]},
+      {"level": 3, "year": 1530, "unlocks": ["subject_integration"]},
+      {"level": 4, "year": 1580, "unlocks": ["building.trade_depot"]},
+      {"level": 5, "year": 1650, "unlocks": ["advanced_diplomacy"]}
+    ]},
+    "military": {"base_cost": 600, "levels": [
+      {"level": 0, "year": 1444, "unlocks": ["unit.infantry_regiment"]},
+      {"level": 1, "year": 1460, "unlocks": ["building.barracks"]},
+      {"level": 2, "year": 1490, "unlocks": ["unit.men_at_arms", "building.fortress"]},
+      {"level": 3, "year": 1530, "unlocks": ["unit.pike_square"]},
+      {"level": 4, "year": 1580, "unlocks": ["unit.arquebus_regiment"]},
+      {"level": 5, "year": 1650, "unlocks": ["unit.line_infantry"]}
+    ]}
+  },
+  "idea_groups": {
+    "administrative": {"name_key": "idea.administrative.name", "ai_weights": {"economic": 100, "military": 35, "diplomatic": 45}, "modifiers": {"tax_modifier_bp": 500, "stability_cost_modifier_bp": -1000, "control_growth_bp": 50}},
+    "diplomatic": {"name_key": "idea.diplomatic.name", "ai_weights": {"economic": 45, "military": 30, "diplomatic": 100}, "modifiers": {"diplomatic_reputation": 2, "subject_liberty_modifier_bp": -500}},
+    "military": {"name_key": "idea.military.name", "ai_weights": {"economic": 25, "military": 100, "diplomatic": 30}, "modifiers": {"manpower_modifier_bp": 750, "army_power_bp": 500}},
+    "tolerance": {"name_key": "idea.tolerance.name", "ai_weights": {"economic": 55, "military": 20, "diplomatic": 75}, "modifiers": {"tolerance_heathen": 2, "tolerance_heretic": 2, "unrest_modifier_bp": -300}}
+  },
+  "countries": {
+    "CAS": {"government": "crown_monarchy", "primary_culture": "castilian", "accepted_cultures": [], "state_religion": "catholic", "capital_province_id": 219, "technology": {"administrative": 0, "diplomatic": 0, "military": 0}, "preferred_idea": "administrative", "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "ARA": {"government": "composite_monarchy", "primary_culture": "aragonese", "accepted_cultures": ["castilian"], "state_religion": "catholic", "capital_province_id": 214, "technology": {"administrative": 0, "diplomatic": 0, "military": 0}, "preferred_idea": "diplomatic", "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "POR": {"government": "crown_monarchy", "primary_culture": "portuguese", "accepted_cultures": [], "state_religion": "catholic", "capital_province_id": 227, "technology": {"administrative": 0, "diplomatic": 0, "military": 0}, "preferred_idea": "diplomatic", "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "GRA": {"government": "emirate", "primary_culture": "andalusian", "accepted_cultures": [], "state_religion": "sunni", "capital_province_id": 223, "technology": {"administrative": 0, "diplomatic": 0, "military": 0}, "preferred_idea": "tolerance", "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "NAV": {"government": "feudal_monarchy", "primary_culture": "basque", "accepted_cultures": ["castilian"], "state_religion": "catholic", "capital_province_id": 210, "technology": {"administrative": 0, "diplomatic": 0, "military": 0}, "preferred_idea": "military", "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."}
+  },
+  "provinces": {
+    "206": {"culture": "castilian", "religion": "catholic", "cores": ["CAS"], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "210": {"culture": "basque", "religion": "catholic", "cores": ["NAV"], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "211": {"culture": "aragonese", "religion": "catholic", "cores": ["ARA"], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "212": {"culture": "aragonese", "religion": "catholic", "cores": ["ARA"], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "214": {"culture": "aragonese", "religion": "catholic", "cores": ["ARA"], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "215": {"culture": "castilian", "religion": "catholic", "cores": ["CAS"], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "217": {"culture": "castilian", "religion": "catholic", "cores": ["CAS"], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "219": {"culture": "castilian", "religion": "catholic", "cores": ["CAS"], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "220": {"culture": "aragonese", "religion": "catholic", "cores": ["ARA"], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "222": {"culture": "andalusian", "religion": "sunni", "cores": ["GRA"], "claims": [{"country_tag": "CAS", "expires_day": -1}], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "223": {"culture": "andalusian", "religion": "sunni", "cores": ["GRA"], "claims": [{"country_tag": "CAS", "expires_day": -1}], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "224": {"culture": "castilian", "religion": "catholic", "cores": ["CAS"], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "225": {"culture": "castilian", "religion": "catholic", "cores": ["CAS"], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "226": {"culture": "andalusian", "religion": "sunni", "cores": ["GRA"], "claims": [{"country_tag": "CAS", "expires_day": -1}], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "227": {"culture": "portuguese", "religion": "catholic", "cores": ["POR"], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "228": {"culture": "portuguese", "religion": "catholic", "cores": ["POR"], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "231": {"culture": "portuguese", "religion": "catholic", "cores": ["POR"], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."},
+    "4546": {"culture": "andalusian", "religion": "sunni", "cores": ["GRA"], "claims": [{"country_tag": "CAS", "expires_day": -1}], "provenance": "Representative 1444 Iberian gameplay setup; historical review required before content lock."}
+  },
+  "events": {
+    "poor_harvest": {"title_key": "event.poor_harvest.title", "cooldown_days": 1825, "trigger": {"month_mod": 12}, "options": [
+      {"id": "relief", "text_key": "event.poor_harvest.relief", "ai_weight": 70, "effects": [{"type": "treasury", "amount": -30000}, {"type": "stability", "amount": 1}]},
+      {"id": "taxes", "text_key": "event.poor_harvest.taxes", "ai_weight": 30, "effects": [{"type": "treasury", "amount": 20000}, {"type": "province_unrest", "amount_bp": 1200}]}
+    ]},
+    "religious_tension": {"title_key": "event.religious_tension.title", "cooldown_days": 1460, "trigger": {"religious_unity_lte_bp": 8500}, "options": [
+      {"id": "tolerate", "text_key": "event.religious_tension.tolerate", "ai_weight": 60, "effects": [{"type": "tolerance_heathen", "amount": 1}, {"type": "authority", "amount_bp": -300}]},
+      {"id": "enforce", "text_key": "event.religious_tension.enforce", "ai_weight": 40, "effects": [{"type": "conversion_speed", "amount_bp": 500}, {"type": "province_unrest", "amount_bp": 1000}]}
+    ]},
+    "reform_petition": {"title_key": "event.reform_petition.title", "cooldown_days": 2190, "trigger": {"centralisation_gte_bp": 3000}, "options": [
+      {"id": "hear", "text_key": "event.reform_petition.hear", "ai_weight": 60, "effects": [{"type": "stability", "amount": 1}, {"type": "centralisation", "amount_bp": -300}]},
+      {"id": "refuse", "text_key": "event.reform_petition.refuse", "ai_weight": 40, "effects": [{"type": "authority", "amount_bp": 400}, {"type": "province_unrest", "amount_bp": 500}]}
+    ]}
+  },
+  "decisions": {
+    "centralize_state": {"name_key": "decision.centralize_state.name", "requirements": {"administrative_tech_gte": 1, "stability_gte": 0, "authority_gte_bp": 6000, "treasury_gte": 100000}, "effects": [{"type": "treasury", "amount": -100000}, {"type": "authority", "amount_bp": -1000}, {"type": "centralisation", "amount_bp": 1000}, {"type": "country_modifier", "id": "centralizing_state", "duration_days": 1825, "modifiers": {"unrest_modifier_bp": 300, "control_growth_bp": 100}}]},
+    "embrace_tolerance": {"name_key": "decision.embrace_tolerance.name", "requirements": {"diplomatic_tech_gte": 1, "stability_gte": 0}, "effects": [{"type": "tolerance_heathen", "amount": 1}, {"type": "stability", "amount": -1}, {"type": "country_modifier", "id": "tolerant_policy", "duration_days": -1, "modifiers": {"unrest_modifier_bp": -200}}]},
+    "form_spain": {"name_key": "decision.form_spain.name", "requirements": {"country_in": ["CAS", "ARA"], "administrative_tech_gte": 3, "owns_provinces": [214, 219, 223, 227]}, "effects": [{"type": "form_country", "new_tag": "SPA"}]}
+  }
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run every automated Grand World Phase 1-7 gate and write one report.
+"""Run every automated Grand World Phase 1-8 gate and write one report.
 
 Examples:
   python tools/testing/run_all_tests.py
@@ -63,6 +63,8 @@ GODOT_TESTS = (
     ("Phase 6 campaign UI, objectives, overlay, and AI-state save", "tests/phase_6_integration_smoke.gd", "Phase 6 integration smoke passed."),
     ("Phase 7 characters, dynasties, titles, succession, claims, and save", "tests/phase_7_character_test.gd", "Phase 7 character test passed."),
     ("Phase 7 court UI, character AI, claim-war UI, and succession integration", "tests/phase_7_integration_smoke.gd", "Phase 7 integration smoke passed."),
+    ("Phase 8 country depth, subjects, events, formation, AI, and save", "tests/phase_8_country_depth_test.gd", "Phase 8 country-depth test passed."),
+    ("Phase 8 Country & State UI, map modes, commands, and save", "tests/phase_8_integration_smoke.gd", "Phase 8 integration smoke passed."),
 )
 
 PYTHON_TESTS = (
@@ -169,14 +171,18 @@ def export_and_start(godot: Path) -> list[TestResult]:
                 "res://assets/economy_definitions.json",
                 "res://assets/ai_definitions.json",
                 "res://assets/character_definitions.json",
+                "res://assets/country_depth_definitions.json",
                 "res://assets/province_graph.json",
                 "res://scenes/ui/economy_hud.tscn",
                 "res://scenes/ui/war_hud.tscn",
                 "res://scenes/ui/ai_debug_hud.tscn",
                 "res://scenes/ui/character_hud.tscn",
+                "res://scenes/ui/country_depth_hud.tscn",
                 "res://scripts/simulation/warfare_system.gd",
                 "res://scripts/simulation/strategic_ai_system.gd",
                 "res://scripts/simulation/character_system.gd",
+                "res://scripts/simulation/country_depth_system.gd",
+                "res://scripts/simulation/country_depth_ai_system.gd",
             )
             missing = [item for item in required_export_log if item not in export_result.output]
             if missing:
@@ -204,7 +210,7 @@ def export_and_start(godot: Path) -> list[TestResult]:
         startup_result.output = "\n".join(value for value in (startup_result.output, log_text) if value)
         required_startup = ("Parsed Provinces:3924", "Parsed Country Colors:1022", "Parsed Countries:1010")
         missing = [item for item in required_startup if item not in startup_result.output]
-        fatal = any(marker in startup_result.output for marker in ("SCRIPT ERROR:", "Failed to open directory", "requires valid Phase 4 economy definitions", "requires valid Phase 6 AI definitions", "requires valid Phase 7 character definitions"))
+        fatal = any(marker in startup_result.output for marker in ("SCRIPT ERROR:", "Failed to open directory", "requires valid Phase 4 economy definitions", "requires valid Phase 6 AI definitions", "requires valid Phase 7 character definitions", "requires valid Phase 8 country-depth definitions"))
         if missing or fatal:
             startup_result.passed = False
             startup_result.reason = "startup data validation failed" + (": " + ", ".join(missing) if missing else "")
@@ -253,7 +259,7 @@ def write_report(results: list[TestResult], godot: Path, started_at: dt.datetime
         "",
         "## Automated scope",
         "",
-        "This report covers map selection/search, camera controls, responsive UI containment, deterministic calendar/commands/RNG, save corruption and migrations, graph/pathfinding/movement, economy, construction, recruitment, diplomacy, warfare and peace, utility AI, campaign objectives, characters/dynasties/titles/claims, marriages, commanders, opinions, ruler modifiers, health, birth, death and succession, character AI and court UI, deterministic family replay, the hundred-year multi-generation soak, the twenty-year Iberian AI soak, the ten-year global soak, and Windows export startup.",
+        "This report covers map selection/search, camera controls, responsive UI containment, deterministic calendar/commands/RNG, save corruption and migrations, graph/pathfinding/movement, economy, construction, recruitment, diplomacy, warfare and peace, utility AI, campaign objectives, characters/dynasties/titles/claims, marriages, commanders, opinions, ruler modifiers, health, birth, death and succession, government, stability, unrest, rebels, control, culture, religion, conversion, technology, ideas, cores, claims, subjects, events, decisions, country formation/release, country-depth AI and UI, deterministic replay through 1700, the hundred-year multi-generation soak, the twenty-year Iberian AI soak, the ten-year global soak, and Windows export startup.",
         "",
         "## Human-only checks still required",
         "",
@@ -291,6 +297,13 @@ def main() -> int:
     for name, path, marker in GODOT_TESTS:
         specs.append(TestSpec(name, (str(godot), "--headless", "--path", str(ROOT), "--script", f"res://{path}"), marker))
     if not args.quick:
+        specs.append(TestSpec(
+            "Phase 8 deterministic 1444-1700 Alpha campaign",
+            (str(godot), "--headless", "--path", str(ROOT), "--script", "res://tests/phase_8_1444_1700_soak.gd"),
+            "Phase 8 1444-1700 soak passed",
+            timeout=120,
+            category="Performance",
+        ))
         specs.append(TestSpec(
             "Hundred-year multi-generation character soak",
             (str(godot), "--headless", "--path", str(ROOT), "--script", "res://tests/phase_7_multigeneration_soak.gd"),

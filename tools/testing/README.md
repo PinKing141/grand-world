@@ -6,7 +6,7 @@ Run the complete automated suite from the project root:
 python tools/testing/run_all_tests.py
 ~~~
 
-The runner finds Godot automatically, runs every Python and GDScript regression, performs the ten-year global soak, exports a temporary Windows debug build, starts that package headlessly, and writes `docs/test_reports/latest_headless_report.md`.
+The runner finds Godot automatically, runs every Python and GDScript regression, performs the deterministic 1444–1700 Alpha campaign plus regional/global soaks, exports a temporary Windows debug build, starts that package headlessly, and writes `docs/test_reports/latest_headless_report.md`.
 
 Useful options:
 

@@ -1,5 +1,41 @@
 # Phase 8 — Country Depth and Historical Content
 
+## Implementation Status
+
+**Implemented in build `0.8.0-phase8`; Alpha gate is in validation.** The complete thin-loop Phase 8 system set is authoritative, deterministic, command-driven, saved in schema 5, exposed to the player, and usable by the authored Iberian AI profiles. Automated tests cover the systemic gate and a deterministic campaign from 1444 to 1700.
+
+Historical data in `assets/country_depth_definitions.json` is deliberately marked as a representative Iberian gameplay setup with provenance notes and a required historical-review flag. It is not presented as globally content-complete. Scaling reviewed cultures, religions, governments, capitals, technology, cores, claims, diplomacy, and event content to every active country is Phase 9 production work.
+
+### Delivered systemic loops
+
+- Data-validated governments, authority, reforms, centralisation, modifiers, stability, and an initial three-estate placeholder.
+- Province control, source-by-source unrest, recent-conquest and separatism penalties, rebel organisation, uprisings, and suppression.
+- Primary and accepted cultures, state and province religions, tolerance, religious unity, and gradual culture/religion conversion.
+- Administrative, diplomatic, and military technology with date-sensitive costs and building, unit, reform, formation, culture, and integration unlocks.
+- Data-driven national directions with modifiers and deterministic AI preference.
+- Permanent cores, expiring fabricated claims, justified conquest declarations, and core/claim war-score discounts.
+- Vassals and character-driven personal unions with liberty desire, subject income, war participation, diplomacy restrictions, succession reconciliation, and deterministic integration.
+- Localised, data-driven country events and decisions with validated triggers/effects, weighted AI options, cooldowns, bounded history, expiry fallback, and national formations.
+- Expanded building families and five-step land-unit progression, all technology-gated and available through the province economy interface.
+- Safe country extinction, successor-country formation, independent-country release, and reference replacement across subjects, wars, diplomacy, armies, characters, titles, and player control.
+- Country-depth AI that uses the same validated player commands and records bounded decision explanations.
+- A draggable Country & State interface with government, technology, society, province, rebel, subject, event, and decision tabs plus unrest, control, culture, religion, and technology map modes.
+- Schema-5 checksums, migrations, registry validation, exact save/load replay, and packaged-resource coverage.
+
+### Automated acceptance evidence
+
+- `tests/phase_8_country_depth_test.gd` validates the complete command/system loop, corruption handling, formation/release, subject lifecycle, and AI exclusion of the player.
+- `tests/phase_8_integration_smoke.gd` validates the packaged main scene, UI actions, strategic overlays, player event path, and exact quick-save restoration.
+- `tests/phase_8_1444_1700_soak.gd` runs 1444–1600, forks through a schema-5 checkpoint, replays both branches to 1700, compares checksums, validates bounded/valid state, and round-trips the final save.
+- `tools/testing/run_all_tests.py` includes all Phase 8 checks and requires the new data, UI, simulation, and AI resources in Windows exports.
+
+### Validation still requiring humans
+
+- Historical review and source replacement for the representative Iberian government, culture, religion, core, claim, ruler, and province setup.
+- Hands-on balance for technology pacing, stability cost, conversion speed, revolt pressure, liberty desire, integration duration, buildings, units, and event outcomes.
+- Readability, colour-blind safety, tooltip quality, UI scaling, feedback art/audio, and input ergonomics on reference hardware.
+- Phase 9 global content throughput and performance projections before calling the project content-complete.
+
 ## Mission
 
 Expand the proven country and character loops into the complete planned 1.0 system set, and establish sustainable historical content production for 1444–1700.
@@ -201,4 +237,3 @@ Alpha means:
 - Detailed naval combat unless specifically promoted into 1.0 scope.
 - Multiplayer.
 - Unlimited mod scripting.
-

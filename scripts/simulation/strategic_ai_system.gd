@@ -41,6 +41,8 @@ var definitions: AIDefinitions
 var graph: ProvinceGraph
 var economy_definitions
 var decision_cost_usec: Dictionary = {}
+var country_tags: Array[String] = []
+var profiles: Dictionary = {}
 
 
 func _init(p_scheduler: SimulationScheduler, p_events: SimulationEventBus, p_definitions: AIDefinitions) -> void:
@@ -49,6 +51,9 @@ func _init(p_scheduler: SimulationScheduler, p_events: SimulationEventBus, p_def
 	definitions = p_definitions
 	graph = ProvinceGraph.load_default()
 	economy_definitions = EconomyDefinitionsScript.load_default()
+	country_tags = definitions.country_tags()
+	for tag in country_tags:
+		profiles[tag] = definitions.profile(tag)
 
 
 func initialize_world(world: CampaignWorldState) -> void:
@@ -70,7 +75,7 @@ func initialize_world(world: CampaignWorldState) -> void:
 			relation["alliance"] = bool(relation_definition.get("alliance", false))
 			relation["rivalry"] = bool(relation_definition.get("rivalry", false))
 			DiplomacySystemScript.set_relation(world, country_a, country_b, relation)
-	for tag in definitions.country_tags():
+	for tag in country_tags:
 		if not world.has_country(tag):
 			continue
 		var runtime := world.country_runtime(tag)
@@ -83,7 +88,7 @@ func ensure_world(world: CampaignWorldState) -> void:
 	if String(world.global_flags.get("ai_slice_id", "")) != definitions.slice_id():
 		initialize_world(world)
 		return
-	for tag in definitions.country_tags():
+	for tag in country_tags:
 		if not world.has_country(tag):
 			continue
 		var runtime := world.country_runtime(tag)
@@ -97,22 +102,30 @@ func process_day(world: CampaignWorldState) -> void:
 		return
 	if String(world.global_flags.get("campaign_status", "running")) != "running":
 		return
-	ensure_world(world)
-	for tag in definitions.country_tags():
+	if String(world.global_flags.get("ai_slice_id", "")) != definitions.slice_id():
+		ensure_world(world)
+	for tag in country_tags:
+		var profile: Dictionary = profiles[tag]
+		var slot := int(profile.get("slot", 0))
+		var strategy_due := _due(world.current_day, STRATEGY_INTERVAL, slot)
+		var economy_due := _due(world.current_day, ECONOMY_INTERVAL, slot)
+		var diplomacy_due := _due(world.current_day, DIPLOMACY_INTERVAL, slot)
+		var military_due := _due(world.current_day, MILITARY_INTERVAL, slot)
+		var tactical_due := not military_due and _due(world.current_day, TACTICAL_INTERVAL, slot)
+		if not strategy_due and not economy_due and not diplomacy_due and not military_due and not tactical_due:
+			continue
 		if not world.has_country(tag) or tag == world.player_country or world.get_country_provinces(tag).is_empty():
 			continue
 		var started := Time.get_ticks_usec()
-		var profile := definitions.profile(tag)
-		var slot := int(profile.get("slot", 0))
-		if _due(world.current_day, STRATEGY_INTERVAL, slot):
+		if strategy_due:
 			_review_strategy(world, tag, profile)
-		if _due(world.current_day, ECONOMY_INTERVAL, slot):
+		if economy_due:
 			_plan_economy(world, tag, profile)
-		if _due(world.current_day, DIPLOMACY_INTERVAL, slot):
+		if diplomacy_due:
 			_plan_diplomacy(world, tag, profile)
-		if _due(world.current_day, MILITARY_INTERVAL, slot):
+		if military_due:
 			_plan_military(world, tag, profile, false)
-		elif _due(world.current_day, TACTICAL_INTERVAL, slot):
+		elif tactical_due:
 			_plan_military(world, tag, profile, true)
 		decision_cost_usec[tag] = Time.get_ticks_usec() - started
 
@@ -122,7 +135,7 @@ func debug_snapshot(world: CampaignWorldState, country_tag: String) -> Dictionar
 		return {}
 	var state := _ai_state(world, country_tag)
 	var threat := _highest_threat(world, country_tag)
-	var profile := definitions.profile(country_tag)
+	var profile: Dictionary = profiles.get(country_tag, {})
 	return {
 		"country_tag": country_tag,
 		"government": String(profile.get("government", "Unknown government")),
@@ -155,7 +168,7 @@ func objective_map_values(world: CampaignWorldState, country_tag: String) -> Dic
 	if not world.has_country(country_tag):
 		return values
 	var state := _ai_state(world, country_tag)
-	var capital := _capital(world, country_tag, definitions.profile(country_tag))
+	var capital := _capital(world, country_tag, profiles.get(country_tag, {}))
 	if capital >= 0:
 		values[capital] = Color(0.2, 0.75, 0.95)
 	var target := int(state.get("target_province_id", -1))
@@ -170,7 +183,7 @@ func objective_map_values(world: CampaignWorldState, country_tag: String) -> Dic
 
 
 func _new_ai_state(tag: String, world: CampaignWorldState) -> Dictionary:
-	var profile := definitions.profile(tag)
+	var profile: Dictionary = profiles.get(tag, {})
 	return {
 		"enabled": true,
 		"profile_id": tag,
@@ -407,7 +420,7 @@ func _issue_army_orders(world: CampaignWorldState, tag: String, target: int, act
 
 
 func _respond_to_access_requests(world: CampaignWorldState, tag: String) -> bool:
-	for other in definitions.country_tags():
+	for other in country_tags:
 		if other == tag or not world.has_country(other):
 			continue
 		var relation := DiplomacySystemScript.relation(world, tag, other)
@@ -517,7 +530,7 @@ func _best_recruitment_province(world: CampaignWorldState, tag: String, profile:
 
 func _highest_threat(world: CampaignWorldState, tag: String) -> Dictionary:
 	var candidates: Array[Dictionary] = []
-	for other in definitions.country_tags():
+	for other in country_tags:
 		if other == tag or not world.has_country(other) or world.get_country_provinces(other).is_empty():
 			continue
 		var border_count := _shared_border_count(world, tag, other)
@@ -571,7 +584,7 @@ func _country_strength(world: CampaignWorldState, tag: String) -> int:
 
 func _coalition_strength(world: CampaignWorldState, tag: String) -> int:
 	var strength := _country_strength(world, tag)
-	for other in definitions.country_tags():
+	for other in country_tags:
 		if other != tag and world.has_country(other) and DiplomacySystemScript.are_allied(world, tag, other):
 			strength += _country_strength(world, other)
 	return strength

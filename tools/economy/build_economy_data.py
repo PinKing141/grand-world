@@ -31,16 +31,58 @@ BUILDINGS = {
         "name": "Tax Office", "cost": 50000, "construction_days": 180,
         "tax_modifier_bp": 2000, "production_modifier_bp": 0,
         "manpower_modifier_bp": 0, "refund_bp": 5000,
+        "required_technology": {"track": "administrative", "level": 0},
     },
     "workshop": {
         "name": "Workshop", "cost": 60000, "construction_days": 240,
         "tax_modifier_bp": 0, "production_modifier_bp": 2000,
         "manpower_modifier_bp": 0, "refund_bp": 5000,
+        "required_technology": {"track": "administrative", "level": 0},
     },
     "barracks": {
         "name": "Barracks", "cost": 50000, "construction_days": 180,
         "tax_modifier_bp": 0, "production_modifier_bp": 0,
         "manpower_modifier_bp": 2500, "refund_bp": 5000,
+        "required_technology": {"track": "military", "level": 1},
+    },
+    "courthouse": {
+        "name": "Courthouse", "cost": 70000, "construction_days": 240,
+        "tax_modifier_bp": 0, "production_modifier_bp": 0, "manpower_modifier_bp": 0,
+        "unrest_modifier_bp": -500, "control_growth_bp": 150, "refund_bp": 5000,
+        "required_technology": {"track": "administrative", "level": 1},
+    },
+    "temple": {
+        "name": "Temple", "cost": 65000, "construction_days": 210,
+        "tax_modifier_bp": 1000, "production_modifier_bp": 0, "manpower_modifier_bp": 0,
+        "conversion_speed_bp": 500, "refund_bp": 5000,
+        "required_technology": {"track": "administrative", "level": 2},
+    },
+    "marketplace": {
+        "name": "Marketplace", "cost": 65000, "construction_days": 210,
+        "tax_modifier_bp": 0, "production_modifier_bp": 1000, "manpower_modifier_bp": 0,
+        "refund_bp": 5000, "required_technology": {"track": "diplomatic", "level": 1},
+    },
+    "fortress": {
+        "name": "Fortress", "cost": 100000, "construction_days": 360,
+        "tax_modifier_bp": 0, "production_modifier_bp": 0, "manpower_modifier_bp": 0,
+        "fort_level": 1, "refund_bp": 5000,
+        "required_technology": {"track": "military", "level": 2},
+    },
+    "manufactory": {
+        "name": "Manufactory", "cost": 150000, "construction_days": 540,
+        "tax_modifier_bp": 0, "production_modifier_bp": 3500, "manpower_modifier_bp": 0,
+        "refund_bp": 5000, "required_technology": {"track": "administrative", "level": 4},
+    },
+    "trade_depot": {
+        "name": "Trade Depot", "cost": 120000, "construction_days": 420,
+        "tax_modifier_bp": 0, "production_modifier_bp": 2500, "manpower_modifier_bp": 0,
+        "refund_bp": 5000, "required_technology": {"track": "diplomatic", "level": 4},
+    },
+    "university": {
+        "name": "University", "cost": 180000, "construction_days": 600,
+        "tax_modifier_bp": 500, "production_modifier_bp": 500, "manpower_modifier_bp": 0,
+        "technology_points_modifier_bp": 500, "refund_bp": 5000,
+        "required_technology": {"track": "administrative", "level": 5},
     },
 }
 
@@ -48,8 +90,33 @@ UNITS = {
     "infantry_regiment": {
         "name": "Infantry Regiment", "cost": 10000, "manpower_cost": 1000,
         "recruitment_days": 90, "monthly_maintenance": 500,
-        "maximum_strength": 1000,
-    }
+        "maximum_strength": 1000, "attack": 100, "defence": 100,
+        "required_technology": {"track": "military", "level": 0},
+    },
+    "men_at_arms": {
+        "name": "Men-at-Arms", "cost": 14000, "manpower_cost": 1000,
+        "recruitment_days": 100, "monthly_maintenance": 650,
+        "maximum_strength": 1000, "attack": 112, "defence": 108,
+        "required_technology": {"track": "military", "level": 2},
+    },
+    "pike_square": {
+        "name": "Pike Square", "cost": 16000, "manpower_cost": 1000,
+        "recruitment_days": 105, "monthly_maintenance": 720,
+        "maximum_strength": 1000, "attack": 118, "defence": 120,
+        "required_technology": {"track": "military", "level": 3},
+    },
+    "arquebus_regiment": {
+        "name": "Arquebus Regiment", "cost": 19000, "manpower_cost": 1000,
+        "recruitment_days": 110, "monthly_maintenance": 800,
+        "maximum_strength": 1000, "attack": 132, "defence": 118,
+        "required_technology": {"track": "military", "level": 4},
+    },
+    "line_infantry": {
+        "name": "Line Infantry", "cost": 23000, "manpower_cost": 1000,
+        "recruitment_days": 120, "monthly_maintenance": 900,
+        "maximum_strength": 1000, "attack": 145, "defence": 135,
+        "required_technology": {"track": "military", "level": 5},
+    },
 }
 
 TOP_LEVEL_VALUE = re.compile(r"^\s*([a-zA-Z0-9_]+)\s*=\s*([^#{}]+)")

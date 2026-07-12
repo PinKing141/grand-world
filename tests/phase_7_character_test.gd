@@ -136,7 +136,7 @@ func _run() -> void:
 	legacy.erase("title_registry")
 	legacy.erase("claim_registry")
 	var migrated := CampaignWorldStateScript.migrate_save_data(legacy)
-	_require(int(migrated["schema_version"]) == 4, "schema 3 saves must migrate to schema 4")
+	_require(int(migrated["schema_version"]) == CampaignWorldStateScript.SAVE_SCHEMA_VERSION, "schema 3 saves must migrate to the current schema")
 	var migration_target := _make_simulation()
 	_require((migration_target["world"] as CampaignWorldState).apply_save_dict(migrated).is_empty(), "migrated saves must merge scenario character defaults")
 	_require((migration_target["world"] as CampaignWorldState).character_registry.size() == 12, "migration must retain the Phase 7 scenario roster")

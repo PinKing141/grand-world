@@ -28,6 +28,12 @@ func validate(world: CampaignWorldState) -> String:
 		return "The selected war-goal province does not exist."
 	if world.get_province_owner(target_province_id) != defender_tag:
 		return "%s no longer owns the selected war-goal province." % defender_tag
+	if not DiplomacySystemScript.overlord_of(world, attacker_tag).is_empty():
+		return "Subjects cannot declare independent wars."
+	if not DiplomacySystemScript.overlord_of(world, defender_tag).is_empty():
+		return "Declare war on the subject's overlord instead."
+	if bool(world.global_flags.get("country_depth_enabled", false)) and not _has_claim_or_core(world, attacker_tag, target_province_id):
+		return "A valid core or fabricated claim is required for a conquest war."
 	if not DiplomacySystemScript.active_war_between(world, attacker_tag, defender_tag).is_empty():
 		return "These countries are already at war."
 	if DiplomacySystemScript.has_active_truce(world, attacker_tag, defender_tag):
@@ -49,6 +55,12 @@ func apply(world: CampaignWorldState, events: SimulationEventBus) -> void:
 	for ally in _allies_of(world, defender_tag):
 		if ally != attacker_tag and not attackers.has(ally):
 			defenders.append(ally)
+	for subject in DiplomacySystemScript.direct_subjects(world, attacker_tag):
+		if not attackers.has(subject):
+			attackers.append(subject)
+	for subject in DiplomacySystemScript.direct_subjects(world, defender_tag):
+		if not defenders.has(subject):
+			defenders.append(subject)
 	attackers.sort()
 	defenders.sort()
 	world.war_registry[war_id] = {
@@ -64,6 +76,8 @@ func apply(world: CampaignWorldState, events: SimulationEventBus) -> void:
 			"type": "conquer_province",
 			"province_id": target_province_id,
 			"target_country": defender_tag,
+			"justification": "core" if (world.province_states[target_province_id].get("economy", {}).get("cores", []) as Array).has(attacker_tag) else "claim",
+			"peace_cost": _peace_cost(world, attacker_tag, target_province_id),
 		},
 		"battles": {},
 		"sieges": {},
@@ -87,3 +101,18 @@ func _allies_of(world: CampaignWorldState, country_tag: String) -> Array[String]
 		if tag != country_tag and DiplomacySystemScript.are_allied(world, country_tag, tag):
 			allies.append(tag)
 	return allies
+
+
+func _has_claim_or_core(world: CampaignWorldState, country_tag: String, province_id: int) -> bool:
+	var economy: Dictionary = world.province_states[province_id].get("economy", {})
+	if (economy.get("cores", []) as Array).has(country_tag):
+		return true
+	for raw_claim in economy.get("claims", []):
+		var claim: Dictionary = raw_claim
+		if String(claim.get("country_tag", "")) == country_tag and (int(claim.get("expires_day", -1)) < 0 or world.current_day <= int(claim.get("expires_day", -1))):
+			return true
+	return false
+
+
+func _peace_cost(world: CampaignWorldState, country_tag: String, province_id: int) -> int:
+	return 10 if (world.province_states[province_id].get("economy", {}).get("cores", []) as Array).has(country_tag) else 15

@@ -14,7 +14,7 @@ static func term_cost(war: Dictionary, term: Dictionary) -> int:
 		"transfer_province":
 			var province_id := int(term.get("province_id", -1))
 			var goal_id := int((war.get("war_goal", {}) as Dictionary).get("province_id", -2))
-			return 15 if province_id == goal_id else 20
+			return int((war.get("war_goal", {}) as Dictionary).get("peace_cost", 15)) if province_id == goal_id else 20
 		"money":
 			return clampi(int(term.get("amount", 0)) / 10000, 1, 25)
 		"press_claim":
@@ -126,6 +126,17 @@ static func apply_offer(world: CampaignWorldState, events: SimulationEventBus, w
 				var old_controller := world.get_province_controller(province_id)
 				var old_owner := world.set_province_owner(province_id, recipient)
 				world.set_province_controller(province_id, recipient)
+				var state: Dictionary = world.province_states[province_id]
+				var economy: Dictionary = state.get("economy", {})
+				economy["recently_conquered_until_day"] = world.current_day + 1825
+				economy["separatism_bp"] = 0 if (economy.get("cores", []) as Array).has(recipient) else 2500
+				state["economy"] = economy
+				world.province_states[province_id] = state
+				var dynamic: Array = world.global_flags.get("country_depth_dynamic_provinces", [])
+				if not dynamic.has(province_id):
+					dynamic.append(province_id)
+					dynamic.sort()
+					world.global_flags["country_depth_dynamic_provinces"] = dynamic
 				events.publish_owner_change(province_id, old_owner, recipient)
 				events.province_controller_changed.emit(province_id, old_controller, recipient)
 			"money":

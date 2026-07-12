@@ -24,6 +24,10 @@ func command_type() -> String:
 func validate(world: CampaignWorldState) -> String:
 	if attacker_tag == defender_tag or not world.has_country(attacker_tag) or not world.has_country(defender_tag):
 		return "A claim war requires two different existing countries."
+	if not DiplomacySystemScript.overlord_of(world, attacker_tag).is_empty():
+		return "Subjects cannot declare independent wars."
+	if not DiplomacySystemScript.overlord_of(world, defender_tag).is_empty():
+		return "Declare war on the subject's overlord instead."
 	if not world.claim_registry.has(claim_id):
 		return "The selected claim does not exist."
 	var claim: Dictionary = world.claim_registry[claim_id]
@@ -51,10 +55,16 @@ func apply(world: CampaignWorldState, events: SimulationEventBus) -> void:
 	relationship["alliance"] = false
 	DiplomacySystemScript.set_relation(world, attacker_tag, defender_tag, relationship)
 	var war_id := "war_%06d" % world.take_counter("next_war_id")
+	var attackers: Array[String] = [attacker_tag]
+	var defenders: Array[String] = [defender_tag]
+	for subject in DiplomacySystemScript.direct_subjects(world, attacker_tag):
+		attackers.append(subject)
+	for subject in DiplomacySystemScript.direct_subjects(world, defender_tag):
+		defenders.append(subject)
 	world.war_registry[war_id] = {
 		"war_id": war_id, "name": "%s claim on %s" % [attacker_tag, title_id], "status": "active",
 		"start_day": world.current_day, "attacker_leader": attacker_tag, "defender_leader": defender_tag,
-		"attackers": [attacker_tag], "defenders": [defender_tag],
+		"attackers": attackers, "defenders": defenders,
 		"war_goal": {"type": "press_claim", "province_id": target_province, "target_country": defender_tag, "claim_id": claim_id, "title_id": title_id, "claimant_id": String(claim["claimant_id"])},
 		"battles": {}, "sieges": {}, "occupied_provinces": {}, "peace_offers": {},
 		"battle_score_attacker": 0, "occupation_score_attacker": 0, "ticking_score_attacker": 0,

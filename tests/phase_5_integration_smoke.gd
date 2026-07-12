@@ -3,6 +3,7 @@ extends SceneTree
 const ControllerScript = preload("res://scripts/simulation/simulation_controller.gd")
 const WarHUDScript = preload("res://scripts/ui/war_hud.gd")
 const DiplomacySystemScript = preload("res://scripts/simulation/diplomacy_system.gd")
+const CountryDepthSystemScript = preload("res://scripts/simulation/country_depth_system.gd")
 
 
 func _initialize() -> void:
@@ -42,11 +43,11 @@ func _run() -> void:
 	province_ids.sort()
 	for raw_id in province_ids:
 		var owner := simulation.world.get_province_owner(int(raw_id))
-		if not owner.is_empty() and owner != player:
+		if not owner.is_empty() and owner != player and CountryDepthSystemScript.has_valid_claim_or_core(simulation.world, player, int(raw_id)):
 			target_id = int(raw_id)
 			target_tag = owner
 			break
-	_require(target_id >= 0, "the scenario needs a foreign target province")
+	_require(target_id >= 0, "the scenario needs a justified foreign target province")
 	hud._on_province_selected({"province_id": target_id, "owner_tag": target_tag, "owner_name": target_tag, "is_playable": true})
 	_require(not hud.declare_war_button.disabled, "a valid foreign province must enable the declaration flow")
 	hud._declare_war()

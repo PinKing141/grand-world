@@ -3,7 +3,7 @@ extends RefCounted
 
 const DeterministicRng = preload("res://scripts/simulation/deterministic_rng.gd")
 
-const SAVE_SCHEMA_VERSION := 4
+const SAVE_SCHEMA_VERSION := 5
 const DEFAULT_SCENARIO_ID := "grand_world_1444"
 
 const ARMY_STATUS_IDLE := "idle"
@@ -33,6 +33,9 @@ var character_registry: Dictionary = {}
 var dynasty_registry: Dictionary = {}
 var title_registry: Dictionary = {}
 var claim_registry: Dictionary = {}
+var subject_registry: Dictionary = {}
+var country_event_registry: Dictionary = {}
+var rebel_faction_registry: Dictionary = {}
 var global_flags: Dictionary = {}
 var global_counters: Dictionary = {}
 var rng_stream_states: Dictionary = {}
@@ -62,6 +65,9 @@ func initialize(
 	dynasty_registry.clear()
 	title_registry.clear()
 	claim_registry.clear()
+	subject_registry.clear()
+	country_event_registry.clear()
+	rebel_faction_registry.clear()
 	global_flags.clear()
 	global_counters.clear()
 	rng_stream_states.clear()
@@ -199,6 +205,12 @@ static func migrate_save_data(save_data: Dictionary) -> Dictionary:
 		migrated["title_registry"] = {}
 		migrated["claim_registry"] = {}
 		migrated["migrated_from_schema"] = int(save_data.get("schema_version", 3))
+		schema = 4
+	if schema == 4:
+		migrated["subject_registry"] = {}
+		migrated["country_event_registry"] = {}
+		migrated["rebel_faction_registry"] = {}
+		migrated["migrated_from_schema"] = int(save_data.get("schema_version", 4))
 	if schema < 1 or schema > SAVE_SCHEMA_VERSION:
 		return save_data
 	migrated["schema_version"] = SAVE_SCHEMA_VERSION
@@ -321,6 +333,9 @@ func checksum() -> String:
 		"dynasties=%s" % _canonical_variant(dynasty_registry),
 		"titles=%s" % _canonical_variant(title_registry),
 		"claims=%s" % _canonical_variant(claim_registry),
+		"subjects=%s" % _canonical_variant(subject_registry),
+		"country_events=%s" % _canonical_variant(country_event_registry),
+		"rebel_factions=%s" % _canonical_variant(rebel_faction_registry),
 	]
 	var stream_names := rng_stream_states.keys()
 	stream_names.sort()
@@ -390,6 +405,9 @@ func to_save_dict(game_version: String) -> Dictionary:
 		"dynasty_registry": dynasty_registry.duplicate(true),
 		"title_registry": title_registry.duplicate(true),
 		"claim_registry": claim_registry.duplicate(true),
+		"subject_registry": subject_registry.duplicate(true),
+		"country_event_registry": country_event_registry.duplicate(true),
+		"rebel_faction_registry": rebel_faction_registry.duplicate(true),
 		"checksum": checksum(),
 	}
 
@@ -540,6 +558,17 @@ func apply_save_dict(save_data: Dictionary) -> String:
 	var character_error := _validate_character_data(loaded_characters, loaded_dynasties, loaded_titles, loaded_claims, loaded_country_states, loaded_armies)
 	if not character_error.is_empty():
 		return character_error
+	var loaded_subjects_variant = save_data.get("subject_registry", {})
+	var loaded_country_events_variant = save_data.get("country_event_registry", {})
+	var loaded_rebels_variant = save_data.get("rebel_faction_registry", {})
+	if not loaded_subjects_variant is Dictionary or not loaded_country_events_variant is Dictionary or not loaded_rebels_variant is Dictionary:
+		return "The save contains invalid Phase 8 registries."
+	var loaded_subjects: Dictionary = loaded_subjects_variant
+	var loaded_country_events: Dictionary = loaded_country_events_variant
+	var loaded_rebels: Dictionary = loaded_rebels_variant
+	var depth_error := _validate_country_depth_data(loaded_subjects, loaded_country_events, loaded_rebels, loaded_country_states, loaded_provinces)
+	if not depth_error.is_empty():
+		return depth_error
 
 	province_states = loaded_provinces
 	country_states = loaded_country_states
@@ -561,7 +590,43 @@ func apply_save_dict(save_data: Dictionary) -> String:
 	dynasty_registry = loaded_dynasties.duplicate(true)
 	title_registry = loaded_titles.duplicate(true)
 	claim_registry = loaded_claims.duplicate(true)
+	subject_registry = loaded_subjects.duplicate(true)
+	country_event_registry = loaded_country_events.duplicate(true)
+	rebel_faction_registry = loaded_rebels.duplicate(true)
 	_rebuild_country_index()
+	return ""
+
+
+func _validate_country_depth_data(subjects: Dictionary, country_events: Dictionary, rebels: Dictionary, loaded_countries: Dictionary, loaded_provinces: Dictionary) -> String:
+	var subject_of := {}
+	for raw_id in subjects:
+		if not subjects[raw_id] is Dictionary:
+			return "Subject relationship %s has invalid state." % String(raw_id)
+		var subject: Dictionary = subjects[raw_id]
+		var overlord := String(subject.get("overlord", ""))
+		var subject_tag := String(subject.get("subject", ""))
+		if overlord == subject_tag or not loaded_countries.has(overlord) or not loaded_countries.has(subject_tag):
+			return "Subject relationship %s has invalid countries." % String(raw_id)
+		if subject_of.has(subject_tag):
+			return "%s has more than one direct overlord." % subject_tag
+		subject_of[subject_tag] = overlord
+	for raw_subject in subject_of:
+		var current := String(raw_subject)
+		var seen := {}
+		while subject_of.has(current):
+			if seen.has(current):
+				return "Subject hierarchy contains a cycle."
+			seen[current] = true
+			current = String(subject_of[current])
+	for raw_id in country_events:
+		if not country_events[raw_id] is Dictionary or not loaded_countries.has(String((country_events[raw_id] as Dictionary).get("country_tag", ""))):
+			return "Country event %s has invalid state or country." % String(raw_id)
+	for raw_id in rebels:
+		if not rebels[raw_id] is Dictionary:
+			return "Rebel faction %s has invalid state." % String(raw_id)
+		var rebel: Dictionary = rebels[raw_id]
+		if not loaded_countries.has(String(rebel.get("country_tag", ""))) or not loaded_provinces.has(int(rebel.get("province_id", -1))):
+			return "Rebel faction %s has invalid country or province." % String(raw_id)
 	return ""
 
 

@@ -3,6 +3,7 @@ extends Control
 
 const DiplomacySystemScript = preload("res://scripts/simulation/diplomacy_system.gd")
 const SimulationDate = preload("res://scripts/simulation/simulation_date.gd")
+const CountryDepthSystemScript = preload("res://scripts/simulation/country_depth_system.gd")
 
 @export var simulation_controller: GrandWorldSimulationController
 @export var province_selector: ProvinceSelector
@@ -148,8 +149,10 @@ func _refresh_target() -> void:
 	var outgoing_request := bool(requests.get(player, false))
 	access_button.text = "Grant access" if incoming_request else ("Access requested" if outgoing_request else "Request access")
 	access_button.disabled = outgoing_request or DiplomacySystemScript.are_at_war(simulation_controller.world, player, _target_country) or DiplomacySystemScript.has_access(simulation_controller.world, player, _target_country)
-	declare_war_button.disabled = DiplomacySystemScript.are_at_war(simulation_controller.world, player, _target_country) or _target_province_id < 0
-	declare_war_button.text = "Declare conquest war for province %d" % _target_province_id
+	var needs_justification := bool(simulation_controller.world.global_flags.get("country_depth_enabled", false)) and not CountryDepthSystemScript.has_valid_claim_or_core(simulation_controller.world, player, _target_province_id)
+	declare_war_button.disabled = DiplomacySystemScript.are_at_war(simulation_controller.world, player, _target_country) or _target_province_id < 0 or needs_justification
+	declare_war_button.text = "Claim required · use Country & State" if needs_justification else "Declare conquest war for province %d" % _target_province_id
+	declare_war_button.tooltip_text = "Fabricate a claim from Country & State → Society before declaring war." if needs_justification else "Declare a justified conquest war for this province."
 
 
 func _refresh_war_list() -> void:

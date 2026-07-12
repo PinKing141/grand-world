@@ -22,6 +22,8 @@ func command_type() -> String:
 func validate(world: CampaignWorldState) -> String:
 	if not world.has_country(country_tag) or not world.has_country(target_tag) or country_tag == target_tag:
 		return "Select two different existing countries."
+	if not DiplomacySystemScript.overlord_of(world, country_tag).is_empty() or not DiplomacySystemScript.overlord_of(world, target_tag).is_empty():
+		return "Subjects cannot form independent alliances."
 	if DiplomacySystemScript.are_at_war(world, country_tag, target_tag):
 		return "Countries at war cannot form an alliance."
 	if DiplomacySystemScript.are_allied(world, country_tag, target_tag):

@@ -4,6 +4,8 @@ extends Control
 const EconomySystemScript = preload("res://scripts/simulation/economy_system.gd")
 const EconomyDefinitionsScript = preload("res://scripts/simulation/economy_definitions.gd")
 const SimulationDateScript = preload("res://scripts/simulation/simulation_date.gd")
+const ConstructBuildingCommandScript = preload("res://scripts/simulation/commands/construct_building_command.gd")
+const RecruitUnitCommandScript = preload("res://scripts/simulation/commands/recruit_unit_command.gd")
 
 @export var simulation_controller: GrandWorldSimulationController
 @export var province_selector: ProvinceSelector
@@ -29,9 +31,9 @@ const SimulationDateScript = preload("res://scripts/simulation/simulation_date.g
 @onready var province_economy_title: Label = %ProvinceEconomyTitle
 @onready var province_values: Label = %ProvinceValues
 @onready var province_queue: Label = %ProvinceQueue
-@onready var tax_building_button: Button = %TaxBuildingButton
-@onready var workshop_button: Button = %WorkshopButton
-@onready var barracks_button: Button = %BarracksButton
+@onready var building_option: OptionButton = %BuildingOption
+@onready var build_button: Button = %BuildButton
+@onready var unit_option: OptionButton = %UnitOption
 @onready var recruit_button: Button = %RecruitButton
 @onready var cancel_construction_button: Button = %CancelConstructionButton
 
@@ -53,10 +55,10 @@ func _ready() -> void:
 	maintenance_option.item_selected.connect(_on_maintenance_selected)
 	take_loan_button.pressed.connect(_take_loan)
 	repay_loan_button.pressed.connect(_repay_first_loan)
-	tax_building_button.pressed.connect(func() -> void: _construct("tax_office"))
-	workshop_button.pressed.connect(func() -> void: _construct("workshop"))
-	barracks_button.pressed.connect(func() -> void: _construct("barracks"))
+	build_button.pressed.connect(_construct_selected)
 	recruit_button.pressed.connect(_recruit)
+	building_option.item_selected.connect(func(_index: int) -> void: _refresh_action_validation())
+	unit_option.item_selected.connect(func(_index: int) -> void: _refresh_action_validation())
 	cancel_construction_button.pressed.connect(_cancel_selected_construction)
 	%TaxMapButton.pressed.connect(func() -> void: _set_economy_map_mode("tax"))
 	%ProductionMapButton.pressed.connect(func() -> void: _set_economy_map_mode("production"))
@@ -68,6 +70,7 @@ func _ready() -> void:
 		_selected_province_id = -1
 		province_economy_panel.hide())
 	_connect_events()
+	_populate_content_options()
 	_refresh_all()
 
 
@@ -212,9 +215,49 @@ func _refresh_province_panel() -> void:
 		]
 	else:
 		province_queue.text = "No active construction."
-	var owned := simulation_controller.world.get_province_owner(_selected_province_id) == tag
-	for button in [tax_building_button, workshop_button, barracks_button, recruit_button]:
-		button.disabled = not owned
+	_refresh_action_validation()
+
+
+func _populate_content_options() -> void:
+	building_option.clear()
+	var definitions = EconomyDefinitionsScript.load_default()
+	var building_ids: Array = definitions.buildings.keys()
+	building_ids.sort()
+	for raw_id in building_ids:
+		var id := String(raw_id)
+		var definition: Dictionary = definitions.building(id)
+		var requirement: Dictionary = definition.get("required_technology", {})
+		building_option.add_item("%s · %s %d" % [String(definition.get("name", id)), String(requirement.get("track", "administrative")).left(3).capitalize(), int(requirement.get("level", 0))])
+		building_option.set_item_metadata(building_option.item_count - 1, id)
+	unit_option.clear()
+	var unit_ids: Array = definitions.units.keys()
+	unit_ids.sort()
+	for raw_id in unit_ids:
+		var id := String(raw_id)
+		var definition: Dictionary = definitions.unit(id)
+		var requirement: Dictionary = definition.get("required_technology", {})
+		unit_option.add_item("%s · %s %d" % [String(definition.get("name", id)), String(requirement.get("track", "military")).left(3).capitalize(), int(requirement.get("level", 0))])
+		unit_option.set_item_metadata(unit_option.item_count - 1, id)
+
+
+func _refresh_action_validation() -> void:
+	if _selected_province_id < 0 or _player_country().is_empty():
+		build_button.disabled = true
+		recruit_button.disabled = true
+		return
+	var tag := _player_country()
+	if building_option.item_count > 0:
+		var building_id := String(building_option.get_item_metadata(building_option.selected))
+		var build_failure := ConstructBuildingCommandScript.new(tag, _selected_province_id, building_id).validate(simulation_controller.world)
+		build_button.disabled = not build_failure.is_empty()
+		build_button.text = "Build selected" if build_failure.is_empty() else "Build · locked"
+		build_button.tooltip_text = build_failure
+	if unit_option.item_count > 0:
+		var unit_id := String(unit_option.get_item_metadata(unit_option.selected))
+		var recruit_failure := RecruitUnitCommandScript.new(tag, _selected_province_id, unit_id).validate(simulation_controller.world)
+		recruit_button.disabled = not recruit_failure.is_empty()
+		recruit_button.text = "Recruit selected" if recruit_failure.is_empty() else "Recruit · locked"
+		recruit_button.tooltip_text = recruit_failure
 
 
 func _construction_in_selected_province() -> String:
@@ -230,8 +273,14 @@ func _construct(building_id: String) -> void:
 	simulation_controller.construct_building(_player_country(), _selected_province_id, building_id)
 
 
+func _construct_selected() -> void:
+	if building_option.item_count > 0:
+		_construct(String(building_option.get_item_metadata(building_option.selected)))
+
+
 func _recruit() -> void:
-	simulation_controller.recruit_unit(_player_country(), _selected_province_id)
+	if unit_option.item_count > 0:
+		simulation_controller.recruit_unit(_player_country(), _selected_province_id, String(unit_option.get_item_metadata(unit_option.selected)))
 
 
 func _cancel_selected_construction() -> void:

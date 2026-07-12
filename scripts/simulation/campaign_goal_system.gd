@@ -24,6 +24,8 @@ static func process_day(world: CampaignWorldState, events: SimulationEventBus, d
 	ensure_world(world, definitions)
 	if String(world.global_flags.get("campaign_status", STATUS_RUNNING)) != STATUS_RUNNING:
 		return
+	if world.current_day < definitions.end_day() and world.current_day % 30 != 0:
+		return
 	var player := world.player_country
 	if not player.is_empty() and world.has_country(player) and world.get_country_provinces(player).is_empty():
 		_finish(world, events, STATUS_DEFEAT, definitions)

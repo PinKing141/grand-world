@@ -89,6 +89,7 @@ static func _empty_ledger() -> Dictionary:
 		"tax": 0,
 		"production": 0,
 		"subject_income": 0,
+		"subject_payments": 0,
 		"event_income": 0,
 		"total_income": 0,
 		"army_maintenance": 0,
@@ -176,17 +177,25 @@ static func recalculate_all(world: CampaignWorldState, definitions = null) -> vo
 		var ledger: Dictionary = ledgers[owner]
 		ledger["army_maintenance"] = int(ledger["army_maintenance"]) + int(army.get("base_monthly_maintenance", 500)) * int(runtime.get("army_maintenance_bp", BASIS_POINTS)) / BASIS_POINTS
 		ledgers[owner] = ledger
+	# Apply country-wide modifiers before subject payments so a subject pays from
+	# its actual monthly tax and production rather than its unmodified base.
 	for raw_tag in tags:
 		var tag := String(raw_tag)
 		var runtime := world.country_runtime(tag)
 		var ledger: Dictionary = ledgers[tag]
 		ledger["interest"] = int(runtime.get("debt", 0)) * MONTHLY_INTEREST_BP / BASIS_POINTS
-		var ruler_modifiers: Dictionary = runtime.get("ruler_modifiers", {})
-		ledger["tax"] = int(ledger["tax"]) * (BASIS_POINTS + int(ruler_modifiers.get("tax_modifier_bp", 0))) / BASIS_POINTS
-		ledger["production"] = int(ledger["production"]) * (BASIS_POINTS + int(ruler_modifiers.get("production_modifier_bp", 0))) / BASIS_POINTS
-		maximum_manpower[tag] = int(maximum_manpower[tag]) * (BASIS_POINTS + int(ruler_modifiers.get("manpower_modifier_bp", 0))) / BASIS_POINTS
+		var modifiers := _combined_country_modifiers(runtime)
+		ledger["tax"] = int(ledger["tax"]) * (BASIS_POINTS + int(modifiers.get("tax_modifier_bp", 0))) / BASIS_POINTS
+		ledger["production"] = int(ledger["production"]) * (BASIS_POINTS + int(modifiers.get("production_modifier_bp", 0))) / BASIS_POINTS
+		maximum_manpower[tag] = int(maximum_manpower[tag]) * (BASIS_POINTS + int(modifiers.get("manpower_modifier_bp", 0))) / BASIS_POINTS
+		ledgers[tag] = ledger
+	_apply_subject_payments(world, ledgers)
+	for raw_tag in tags:
+		var tag := String(raw_tag)
+		var runtime := world.country_runtime(tag)
+		var ledger: Dictionary = ledgers[tag]
 		ledger["total_income"] = int(ledger["tax"]) + int(ledger["production"]) + int(ledger["subject_income"]) + int(ledger["event_income"])
-		ledger["total_expenses"] = int(ledger["army_maintenance"]) + int(ledger["fort_maintenance"]) + int(ledger["interest"]) + int(ledger["event_expenses"])
+		ledger["total_expenses"] = int(ledger["army_maintenance"]) + int(ledger["fort_maintenance"]) + int(ledger["interest"]) + int(ledger["subject_payments"]) + int(ledger["event_expenses"])
 		ledger["balance"] = int(ledger["total_income"]) - int(ledger["total_expenses"])
 		runtime["maximum_manpower"] = int(maximum_manpower[tag])
 		runtime["manpower"] = mini(int(runtime.get("manpower", 0)), int(maximum_manpower[tag]))
@@ -212,10 +221,10 @@ static func recalculate_country(world: CampaignWorldState, country_tag: String, 
 		(ledger["province_production"] as Dictionary)[str(province_id)] = outputs["production"]
 		maximum_manpower += int(outputs["maximum_manpower"])
 	var runtime := world.country_runtime(country_tag)
-	var ruler_modifiers: Dictionary = runtime.get("ruler_modifiers", {})
-	ledger["tax"] = int(ledger["tax"]) * (BASIS_POINTS + int(ruler_modifiers.get("tax_modifier_bp", 0))) / BASIS_POINTS
-	ledger["production"] = int(ledger["production"]) * (BASIS_POINTS + int(ruler_modifiers.get("production_modifier_bp", 0))) / BASIS_POINTS
-	maximum_manpower = maximum_manpower * (BASIS_POINTS + int(ruler_modifiers.get("manpower_modifier_bp", 0))) / BASIS_POINTS
+	var modifiers := _combined_country_modifiers(runtime)
+	ledger["tax"] = int(ledger["tax"]) * (BASIS_POINTS + int(modifiers.get("tax_modifier_bp", 0))) / BASIS_POINTS
+	ledger["production"] = int(ledger["production"]) * (BASIS_POINTS + int(modifiers.get("production_modifier_bp", 0))) / BASIS_POINTS
+	maximum_manpower = maximum_manpower * (BASIS_POINTS + int(modifiers.get("manpower_modifier_bp", 0))) / BASIS_POINTS
 	var maintenance_bp := int(runtime.get("army_maintenance_bp", BASIS_POINTS))
 	var army_maintenance := 0
 	for army_id in world.country_armies(country_tag):
@@ -223,8 +232,9 @@ static func recalculate_country(world: CampaignWorldState, country_tag: String, 
 		army_maintenance += int(army.get("base_monthly_maintenance", 500)) * maintenance_bp / BASIS_POINTS
 	ledger["army_maintenance"] = army_maintenance
 	ledger["interest"] = int(runtime.get("debt", 0)) * MONTHLY_INTEREST_BP / BASIS_POINTS
+	_apply_single_country_subject_payments(world, country_tag, ledger)
 	ledger["total_income"] = int(ledger["tax"]) + int(ledger["production"]) + int(ledger["subject_income"]) + int(ledger["event_income"])
-	ledger["total_expenses"] = int(ledger["army_maintenance"]) + int(ledger["fort_maintenance"]) + int(ledger["interest"]) + int(ledger["event_expenses"])
+	ledger["total_expenses"] = int(ledger["army_maintenance"]) + int(ledger["fort_maintenance"]) + int(ledger["interest"]) + int(ledger["subject_payments"]) + int(ledger["event_expenses"])
 	ledger["balance"] = int(ledger["total_income"]) - int(ledger["total_expenses"])
 	runtime["maximum_manpower"] = maximum_manpower
 	runtime["manpower"] = mini(int(runtime.get("manpower", 0)), maximum_manpower)
@@ -262,6 +272,50 @@ static func province_outputs(economy: Dictionary, definitions = null) -> Diction
 	maximum_manpower = maximum_manpower * common_bp / BASIS_POINTS
 	maximum_manpower = maximum_manpower * (BASIS_POINTS + manpower_bonus) / BASIS_POINTS
 	return {"tax": tax, "production": production, "maximum_manpower": maximum_manpower}
+
+
+static func _combined_country_modifiers(runtime: Dictionary) -> Dictionary:
+	var result := {"tax_modifier_bp": 0, "production_modifier_bp": 0, "manpower_modifier_bp": 0}
+	for source_variant in [runtime.get("ruler_modifiers", {}), runtime.get("country_depth_modifiers", {})]:
+		var source: Dictionary = source_variant
+		for key in result:
+			result[key] = int(result[key]) + int(source.get(key, 0))
+	return result
+
+
+static func _apply_subject_payments(world: CampaignWorldState, ledgers: Dictionary) -> void:
+	var ids := world.subject_registry.keys()
+	ids.sort()
+	for raw_id in ids:
+		var record: Dictionary = world.subject_registry[raw_id]
+		if String(record.get("status", "active")) != "active":
+			continue
+		var overlord := String(record.get("overlord", ""))
+		var subject := String(record.get("subject", ""))
+		if not ledgers.has(overlord) or not ledgers.has(subject):
+			continue
+		var subject_ledger: Dictionary = ledgers[subject]
+		var payment := (int(subject_ledger.get("tax", 0)) + int(subject_ledger.get("production", 0))) * int(record.get("income_bp", 0)) / BASIS_POINTS
+		subject_ledger["subject_payments"] = int(subject_ledger.get("subject_payments", 0)) + payment
+		ledgers[subject] = subject_ledger
+		var overlord_ledger: Dictionary = ledgers[overlord]
+		overlord_ledger["subject_income"] = int(overlord_ledger.get("subject_income", 0)) + payment
+		ledgers[overlord] = overlord_ledger
+
+
+static func _apply_single_country_subject_payments(world: CampaignWorldState, country_tag: String, ledger: Dictionary) -> void:
+	var ids := world.subject_registry.keys()
+	ids.sort()
+	for raw_id in ids:
+		var record: Dictionary = world.subject_registry[raw_id]
+		if String(record.get("status", "active")) != "active":
+			continue
+		if String(record.get("subject", "")) == country_tag:
+			ledger["subject_payments"] = int(ledger.get("subject_payments", 0)) + (int(ledger.get("tax", 0)) + int(ledger.get("production", 0))) * int(record.get("income_bp", 0)) / BASIS_POINTS
+		elif String(record.get("overlord", "")) == country_tag:
+			var subject_runtime := world.country_runtime(String(record.get("subject", "")))
+			var subject_ledger: Dictionary = subject_runtime.get("ledger", {})
+			ledger["subject_income"] = int(ledger.get("subject_income", 0)) + (int(subject_ledger.get("tax", 0)) + int(subject_ledger.get("production", 0))) * int(record.get("income_bp", 0)) / BASIS_POINTS
 
 
 static func _complete_constructions(world: CampaignWorldState, events: SimulationEventBus, definitions) -> void:
@@ -314,6 +368,8 @@ static func _complete_recruitments(world: CampaignWorldState, events: Simulation
 		army["regiment_count"] = 1
 		army["strength"] = int(definition.get("maximum_strength", 1000))
 		army["base_monthly_maintenance"] = int(definition.get("monthly_maintenance", 500))
+		army["attack"] = int(definition.get("attack", 100))
+		army["defence"] = int(definition.get("defence", 100))
 		world.army_registry[army_id] = army
 		world.recruitment_registry.erase(raw_id)
 		events.recruitment_completed.emit(String(raw_id), army_id, int(record["province_id"]))

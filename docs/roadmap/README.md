@@ -2,7 +2,7 @@
 
 ## Current Milestone
 
-**Phase 7 — Characters, Dynasties, Titles, and Succession is in validation.** The Iberian slice now has authoritative rulers, heirs, families, dynasties, titles, claims, marriages, commanders, opinions, ruler modifiers, health, births, deaths, deterministic succession, character AI, claim wars, schema-4 saves, and a Court & Dynasty interface. Remaining gate work is hands-on balance, historical review, portrait/presentation direction, and packaged-build validation before the Character Loop gate can be called complete. Phase 6 balance and presentation validation remains a supporting workstream.
+**Phase 8 — Country Depth and Historical Content is implemented and in Alpha validation.** Build `0.8.0-phase8` adds authoritative government, stability, unrest/rebels/control, culture/religion/conversion, three technology tracks, national directions, cores/claims, subjects and personal unions, events/decisions, country formation/release, expanded buildings/units, deterministic country AI, schema-5 saves, a Country & State interface, and a deterministic 1444–1700 gate. Remaining work is full-suite/package validation, hands-on balance and UX, historical review, and Phase 9 global content production.
 
 The roadmap converts the long-term grand-strategy vision into smaller production phases with explicit gates.
 

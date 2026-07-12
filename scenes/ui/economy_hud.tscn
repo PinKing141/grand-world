@@ -259,35 +259,35 @@ text = "No active construction."
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="TaxBuildingButton" type="Button" parent="ProvinceEconomyPanel/Margin/Column/BuildRow"]
+[node name="BuildingOption" type="OptionButton" parent="ProvinceEconomyPanel/Margin/Column/BuildRow"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 12
-text = "Tax Office"
 
-[node name="WorkshopButton" type="Button" parent="ProvinceEconomyPanel/Margin/Column/BuildRow"]
+[node name="BuildButton" type="Button" parent="ProvinceEconomyPanel/Margin/Column/BuildRow"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
-text = "Workshop"
-
-[node name="BarracksButton" type="Button" parent="ProvinceEconomyPanel/Margin/Column/BuildRow"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Barracks"
+text = "Build selected"
 
 [node name="ActionRow" type="HBoxContainer" parent="ProvinceEconomyPanel/Margin/Column"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
+[node name="UnitOption" type="OptionButton" parent="ProvinceEconomyPanel/Margin/Column/ActionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
+
 [node name="RecruitButton" type="Button" parent="ProvinceEconomyPanel/Margin/Column/ActionRow"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
-text = "Recruit infantry"
+text = "Recruit selected"
 
-[node name="CancelConstructionButton" type="Button" parent="ProvinceEconomyPanel/Margin/Column/ActionRow"]
+[node name="CancelConstructionButton" type="Button" parent="ProvinceEconomyPanel/Margin/Column"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 12

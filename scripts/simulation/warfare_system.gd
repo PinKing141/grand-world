@@ -468,6 +468,10 @@ static func _combat_power(world: CampaignWorldState, army_ids: Array, stat: Stri
 				if (commander.get("traits", []) as Array).has("brave"):
 					commander_bp += 300
 				power = power * maxi(commander_bp, 5000) / 10000
+		var owner_tag := String(army.get("owner_country_id", ""))
+		if world.has_country(owner_tag):
+			var country_modifiers: Dictionary = world.country_runtime(owner_tag).get("country_depth_modifiers", {})
+			power = power * maxi(1000, 10000 + int(country_modifiers.get("army_power_bp", 0))) / 10000
 		total += power
 	return total
 

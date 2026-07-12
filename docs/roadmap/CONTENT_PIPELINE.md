@@ -69,6 +69,8 @@ Optimised and validated:
 - Localisation lookup keys.
 - Content version and checksum.
 
+Phase 8's first validated country-depth runtime bundle is `assets/country_depth_definitions.json` (`phase8-iberia-1`). It validates government/reform references, contiguous technology levels, culture/religion IDs, idea groups, event/decision localisation and supported effects, country provenance, province provenance, and authored cross-references. Its explicit “historical review required” provenance is a production flag, not a claim of final historical accuracy.
+
 ### Campaign Save Data
 
 Only changing campaign state:
@@ -85,6 +87,9 @@ Only changing campaign state:
 - Modifiers.
 - Events.
 - Construction.
+- Subjects and integration.
+- Rebel factions.
+- Country-depth technology, government, culture, religion, ideas, modifiers, and event history.
 
 Source definitions are not normal campaign saves.
 
@@ -265,4 +270,3 @@ Content complete requires:
 - Tutorial and onboarding content present.
 - No pending schema redesign.
 - Remaining content work limited to corrections, balance, and polish.
-
