@@ -2,8 +2,8 @@ class_name CountryLabelLayer
 extends Node3D
 
 ## EU4/CK-style country name labels laid flat over each nation's territory.
-## A name is centred on the country's land and its size scales with the
-## country's territorial extent, so larger realms read as larger names.
+## A name is centred on the country's land and its size scales with how many
+## provinces the country holds, so larger realms read as larger names.
 ##
 ## Labels are rebuilt only when ownership changes; the only per-frame work is
 ## a cheap zoom level-of-detail pass that hides small realms when zoomed out.
@@ -15,12 +15,14 @@ const MAP_HALF_WIDTH := 28.16
 const MAP_HALF_HEIGHT := 10.24
 const LABEL_FONT_SIZE := 64
 const LABEL_LIFT := 0.03
-const MIN_PIXEL_SIZE := 0.0032
-const MAX_PIXEL_SIZE := 0.06
-# Fraction of a country's width the name should try to span, and the glyph
-# aspect used to fit the text to that width before rendering.
-const WIDTH_FILL := 0.85
-const GLYPH_ASPECT := 0.55
+# Name size scales with how many provinces a country holds (not its bounding
+# box, which explodes for scattered realms like nomads or trade republics).
+# size = BASE * province_count ^ COUNT_EXP, clamped so a one-province minor
+# stays small and the largest empire stays readable rather than map-filling.
+const BASE_PIXEL_SIZE := 0.0038
+const COUNT_EXPONENT := 0.4
+const MIN_PIXEL_SIZE := 0.004
+const MAX_PIXEL_SIZE := 0.03
 
 @export var simulation_controller: GrandWorldSimulationController
 @export var map_render: Node
@@ -29,7 +31,7 @@ var _graph: ProvinceGraph
 var _height_image: Image
 var _height_scale := 0.35
 var _labels: Dictionary = {}          # tag -> Label3D
-var _label_extent: Dictionary = {}    # tag -> float world extent (-1 = inactive)
+var _label_weight: Dictionary = {}    # tag -> int land-province count (0 = inactive)
 var _dirty := true
 var _events_connected := false
 var _last_camera_height := -1.0
@@ -89,30 +91,28 @@ func _rebuild_labels() -> void:
 	for raw_tag in country_tags:
 		var tag := String(raw_tag)
 		var provinces: Array = world.country_to_provinces[raw_tag]
-		var min_x := INF
-		var max_x := -INF
-		var min_z := INF
-		var max_z := -INF
+		var points: Array[Vector3] = []
 		var sum := Vector3.ZERO
-		var top_y := 0.0
-		var count := 0
 		for raw_pid in provinces:
 			var pid := int(raw_pid)
 			if not _graph.is_land(pid):
 				continue
 			var point := _anchor_world(pid)
-			min_x = minf(min_x, point.x)
-			max_x = maxf(max_x, point.x)
-			min_z = minf(min_z, point.z)
-			max_z = maxf(max_z, point.z)
+			points.append(point)
 			sum += point
-			top_y = maxf(top_y, point.y)
-			count += 1
+		var count := points.size()
 		if count == 0:
 			continue
+		# Place the name on the land province nearest the country's centroid,
+		# so a scattered realm's name still sits on real territory.
 		var center := sum / float(count)
-		var bbox_width := max_x - min_x
-		var extent := maxf(bbox_width, max_z - min_z)
+		var seat := points[0]
+		var best_dist := INF
+		for point in points:
+			var dist := (point.x - center.x) * (point.x - center.x) + (point.z - center.z) * (point.z - center.z)
+			if dist < best_dist:
+				best_dist = dist
+				seat = point
 
 		var label: Label3D = _labels.get(tag)
 		if label == null:
@@ -122,18 +122,15 @@ func _rebuild_labels() -> void:
 		var country_name := String(names.get(tag, tag)).to_upper()
 		if label.text != country_name:
 			label.text = country_name
-		var char_count := maxi(country_name.length(), 3)
-		var approx_text_px := float(LABEL_FONT_SIZE) * GLYPH_ASPECT * float(char_count)
-		var target_world := maxf(bbox_width, 0.25) * WIDTH_FILL
-		label.pixel_size = clampf(target_world / approx_text_px, MIN_PIXEL_SIZE, MAX_PIXEL_SIZE)
-		label.position = Vector3(center.x, top_y + LABEL_LIFT, center.z)
-		_label_extent[tag] = extent
+		label.pixel_size = clampf(BASE_PIXEL_SIZE * pow(float(count), COUNT_EXPONENT), MIN_PIXEL_SIZE, MAX_PIXEL_SIZE)
+		label.position = Vector3(seat.x, seat.y + LABEL_LIFT, seat.z)
+		_label_weight[tag] = count
 		seen[tag] = true
 
 	for tag in _labels.keys():
 		if not seen.has(tag):
 			_labels[tag].visible = false
-			_label_extent[tag] = -1.0
+			_label_weight[tag] = 0
 	# Force the level-of-detail pass to re-evaluate every label next frame.
 	_last_camera_height = -1.0
 
@@ -145,8 +142,8 @@ func _make_label() -> Label3D:
 	label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
 	label.double_sided = true
 	label.modulate = Color(0.96, 0.94, 0.86)
-	label.outline_modulate = Color(0.03, 0.03, 0.05, 0.92)
-	label.outline_size = 16
+	label.outline_modulate = Color(0.03, 0.03, 0.05, 0.9)
+	label.outline_size = 8
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -161,10 +158,10 @@ func _update_zoom_visibility() -> void:
 	if absf(camera_height - _last_camera_height) < 0.05:
 		return
 	_last_camera_height = camera_height
-	# Zoomed out (large height) shows only large realms; zoomed in reveals the
-	# rest. Keeps a thousand tiny minors from overlapping into noise.
-	var min_extent := camera_height * 0.05
+	# Zoomed out (large height) shows only larger realms; zooming in reveals the
+	# minors. Keeps hundreds of one-province tags from overlapping into noise.
+	var min_count := maxf(1.0, (camera_height - 1.0) * 0.9)
 	for tag in _labels.keys():
-		var extent: float = _label_extent.get(tag, -1.0)
+		var weight: int = _label_weight.get(tag, 0)
 		var label: Label3D = _labels[tag]
-		label.visible = extent >= 0.0 and extent >= min_extent
+		label.visible = weight > 0 and float(weight) >= min_count
