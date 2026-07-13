@@ -23,6 +23,13 @@ const BASE_PIXEL_SIZE := 0.0038
 const COUNT_EXPONENT := 0.4
 const MIN_PIXEL_SIZE := 0.004
 const MAX_PIXEL_SIZE := 0.03
+# Average glyph width as a fraction of font size, used only to estimate a
+# name's world footprint for overlap culling.
+const GLYPH_ASPECT := 0.52
+# Names may overlap by this fraction before the smaller one is culled, so
+# gentle touches are tolerated but real collisions are removed.
+const OVERLAP_TOLERANCE := 0.55
+const GLYPH_SPACING := 6.0
 
 @export var simulation_controller: GrandWorldSimulationController
 @export var map_render: Node
@@ -30,6 +37,7 @@ const MAX_PIXEL_SIZE := 0.03
 var _graph: ProvinceGraph
 var _height_image: Image
 var _height_scale := 0.35
+var _label_font: FontVariation
 var _labels: Dictionary = {}          # tag -> Label3D
 var _label_weight: Dictionary = {}    # tag -> int land-province count (0 = inactive)
 var _dirty := true
@@ -38,6 +46,14 @@ var _last_camera_height := -1.0
 
 
 func _ready() -> void:
+	# Period serif via the OS font set (Georgia/Times ship on Windows, the
+	# export target) so no font asset is required; letter-spaced for the
+	# engraved map-label look. Falls back to any serif the platform provides.
+	var system_font := SystemFont.new()
+	system_font.font_names = PackedStringArray(["Georgia", "Times New Roman", "serif"])
+	_label_font = FontVariation.new()
+	_label_font.base_font = system_font
+	_label_font.spacing_glyph = int(GLYPH_SPACING)
 	_graph = ProvinceGraph.load_default()
 	var height_texture := load("res://assets/heightmap.png") as Texture2D
 	if height_texture != null:
@@ -137,6 +153,8 @@ func _rebuild_labels() -> void:
 
 func _make_label() -> Label3D:
 	var label := Label3D.new()
+	if _label_font != null:
+		label.font = _label_font
 	label.font_size = LABEL_FONT_SIZE
 	label.rotation = Vector3(-PI / 2.0, 0.0, 0.0)  # lie flat on the map plane
 	label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
@@ -161,7 +179,37 @@ func _update_zoom_visibility() -> void:
 	# Zoomed out (large height) shows only larger realms; zooming in reveals the
 	# minors. Keeps hundreds of one-province tags from overlapping into noise.
 	var min_count := maxf(1.0, (camera_height - 1.0) * 0.9)
+	# Candidates that pass the level-of-detail cut, largest realm first so the
+	# more important name wins a collision.
+	var candidates: Array = []
 	for tag in _labels.keys():
 		var weight: int = _label_weight.get(tag, 0)
+		if weight > 0 and float(weight) >= min_count:
+			candidates.append(tag)
+		else:
+			_labels[tag].visible = false
+	candidates.sort_custom(func(a: String, b: String) -> bool: return int(_label_weight[a]) > int(_label_weight[b]))
+	# Greedy de-overlap: keep a name only if its footprint does not clash with
+	# an already-kept, larger name.
+	var kept: Array[Rect2] = []
+	for tag in candidates:
 		var label: Label3D = _labels[tag]
-		label.visible = weight > 0 and float(weight) >= min_count
+		var rect := _label_rect(label)
+		var clash := false
+		for other in kept:
+			if rect.intersects(other):
+				clash = true
+				break
+		label.visible = not clash
+		if not clash:
+			kept.append(rect)
+
+
+func _label_rect(label: Label3D) -> Rect2:
+	# Approximate world footprint of a name on the flat map (XZ plane), shrunk
+	# by the overlap tolerance so gentle touches are allowed.
+	var width := float(maxi(label.text.length(), 1)) * float(LABEL_FONT_SIZE) * GLYPH_ASPECT * label.pixel_size
+	var height := float(LABEL_FONT_SIZE) * label.pixel_size
+	width *= OVERLAP_TOLERANCE
+	height *= OVERLAP_TOLERANCE
+	return Rect2(label.position.x - width * 0.5, label.position.z - height * 0.5, width, height)
