@@ -1,4 +1,4 @@
-[gd_scene load_steps=37 format=3 uid="uid://cgoxd520waiho"]
+[gd_scene load_steps=38 format=3 uid="uid://cgoxd520waiho"]
 
 [ext_resource type="Texture2D" uid="uid://c7x6n8v5pq0qm" path="res://assets/provinces.bmp" id="1_o5qli"]
 [ext_resource type="Shader" uid="uid://huxgtaoxjfut" path="res://shaders/final_output_political_map.gdshader" id="1_tipki"]
@@ -20,6 +20,7 @@
 [ext_resource type="Script" path="res://scripts/simulation/simulation_controller.gd" id="18_sim"]
 [ext_resource type="PackedScene" path="res://scenes/ui/simulation_hud.tscn" id="19_sim_hud"]
 [ext_resource type="Script" path="res://scripts/ui/army_layer.gd" id="20_army"]
+[ext_resource type="Script" path="res://scripts/ui/country_label_layer.gd" id="26_country_label"]
 [ext_resource type="PackedScene" path="res://scenes/ui/economy_hud.tscn" id="21_economy_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/war_hud.tscn" id="22_war_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/ai_debug_hud.tscn" id="23_ai_hud"]
@@ -20852,6 +20853,11 @@ camera_controller = NodePath("../CameraController")
 
 [node name="ArmyLayer" type="Node3D" parent="." node_paths=PackedStringArray("simulation_controller", "map_render")]
 script = ExtResource("20_army")
+simulation_controller = NodePath("../SimulationController")
+map_render = NodePath("../Map")
+
+[node name="CountryLabelLayer" type="Node3D" parent="." node_paths=PackedStringArray("simulation_controller", "map_render")]
+script = ExtResource("26_country_label")
 simulation_controller = NodePath("../SimulationController")
 map_render = NodePath("../Map")
 

@@ -21,7 +21,7 @@ func _gui_input(event: InputEvent) -> void:
 		if button.pressed:
 			_dragging = true
 			_drag_offset = button.global_position - global_position
-			move_to_front()
+			_raise_to_front()
 		else:
 			_apply_pending_position()
 			_dragging = false
@@ -35,6 +35,18 @@ func _gui_input(event: InputEvent) -> void:
 		# Apply only the newest position to avoid repeated layout invalidation.
 		set_process(true)
 		accept_event()
+
+
+func _raise_to_front() -> void:
+	# Raise this panel above its siblings within its own HUD, then raise the
+	# whole HUD above the other HUD layers, so a clicked window always wins
+	# over windows from a different HUD (each HUD is its own Control layer).
+	move_to_front()
+	var top := self as Control
+	while top.get_parent() is Control:
+		top = top.get_parent() as Control
+	if top != self:
+		top.move_to_front()
 
 
 func _process(_delta: float) -> void:
