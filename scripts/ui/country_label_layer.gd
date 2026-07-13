@@ -2,11 +2,16 @@ class_name CountryLabelLayer
 extends Node3D
 
 ## EU4/CK-style country name labels laid flat over each nation's territory.
-## A name is centred on the country's land and its size scales with how many
-## provinces the country holds, so larger realms read as larger names.
 ##
-## Labels are rebuilt only when ownership changes; the only per-frame work is
-## a cheap zoom level-of-detail pass that hides small realms when zoomed out.
+## Large realms get true curved names: a parabolic centreline is fitted through
+## the country's provinces and each glyph is placed and rotated along it. Small
+## realms keep a single straight (optionally tilted) label. Name size scales
+## with province count, so larger realms read larger.
+##
+## Each country owns a holder Node3D whose children are its glyphs; the glyphs
+## are pooled and reused, so ownership changes reposition rather than rebuild.
+## Rebuilds happen only on ownership change; per frame there is only a cheap
+## zoom level-of-detail and overlap pass.
 
 const GrandWorldSimulationController = preload("res://scripts/simulation/simulation_controller.gd")
 
@@ -15,24 +20,18 @@ const MAP_HALF_WIDTH := 28.16
 const MAP_HALF_HEIGHT := 10.24
 const LABEL_FONT_SIZE := 64
 const LABEL_LIFT := 0.03
-# Name size scales with how many provinces a country holds (not its bounding
-# box, which explodes for scattered realms like nomads or trade republics).
-# size = BASE * province_count ^ COUNT_EXP, clamped so a one-province minor
-# stays small and the largest empire stays readable rather than map-filling.
+# Name size scales with land-province count (robust to scattered realms).
 const BASE_PIXEL_SIZE := 0.0038
 const COUNT_EXPONENT := 0.4
 const MIN_PIXEL_SIZE := 0.004
 const MAX_PIXEL_SIZE := 0.03
-# Average glyph width as a fraction of font size, used only to estimate a
-# name's world footprint for overlap culling.
-const GLYPH_ASPECT := 0.52
-# Names may overlap by this fraction before the smaller one is culled, so
-# gentle touches are tolerated but real collisions are removed.
 const OVERLAP_TOLERANCE := 0.5
 const GLYPH_SPACING := 6.0
-# Names rotate to follow an elongated territory's long axis, but only past
-# this length/width ratio, and never tilt beyond this angle so they stay
-# readable rather than running fully vertical.
+# Realms with at least this many provinces get curved per-glyph names; smaller
+# ones stay single straight labels for performance.
+const CURVE_MIN_COUNT := 6
+# A straight name past this elongation follows the territory's long axis, up to
+# this tilt so it never runs unreadably vertical.
 const ELONGATION_MIN := 1.7
 const MAX_TILT := deg_to_rad(42.0)
 
@@ -43,8 +42,10 @@ var _graph: ProvinceGraph
 var _height_image: Image
 var _height_scale := 0.35
 var _label_font: FontVariation
-var _labels: Dictionary = {}          # tag -> Label3D
+var _labels: Dictionary = {}          # tag -> Node3D holder
 var _label_weight: Dictionary = {}    # tag -> int land-province count (0 = inactive)
+var _label_center: Dictionary = {}    # tag -> Vector2 world (x, z) footprint centre
+var _label_half: Dictionary = {}      # tag -> Vector2 half (width, height) footprint
 var _dirty := true
 var _events_connected := false
 var _last_camera_height := -1.0
@@ -52,8 +53,7 @@ var _last_camera_height := -1.0
 
 func _ready() -> void:
 	# Period serif via the OS font set (Georgia/Times ship on Windows, the
-	# export target) so no font asset is required; letter-spaced for the
-	# engraved map-label look. Falls back to any serif the platform provides.
+	# export target); letter-spaced for the engraved map-label look.
 	var system_font := SystemFont.new()
 	system_font.font_names = PackedStringArray(["Georgia", "Times New Roman", "serif"])
 	_label_font = FontVariation.new()
@@ -129,8 +129,6 @@ func _rebuild_labels() -> void:
 		var count := points.size()
 		if count == 0:
 			continue
-		# Place the name on the land province nearest the country's centroid,
-		# so a scattered realm's name still sits on real territory.
 		var center := sum / float(count)
 		var seat := points[0]
 		var best_dist := INF
@@ -140,30 +138,148 @@ func _rebuild_labels() -> void:
 				best_dist = dist
 				seat = point
 
-		var label: Label3D = _labels.get(tag)
-		if label == null:
-			label = _make_label()
-			_labels[tag] = label
-			add_child(label)
-		if label.text != country_name:
-			label.text = country_name
-		label.pixel_size = clampf(BASE_PIXEL_SIZE * pow(float(count), COUNT_EXPONENT), MIN_PIXEL_SIZE, MAX_PIXEL_SIZE)
-		label.position = Vector3(seat.x, seat.y + LABEL_LIFT, seat.z)
-		label.basis = _territory_basis(points, center)
+		var holder: Node3D = _labels.get(tag)
+		if holder == null:
+			holder = Node3D.new()
+			_labels[tag] = holder
+			add_child(holder)
+		var pixel_size := clampf(BASE_PIXEL_SIZE * pow(float(count), COUNT_EXPONENT), MIN_PIXEL_SIZE, MAX_PIXEL_SIZE)
+		var half: Vector2
+		if count >= CURVE_MIN_COUNT and country_name.strip_edges().length() >= 3:
+			half = _layout_curved(holder, country_name, points, center, seat.y, pixel_size)
+		else:
+			half = _layout_straight(holder, country_name, seat, pixel_size, _territory_basis(points, center))
 		_label_weight[tag] = count
+		_label_center[tag] = Vector2(seat.x, seat.z)
+		_label_half[tag] = half
 		seen[tag] = true
 
 	for tag in _labels.keys():
 		if not seen.has(tag):
 			_labels[tag].visible = false
 			_label_weight[tag] = 0
-	# Force the level-of-detail pass to re-evaluate every label next frame.
 	_last_camera_height = -1.0
 
 
+func _ensure_glyphs(holder: Node3D, needed: int) -> void:
+	while holder.get_child_count() < needed:
+		holder.add_child(_make_glyph())
+	for i in holder.get_child_count():
+		(holder.get_child(i) as Label3D).visible = i < needed
+
+
+func _make_glyph() -> Label3D:
+	var label := Label3D.new()
+	if _label_font != null:
+		label.font = _label_font
+	label.font_size = LABEL_FONT_SIZE
+	label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
+	label.double_sided = true
+	label.modulate = Color(0.96, 0.94, 0.86)
+	label.outline_modulate = Color(0.03, 0.03, 0.05, 0.9)
+	label.outline_size = 8
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	return label
+
+
+func _layout_straight(holder: Node3D, text: String, seat: Vector3, pixel_size: float, orientation: Basis) -> Vector2:
+	_ensure_glyphs(holder, 1)
+	var glyph := holder.get_child(0) as Label3D
+	glyph.text = text
+	glyph.pixel_size = pixel_size
+	glyph.position = Vector3(seat.x, seat.y + LABEL_LIFT, seat.z)
+	glyph.basis = orientation
+	var width := _label_font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, LABEL_FONT_SIZE).x * pixel_size
+	return Vector2(width * 0.5, float(LABEL_FONT_SIZE) * pixel_size * 0.5)
+
+
+func _layout_curved(holder: Node3D, text: String, points: Array[Vector3], center: Vector3, base_y: float, pixel_size: float) -> Vector2:
+	# Principal axis of the province cloud on the flat map plane.
+	var cxx := 0.0
+	var czz := 0.0
+	var cxz := 0.0
+	for point in points:
+		var dx := point.x - center.x
+		var dz := point.z - center.z
+		cxx += dx * dx
+		czz += dz * dz
+		cxz += dx * dz
+	var angle := 0.5 * atan2(2.0 * cxz, cxx - czz)
+	var major := Vector3(cos(angle), 0.0, sin(angle))
+	# Read left-to-right for wide realms, top-to-bottom for tall ones.
+	if absf(major.x) >= absf(major.z):
+		if major.x < 0.0:
+			major = -major
+	elif major.z < 0.0:
+		major = -major
+	var minor := Vector3(-major.z, 0.0, major.x)
+
+	# Fit perpendicular offset perp(t) = a t^2 + b t + c along the axis, so the
+	# name follows the territory's bend.
+	var s0 := 0.0
+	var s1 := 0.0
+	var s2 := 0.0
+	var s3 := 0.0
+	var s4 := 0.0
+	var p0 := 0.0
+	var p1 := 0.0
+	var p2 := 0.0
+	for point in points:
+		var d := Vector3(point.x - center.x, 0.0, point.z - center.z)
+		var t := d.dot(major)
+		var perp := d.dot(minor)
+		var t2 := t * t
+		s0 += 1.0
+		s1 += t
+		s2 += t2
+		s3 += t2 * t
+		s4 += t2 * t2
+		p0 += perp
+		p1 += perp * t
+		p2 += perp * t2
+	var coeffs := _solve3(s4, s3, s2, s3, s2, s1, s2, s1, s0, p2, p1, p0)
+	var a := coeffs.x
+	var b := coeffs.y
+	var c := coeffs.z
+
+	# Measure glyph advances and lay the name centred on the curve.
+	var advances := PackedFloat32Array()
+	var total := 0.0
+	for i in text.length():
+		var w := (_label_font.get_char_size(text.unicode_at(i), LABEL_FONT_SIZE).x + GLYPH_SPACING) * pixel_size
+		advances.append(w)
+		total += w
+	# Tame the curvature so a sprawling or L-shaped realm can't over-bend its
+	# name: cap the end deviation to a fraction of the name's length.
+	var half_span := total * 0.5
+	var dev := maxf(absf(a * half_span * half_span + b * half_span + c), absf(a * half_span * half_span - b * half_span + c))
+	var limit := 0.32 * total
+	if dev > limit and dev > 0.0001:
+		var scale := limit / dev
+		a *= scale
+		b *= scale
+		c *= scale
+	_ensure_glyphs(holder, text.length())
+	var cursor := -total * 0.5
+	for i in text.length():
+		var advance := advances[i]
+		var t := cursor + advance * 0.5
+		var perp := a * t * t + b * t + c
+		var pos := center + major * t + minor * perp
+		var tangent := (major + minor * (2.0 * a * t + b)).normalized()
+		var glyph := holder.get_child(i) as Label3D
+		glyph.text = text[i]
+		glyph.pixel_size = pixel_size
+		glyph.position = Vector3(pos.x, base_y + LABEL_LIFT, pos.z)
+		var glyph_up := Vector3(tangent.z, 0.0, -tangent.x)
+		glyph.basis = Basis(tangent, glyph_up, Vector3(0.0, 1.0, 0.0))
+		cursor += advance
+	return Vector2(total * 0.5, float(LABEL_FONT_SIZE) * pixel_size * 0.5)
+
+
 func _territory_basis(points: Array[Vector3], center: Vector3) -> Basis:
-	# Rotate the name to follow the territory's long axis (principal component
-	# of the province positions), so elongated realms read along the land.
 	var tilt := 0.0
 	if points.size() >= 4:
 		var cxx := 0.0
@@ -184,28 +300,20 @@ func _territory_basis(points: Array[Vector3], center: Vector3) -> Basis:
 		var minor := maxf(mid - radius, 0.00001)
 		if (mid + radius) / minor >= ELONGATION_MIN:
 			tilt = clampf(0.5 * atan2(2.0 * cxz, cxx - czz), -MAX_TILT, MAX_TILT)
-	# Flat on the map (XZ plane), text advancing along the tilt direction and
-	# facing straight up so it reads from the top-down camera.
 	var advance := Vector3(cos(tilt), 0.0, sin(tilt))
 	var glyph_up := Vector3(sin(tilt), 0.0, -cos(tilt))
 	return Basis(advance, glyph_up, Vector3(0.0, 1.0, 0.0))
 
 
-func _make_label() -> Label3D:
-	var label := Label3D.new()
-	if _label_font != null:
-		label.font = _label_font
-	label.font_size = LABEL_FONT_SIZE
-	label.rotation = Vector3(-PI / 2.0, 0.0, 0.0)  # lie flat on the map plane
-	label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
-	label.double_sided = true
-	label.modulate = Color(0.96, 0.94, 0.86)
-	label.outline_modulate = Color(0.03, 0.03, 0.05, 0.9)
-	label.outline_size = 8
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	return label
+func _solve3(m00: float, m01: float, m02: float, m10: float, m11: float, m12: float, m20: float, m21: float, m22: float, r0: float, r1: float, r2: float) -> Vector3:
+	# Cramer's rule for a 3x3 system; returns zero (straight name) if singular.
+	var det := m00 * (m11 * m22 - m12 * m21) - m01 * (m10 * m22 - m12 * m20) + m02 * (m10 * m21 - m11 * m20)
+	if absf(det) < 1e-9:
+		return Vector3.ZERO
+	var det_a := r0 * (m11 * m22 - m12 * m21) - m01 * (r1 * m22 - m12 * r2) + m02 * (r1 * m21 - m11 * r2)
+	var det_b := m00 * (r1 * m22 - m12 * r2) - r0 * (m10 * m22 - m12 * m20) + m02 * (m10 * r2 - r1 * m20)
+	var det_c := m00 * (m11 * r2 - r1 * m21) - m01 * (m10 * r2 - r1 * m20) + r0 * (m10 * m21 - m11 * m20)
+	return Vector3(det_a / det, det_b / det, det_c / det)
 
 
 func _update_zoom_visibility() -> void:
@@ -216,11 +324,7 @@ func _update_zoom_visibility() -> void:
 	if absf(camera_height - _last_camera_height) < 0.05:
 		return
 	_last_camera_height = camera_height
-	# Zoomed out (large height) shows only larger realms; zooming in reveals the
-	# minors. Keeps hundreds of one-province tags from overlapping into noise.
 	var min_count := maxf(1.0, (camera_height - 1.0) * 0.9)
-	# Candidates that pass the level-of-detail cut, largest realm first so the
-	# more important name wins a collision.
 	var candidates: Array = []
 	for tag in _labels.keys():
 		var weight: int = _label_weight.get(tag, 0)
@@ -229,27 +333,22 @@ func _update_zoom_visibility() -> void:
 		else:
 			_labels[tag].visible = false
 	candidates.sort_custom(func(a: String, b: String) -> bool: return int(_label_weight[a]) > int(_label_weight[b]))
-	# Greedy de-overlap: keep a name only if its footprint does not clash with
-	# an already-kept, larger name.
 	var kept: Array[Rect2] = []
 	for tag in candidates:
-		var label: Label3D = _labels[tag]
-		var rect := _label_rect(label)
+		var rect := _label_rect(tag)
 		var clash := false
 		for other in kept:
 			if rect.intersects(other):
 				clash = true
 				break
-		label.visible = not clash
+		_labels[tag].visible = not clash
 		if not clash:
 			kept.append(rect)
 
 
-func _label_rect(label: Label3D) -> Rect2:
-	# Approximate world footprint of a name on the flat map (XZ plane), shrunk
-	# by the overlap tolerance so gentle touches are allowed.
-	var width := float(maxi(label.text.length(), 1)) * float(LABEL_FONT_SIZE) * GLYPH_ASPECT * label.pixel_size
-	var height := float(LABEL_FONT_SIZE) * label.pixel_size
-	width *= OVERLAP_TOLERANCE
-	height *= OVERLAP_TOLERANCE
-	return Rect2(label.position.x - width * 0.5, label.position.z - height * 0.5, width, height)
+func _label_rect(tag: String) -> Rect2:
+	var c: Vector2 = _label_center.get(tag, Vector2.ZERO)
+	var h: Vector2 = _label_half.get(tag, Vector2.ZERO)
+	var width := h.x * 2.0 * OVERLAP_TOLERANCE
+	var height := h.y * 2.0 * OVERLAP_TOLERANCE
+	return Rect2(c.x - width * 0.5, c.y - height * 0.5, width, height)
