@@ -22,9 +22,9 @@ const LABEL_FONT_SIZE := 64
 const LABEL_LIFT := 0.03
 # The name spans this fraction of the main body's long axis, kept small and
 # clamped so nothing dominates the map.
-const NAME_FILL := 0.7
-const MIN_PIXEL_SIZE := 0.0028
-const MAX_PIXEL_SIZE := 0.011
+const NAME_FILL := 0.62
+const MIN_PIXEL_SIZE := 0.0026
+const MAX_PIXEL_SIZE := 0.0085
 const OVERLAP_TOLERANCE := 0.5
 const GLYPH_SPACING := 3.0
 # Main bodies with at least this many provinces get curved per-glyph names.
@@ -255,6 +255,10 @@ func _make_glyph() -> Label3D:
 	label.font_size = LABEL_FONT_SIZE
 	label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
 	label.double_sided = true
+	# Draw over the terrain so raised relief never clips the name.
+	label.no_depth_test = true
+	label.render_priority = 2
+	label.outline_render_priority = 1
 	label.modulate = Color(0.96, 0.94, 0.86)
 	label.outline_modulate = Color(0.03, 0.03, 0.05, 0.9)
 	label.outline_size = 8
@@ -358,7 +362,9 @@ func _update_zoom_visibility() -> void:
 	if absf(camera_height - _last_camera_height) < 0.05:
 		return
 	_last_camera_height = camera_height
-	var min_count := maxf(1.0, (camera_height - 1.0) * 0.9)
+	# Steeper cut so a zoomed-out view shows only the major powers and never
+	# feels crowded; zooming in progressively reveals the smaller realms.
+	var min_count := maxf(1.0, (camera_height - 0.8) * 1.5)
 	var candidates: Array = []
 	for tag in _labels.keys():
 		var weight: int = _label_weight.get(tag, 0)
