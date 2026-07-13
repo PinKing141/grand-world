@@ -23,9 +23,13 @@ const LABEL_LIFT := 0.03
 # The name spans this fraction of the main body's long axis, kept small and
 # clamped so nothing dominates the map.
 const NAME_FILL := 0.62
-const MIN_PIXEL_SIZE := 0.0026
+# Low floor so a long name on a small realm shrinks to fit its borders rather
+# than overflowing into its neighbours (it stays readable once zoomed in on it).
+const MIN_PIXEL_SIZE := 0.0009
 const MAX_PIXEL_SIZE := 0.0085
-const OVERLAP_TOLERANCE := 0.5
+# Names may overlap only this fraction of their footprint before the smaller is
+# culled; higher = stricter spacing.
+const OVERLAP_TOLERANCE := 0.62
 const GLYPH_SPACING := 3.0
 # Main bodies with at least this many provinces get curved per-glyph names.
 const CURVE_MIN_COUNT := 6
