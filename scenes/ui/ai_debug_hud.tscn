@@ -32,8 +32,9 @@ unique_name_in_owner = true
 layout_mode = 0
 offset_left = 30.0
 offset_top = 252.0
-offset_right = 174.0
-offset_bottom = 290.0
+offset_right = 158.0
+offset_bottom = 286.0
+theme_override_font_sizes/font_size = 13
 text = "Campaign & AI"
 tooltip_text = "Open campaign goals and the deterministic AI decision inspector"
 
@@ -45,10 +46,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -350.0
-offset_top = -310.0
-offset_right = 350.0
-offset_bottom = 310.0
+offset_left = -290.0
+offset_top = -250.0
+offset_right = 290.0
+offset_bottom = 250.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBox_ai")
@@ -56,14 +57,14 @@ script = ExtResource("2_drag")
 
 [node name="Margin" type="MarginContainer" parent="AIPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 9
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 9
 
 [node name="Column" type="VBoxContainer" parent="AIPanel/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 5
 
 [node name="Header" type="HBoxContainer" parent="AIPanel/Margin/Column"]
 layout_mode = 2
@@ -71,27 +72,29 @@ layout_mode = 2
 [node name="Title" type="Label" parent="AIPanel/Margin/Column/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 16
 text = "Iberian Campaign & AI Inspector"
 
 [node name="CloseButton" type="Button" parent="AIPanel/Margin/Column/Header"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(32, 32)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
+theme_override_font_sizes/font_size = 13
 text = "×"
 
 [node name="ObjectiveLabel" type="Label" parent="AIPanel/Margin/Column"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(620, 0)
+custom_minimum_size = Vector2(540, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92, 0.82, 0.48, 1)
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 13
 text = "Campaign objective"
 autowrap_mode = 2
 
 [node name="CampaignStatus" type="Label" parent="AIPanel/Margin/Column"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Campaign status"
 
 [node name="Separator" type="HSeparator" parent="AIPanel/Margin/Column"]
@@ -100,38 +103,44 @@ layout_mode = 2
 [node name="CountryOption" type="OptionButton" parent="AIPanel/Margin/Column"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 
 [node name="StrategyLabel" type="Label" parent="AIPanel/Margin/Column"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(620, 0)
+custom_minimum_size = Vector2(540, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.56, 0.78, 0.94, 1)
+theme_override_font_sizes/font_size = 12
 text = "Strategy"
 autowrap_mode = 2
 
 [node name="PlanLabel" type="Label" parent="AIPanel/Margin/Column"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(620, 0)
+custom_minimum_size = Vector2(540, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Current plan"
 autowrap_mode = 2
 
 [node name="ResourcesLabel" type="Label" parent="AIPanel/Margin/Column"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Resources"
 
 [node name="ThreatLabel" type="Label" parent="AIPanel/Margin/Column"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(620, 0)
+custom_minimum_size = Vector2(540, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Threat"
 autowrap_mode = 2
 
 [node name="DecisionLabel" type="Label" parent="AIPanel/Margin/Column"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(620, 0)
+custom_minimum_size = Vector2(540, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Last decision"
 autowrap_mode = 2
 
@@ -139,28 +148,29 @@ autowrap_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.62, 0.7, 0.76, 1)
+theme_override_font_sizes/font_size = 12
 text = "Schedule"
 
 [node name="HistoryLabel" type="RichTextLabel" parent="AIPanel/Margin/Column"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 130)
+custom_minimum_size = Vector2(0, 96)
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_font_sizes/normal_font_size = 12
 bbcode_enabled = true
-fit_content = false
-scroll_active = true
 text = "Recent decisions"
 
 [node name="ObjectiveMapButton" type="Button" parent="AIPanel/Margin/Column"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Show military objective overlay"
 
 [node name="SummaryLabel" type="RichTextLabel" parent="AIPanel/Margin/Column"]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(0, 100)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
+theme_override_font_sizes/normal_font_size = 12
 bbcode_enabled = true
-fit_content = false
 text = "Campaign summary"

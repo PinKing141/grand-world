@@ -32,8 +32,9 @@ unique_name_in_owner = true
 layout_mode = 0
 offset_left = 30.0
 offset_top = 300.0
-offset_right = 174.0
-offset_bottom = 338.0
+offset_right = 158.0
+offset_bottom = 334.0
+theme_override_font_sizes/font_size = 13
 text = "Court & Dynasty"
 tooltip_text = "Open rulers, families, titles, claims, opinions, and succession"
 
@@ -45,10 +46,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -410.0
-offset_top = -390.0
-offset_right = 410.0
-offset_bottom = 390.0
+offset_left = -330.0
+offset_top = -305.0
+offset_right = 330.0
+offset_bottom = 305.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBox_character")
@@ -56,14 +57,14 @@ script = ExtResource("2_drag")
 
 [node name="Margin" type="MarginContainer" parent="CharacterPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 9
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 9
 
 [node name="Column" type="VBoxContainer" parent="CharacterPanel/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 5
 
 [node name="Header" type="HBoxContainer" parent="CharacterPanel/Margin/Column"]
 layout_mode = 2
@@ -71,59 +72,62 @@ layout_mode = 2
 [node name="Title" type="Label" parent="CharacterPanel/Margin/Column/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 16
 text = "Court, Dynasty & Succession"
 
 [node name="CloseButton" type="Button" parent="CharacterPanel/Margin/Column/Header"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(32, 32)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
+theme_override_font_sizes/font_size = 13
 text = "×"
 
 [node name="CountryOption" type="OptionButton" parent="CharacterPanel/Margin/Column"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 
 [node name="RealmRow" type="HBoxContainer" parent="CharacterPanel/Margin/Column"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
 [node name="PortraitFrame" type="PanelContainer" parent="CharacterPanel/Margin/Column/RealmRow"]
-custom_minimum_size = Vector2(100, 100)
+custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
+size_flags_vertical = 4
 
 [node name="PortraitLabel" type="Label" parent="CharacterPanel/Margin/Column/RealmRow/PortraitFrame"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92, 0.78, 0.42, 1)
-theme_override_font_sizes/font_size = 28
+theme_override_font_sizes/font_size = 20
 text = "R"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="RulerLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/RealmRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(320, 100)
+custom_minimum_size = Vector2(250, 62)
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/normal_font_size = 12
 bbcode_enabled = true
-fit_content = false
 
 [node name="SuccessionLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/RealmRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 100)
+custom_minimum_size = Vector2(220, 62)
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/normal_font_size = 12
 bbcode_enabled = true
-fit_content = false
-scroll_active = true
 
 [node name="AILabel" type="Label" parent="CharacterPanel/Margin/Column"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.62, 0.72, 0.84, 1)
+theme_override_font_sizes/font_size = 12
 text = "Character AI"
-text_overrun_behavior = 3
+autowrap_mode = 2
 
 [node name="Separator" type="HSeparator" parent="CharacterPanel/Margin/Column"]
 layout_mode = 2
@@ -131,81 +135,85 @@ layout_mode = 2
 [node name="CharacterOption" type="OptionButton" parent="CharacterPanel/Margin/Column"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 
-[node name="DetailsScroll" type="ScrollContainer" parent="CharacterPanel/Margin/Column"]
-custom_minimum_size = Vector2(0, 290)
+[node name="Details" type="VBoxContainer" parent="CharacterPanel/Margin/Column"]
 layout_mode = 2
 size_flags_vertical = 3
-horizontal_scroll_mode = 0
+theme_override_constants/separation = 4
 
-[node name="Details" type="VBoxContainer" parent="CharacterPanel/Margin/Column/DetailsScroll"]
-custom_minimum_size = Vector2(750, 0)
+[node name="IdentityLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/Details"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 7
-
-[node name="IdentityLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/DetailsScroll/Details"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(750, 55)
-layout_mode = 2
+theme_override_font_sizes/normal_font_size = 12
 bbcode_enabled = true
-fit_content = false
 
-[node name="SkillsLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/DetailsScroll/Details"]
+[node name="SkillsLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/Details"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(750, 58)
+custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/normal_font_size = 12
 bbcode_enabled = true
-fit_content = false
 
-[node name="FamilyLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/DetailsScroll/Details"]
+[node name="FamilyLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/Details"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(750, 76)
+custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/normal_font_size = 12
 bbcode_enabled = true
-fit_content = false
 
-[node name="TitlesLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/DetailsScroll/Details"]
+[node name="TitlesLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/Details"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(750, 90)
+custom_minimum_size = Vector2(0, 72)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/normal_font_size = 12
 bbcode_enabled = true
-fit_content = false
 
-[node name="OpinionRow" type="HBoxContainer" parent="CharacterPanel/Margin/Column/DetailsScroll/Details"]
+[node name="OpinionRow" type="HBoxContainer" parent="CharacterPanel/Margin/Column/Details"]
 layout_mode = 2
 
-[node name="OpinionPrompt" type="Label" parent="CharacterPanel/Margin/Column/DetailsScroll/Details/OpinionRow"]
+[node name="OpinionPrompt" type="Label" parent="CharacterPanel/Margin/Column/Details/OpinionRow"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Opinion target"
 
-[node name="OpinionOption" type="OptionButton" parent="CharacterPanel/Margin/Column/DetailsScroll/Details/OpinionRow"]
+[node name="OpinionOption" type="OptionButton" parent="CharacterPanel/Margin/Column/Details/OpinionRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
 
-[node name="OpinionLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/DetailsScroll/Details"]
+[node name="OpinionLabel" type="RichTextLabel" parent="CharacterPanel/Margin/Column/Details"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(750, 120)
+custom_minimum_size = Vector2(0, 74)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/normal_font_size = 12
 bbcode_enabled = true
-fit_content = false
 
 [node name="ActionRow" type="HBoxContainer" parent="CharacterPanel/Margin/Column"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
 [node name="MarriageOption" type="OptionButton" parent="CharacterPanel/Margin/Column/ActionRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
 
 [node name="MarriageButton" type="Button" parent="CharacterPanel/Margin/Column/ActionRow"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Arrange marriage"
 
 [node name="ClaimButton" type="Button" parent="CharacterPanel/Margin/Column/ActionRow"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "No pressable claim"

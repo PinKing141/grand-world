@@ -32,8 +32,9 @@ unique_name_in_owner = true
 layout_mode = 0
 offset_left = 30.0
 offset_top = 348.0
-offset_right = 174.0
-offset_bottom = 386.0
+offset_right = 158.0
+offset_bottom = 382.0
+theme_override_font_sizes/font_size = 13
 text = "Country & State"
 tooltip_text = "Open government, technology, society, subjects, events, and decisions"
 
@@ -45,10 +46,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -450.0
-offset_top = -370.0
-offset_right = 450.0
-offset_bottom = 370.0
+offset_left = -360.0
+offset_top = -290.0
+offset_right = 360.0
+offset_bottom = 290.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBox_depth")
@@ -56,14 +57,14 @@ script = ExtResource("2_drag")
 
 [node name="Margin" type="MarginContainer" parent="CountryStatePanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 9
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 9
 
 [node name="Column" type="VBoxContainer" parent="CountryStatePanel/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 5
 
 [node name="Header" type="HBoxContainer" parent="CountryStatePanel/Margin/Column"]
 layout_mode = 2
@@ -72,53 +73,61 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 16
 text = "Country & State"
 
 [node name="CloseButton" type="Button" parent="CountryStatePanel/Margin/Column/Header"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(32, 32)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
+theme_override_font_sizes/font_size = 13
 text = "×"
 
 [node name="MapModes" type="HBoxContainer" parent="CountryStatePanel/Margin/Column"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 4
 
 [node name="Label" type="Label" parent="CountryStatePanel/Margin/Column/MapModes"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
 text = "Strategic map modes"
 
 [node name="UnrestMapButton" type="Button" parent="CountryStatePanel/Margin/Column/MapModes"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Unrest"
 
 [node name="ControlMapButton" type="Button" parent="CountryStatePanel/Margin/Column/MapModes"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Control"
 
 [node name="CultureMapButton" type="Button" parent="CountryStatePanel/Margin/Column/MapModes"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Culture"
 
 [node name="ReligionMapButton" type="Button" parent="CountryStatePanel/Margin/Column/MapModes"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Religion"
 
 [node name="TechnologyMapButton" type="Button" parent="CountryStatePanel/Margin/Column/MapModes"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Technology"
 
 [node name="Tabs" type="TabContainer" parent="CountryStatePanel/Margin/Column"]
-custom_minimum_size = Vector2(0, 625)
+custom_minimum_size = Vector2(0, 420)
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_font_sizes/font_size = 13
 
 [node name="Government" type="MarginContainer" parent="CountryStatePanel/Margin/Column/Tabs"]
 layout_mode = 2
@@ -129,22 +138,25 @@ theme_override_constants/margin_bottom = 8
 
 [node name="Column" type="VBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Government"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 5
 
 [node name="OverviewLabel" type="RichTextLabel" parent="CountryStatePanel/Margin/Column/Tabs/Government/Column"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 145)
+custom_minimum_size = Vector2(0, 118)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/normal_font_size = 12
 bbcode_enabled = true
-fit_content = false
 
 [node name="StabilityButton" type="Button" parent="CountryStatePanel/Margin/Column/Tabs/Government/Column"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Increase stability"
 
 [node name="TechnologyHeader" type="Label" parent="CountryStatePanel/Margin/Column/Tabs/Government/Column"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 11
 text = "TECHNOLOGY — click an affordable track to advance"
 
 [node name="Technology" type="HBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Government/Column"]
@@ -155,18 +167,21 @@ theme_override_constants/separation = 6
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
 text = "Administrative"
 
 [node name="DiplomaticTechButton" type="Button" parent="CountryStatePanel/Margin/Column/Tabs/Government/Column/Technology"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
 text = "Diplomatic"
 
 [node name="MilitaryTechButton" type="Button" parent="CountryStatePanel/Margin/Column/Tabs/Government/Column/Technology"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
 text = "Military"
 
 [node name="ReformRow" type="HBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Government/Column"]
@@ -176,10 +191,12 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
 
 [node name="ReformButton" type="Button" parent="CountryStatePanel/Margin/Column/Tabs/Government/Column/ReformRow"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Enact reform"
 
 [node name="GovernmentRow" type="HBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Government/Column"]
@@ -189,10 +206,12 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
 
 [node name="GovernmentButton" type="Button" parent="CountryStatePanel/Margin/Column/Tabs/Government/Column/GovernmentRow"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Change government"
 
 [node name="IdeaRow" type="HBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Government/Column"]
@@ -202,15 +221,18 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
 
 [node name="IdeaButton" type="Button" parent="CountryStatePanel/Margin/Column/Tabs/Government/Column/IdeaRow"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Choose direction"
 
 [node name="AILabel" type="Label" parent="CountryStatePanel/Margin/Column/Tabs/Government/Column"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 autowrap_mode = 2
 text = "Country AI"
 
@@ -223,18 +245,22 @@ theme_override_constants/margin_bottom = 8
 
 [node name="Column" type="VBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Society"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 5
 
 [node name="SocietyLabel" type="RichTextLabel" parent="CountryStatePanel/Margin/Column/Tabs/Society/Column"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 100)
+custom_minimum_size = Vector2(0, 84)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/normal_font_size = 12
 bbcode_enabled = true
 
 [node name="ProvinceLabel" type="RichTextLabel" parent="CountryStatePanel/Margin/Column/Tabs/Society/Column"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 190)
+custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/normal_font_size = 12
 bbcode_enabled = true
 
 [node name="ProvinceActions" type="HBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Society/Column"]
@@ -244,27 +270,33 @@ theme_override_constants/separation = 5
 [node name="ConvertReligionButton" type="Button" parent="CountryStatePanel/Margin/Column/Tabs/Society/Column/ProvinceActions"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Convert religion"
 
 [node name="ConvertCultureButton" type="Button" parent="CountryStatePanel/Margin/Column/Tabs/Society/Column/ProvinceActions"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Convert culture"
 
 [node name="AcceptCultureButton" type="Button" parent="CountryStatePanel/Margin/Column/Tabs/Society/Column/ProvinceActions"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Accept culture"
 
 [node name="FabricateClaimButton" type="Button" parent="CountryStatePanel/Margin/Column/Tabs/Society/Column/ProvinceActions"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Fabricate claim"
 
 [node name="RebelsLabel" type="RichTextLabel" parent="CountryStatePanel/Margin/Column/Tabs/Society/Column"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 120)
+custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/normal_font_size = 12
 bbcode_enabled = true
 
 [node name="RebelRow" type="HBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Society/Column"]
@@ -274,10 +306,12 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
 
 [node name="SuppressButton" type="Button" parent="CountryStatePanel/Margin/Column/Tabs/Society/Column/RebelRow"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Suppress · 25.00 + 1,000 manpower"
 
 [node name="Subjects" type="MarginContainer" parent="CountryStatePanel/Margin/Column/Tabs"]
@@ -289,12 +323,14 @@ theme_override_constants/margin_bottom = 8
 
 [node name="Column" type="VBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Subjects"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 5
 
 [node name="SubjectsLabel" type="RichTextLabel" parent="CountryStatePanel/Margin/Column/Tabs/Subjects/Column"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 220)
+custom_minimum_size = Vector2(0, 168)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/normal_font_size = 12
 bbcode_enabled = true
 
 [node name="IntegrateRow" type="HBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Subjects/Column"]
@@ -304,14 +340,18 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
 
 [node name="IntegrateButton" type="Button" parent="CountryStatePanel/Margin/Column/Tabs/Subjects/Column/IntegrateRow"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Begin integration"
 
 [node name="VassalageHint" type="Label" parent="CountryStatePanel/Margin/Column/Tabs/Subjects/Column"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 2
 text = "Voluntary vassalage requires Diplomatic 1, alliance, and target opinion +100."
 
 [node name="VassalRow" type="HBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Subjects/Column"]
@@ -321,14 +361,18 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
 
 [node name="VassalButton" type="Button" parent="CountryStatePanel/Margin/Column/Tabs/Subjects/Column/VassalRow"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Offer vassalage"
 
 [node name="ReleaseHint" type="Label" parent="CountryStatePanel/Margin/Column/Tabs/Subjects/Column"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 2
 text = "Release an inactive country's owned core provinces as an independent state."
 
 [node name="ReleaseRow" type="HBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Subjects/Column"]
@@ -338,10 +382,12 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
 
 [node name="ReleaseButton" type="Button" parent="CountryStatePanel/Margin/Column/Tabs/Subjects/Column/ReleaseRow"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "Release country"
 
 [node name="Events & Decisions" type="MarginContainer" parent="CountryStatePanel/Margin/Column/Tabs"]
@@ -351,32 +397,32 @@ theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 8
 
-[node name="Scroll" type="ScrollContainer" parent="CountryStatePanel/Margin/Column/Tabs/Events & Decisions"]
+[node name="Column" type="VBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Events & Decisions"]
 layout_mode = 2
-horizontal_scroll_mode = 0
+theme_override_constants/separation = 5
 
-[node name="Column" type="VBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Events & Decisions/Scroll"]
+[node name="EventLabel" type="RichTextLabel" parent="CountryStatePanel/Margin/Column/Tabs/Events & Decisions/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 8
-
-[node name="EventLabel" type="RichTextLabel" parent="CountryStatePanel/Margin/Column/Tabs/Events & Decisions/Scroll/Column"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 90)
-layout_mode = 2
+theme_override_font_sizes/normal_font_size = 12
 bbcode_enabled = true
 
-[node name="EventOptions" type="VBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Events & Decisions/Scroll/Column"]
+[node name="EventOptions" type="VBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Events & Decisions/Column"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_constants/separation = 4
 
-[node name="Separator" type="HSeparator" parent="CountryStatePanel/Margin/Column/Tabs/Events & Decisions/Scroll/Column"]
+[node name="Separator" type="HSeparator" parent="CountryStatePanel/Margin/Column/Tabs/Events & Decisions/Column"]
 layout_mode = 2
 
-[node name="DecisionHeader" type="Label" parent="CountryStatePanel/Margin/Column/Tabs/Events & Decisions/Scroll/Column"]
+[node name="DecisionHeader" type="Label" parent="CountryStatePanel/Margin/Column/Tabs/Events & Decisions/Column"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 11
 text = "NATIONAL DECISIONS"
 
-[node name="DecisionsBox" type="VBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Events & Decisions/Scroll/Column"]
+[node name="DecisionsBox" type="VBoxContainer" parent="CountryStatePanel/Margin/Column/Tabs/Events & Decisions/Column"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_constants/separation = 4
