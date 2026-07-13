@@ -28,8 +28,13 @@ const MAX_PIXEL_SIZE := 0.03
 const GLYPH_ASPECT := 0.52
 # Names may overlap by this fraction before the smaller one is culled, so
 # gentle touches are tolerated but real collisions are removed.
-const OVERLAP_TOLERANCE := 0.55
+const OVERLAP_TOLERANCE := 0.5
 const GLYPH_SPACING := 6.0
+# Names rotate to follow an elongated territory's long axis, but only past
+# this length/width ratio, and never tilt beyond this angle so they stay
+# readable rather than running fully vertical.
+const ELONGATION_MIN := 1.7
+const MAX_TILT := deg_to_rad(42.0)
 
 @export var simulation_controller: GrandWorldSimulationController
 @export var map_render: Node
@@ -106,6 +111,11 @@ func _rebuild_labels() -> void:
 	country_tags.sort()
 	for raw_tag in country_tags:
 		var tag := String(raw_tag)
+		if tag.is_empty():
+			continue
+		var country_name := String(names.get(tag, tag)).to_upper()
+		if country_name.is_empty() or country_name == "NO OWNER":
+			continue
 		var provinces: Array = world.country_to_provinces[raw_tag]
 		var points: Array[Vector3] = []
 		var sum := Vector3.ZERO
@@ -135,11 +145,11 @@ func _rebuild_labels() -> void:
 			label = _make_label()
 			_labels[tag] = label
 			add_child(label)
-		var country_name := String(names.get(tag, tag)).to_upper()
 		if label.text != country_name:
 			label.text = country_name
 		label.pixel_size = clampf(BASE_PIXEL_SIZE * pow(float(count), COUNT_EXPONENT), MIN_PIXEL_SIZE, MAX_PIXEL_SIZE)
 		label.position = Vector3(seat.x, seat.y + LABEL_LIFT, seat.z)
+		label.basis = _territory_basis(points, center)
 		_label_weight[tag] = count
 		seen[tag] = true
 
@@ -149,6 +159,36 @@ func _rebuild_labels() -> void:
 			_label_weight[tag] = 0
 	# Force the level-of-detail pass to re-evaluate every label next frame.
 	_last_camera_height = -1.0
+
+
+func _territory_basis(points: Array[Vector3], center: Vector3) -> Basis:
+	# Rotate the name to follow the territory's long axis (principal component
+	# of the province positions), so elongated realms read along the land.
+	var tilt := 0.0
+	if points.size() >= 4:
+		var cxx := 0.0
+		var czz := 0.0
+		var cxz := 0.0
+		for point in points:
+			var dx := point.x - center.x
+			var dz := point.z - center.z
+			cxx += dx * dx
+			czz += dz * dz
+			cxz += dx * dz
+		var n := float(points.size())
+		cxx /= n
+		czz /= n
+		cxz /= n
+		var mid := (cxx + czz) * 0.5
+		var radius := sqrt(pow((cxx - czz) * 0.5, 2.0) + cxz * cxz)
+		var minor := maxf(mid - radius, 0.00001)
+		if (mid + radius) / minor >= ELONGATION_MIN:
+			tilt = clampf(0.5 * atan2(2.0 * cxz, cxx - czz), -MAX_TILT, MAX_TILT)
+	# Flat on the map (XZ plane), text advancing along the tilt direction and
+	# facing straight up so it reads from the top-down camera.
+	var advance := Vector3(cos(tilt), 0.0, sin(tilt))
+	var glyph_up := Vector3(sin(tilt), 0.0, -cos(tilt))
+	return Basis(advance, glyph_up, Vector3(0.0, 1.0, 0.0))
 
 
 func _make_label() -> Label3D:
