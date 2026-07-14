@@ -4,6 +4,7 @@
 Examples:
   python tools/testing/run_all_tests.py
   python tools/testing/run_all_tests.py --quick
+  python tools/testing/run_all_tests.py --quick --visual
   python tools/testing/run_all_tests.py --skip-export
   python tools/testing/run_all_tests.py --godot C:/Godot/Godot_console.exe
 """
@@ -48,6 +49,9 @@ class TestResult:
 
 
 GODOT_TESTS = (
+    ("Country registry runtime and ownership integrity", "tests/country_registry_test.gd", "Country registry runtime test passed."),
+    ("Country label territory, lifecycle, map modes, and performance", "tests/country_label_layer_test.gd", "Country label layer P1 test passed."),
+    ("Country label projected visual layouts", "tests/country_label_visual_regression_test.gd", "Country label visual regression passed."),
     ("Phase 1 map interaction", "tests/phase_1a_smoke.gd", "Phase 1A smoke test passed."),
     ("Camera controls", "tests/camera_controls_smoke.gd", "Camera controls smoke test passed."),
     ("Responsive UI layout", "tests/ui_layout_smoke.gd", "UI layout smoke test passed"),
@@ -68,6 +72,9 @@ GODOT_TESTS = (
 )
 
 PYTHON_TESTS = (
+    ("Canonical country registry", "tools/country_registry/build_country_registry.py", "Country registry is valid and current."),
+    ("Conservative country-label territory map", "tools/map_labels/build_label_territory_map.py", "Label territory map is valid and current."),
+    ("MV-0 map visual asset and render audit", "tools/map_visual_audit/build_map_visual_audit.py", "MV-0 map visual asset and render audit is valid and current."),
     ("Terrain classification", "tests/terrain_classification_smoke.py", "Terrain classification smoke test passed."),
     ("Biome classification", "tests/biome_classification_smoke.py", "Biome classification smoke test passed."),
     ("Baked economy definitions", "tools/economy/build_economy_data.py", "Economy definitions are current."),
@@ -90,6 +97,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--quick", action="store_true", help="Skip long campaign soaks and Windows export.")
     parser.add_argument("--skip-export", action="store_true", help="Run all gameplay tests but skip packaging.")
     parser.add_argument("--no-report", action="store_true", help="Do not update the Markdown report.")
+    parser.add_argument("--visual", action="store_true", help="Open a rendering window and compare GPU country-label screenshots.")
     return parser.parse_args()
 
 
@@ -168,6 +176,10 @@ def export_and_start(godot: Path) -> list[TestResult]:
         export_result = execute(export_spec)
         if export_result.passed:
             required_export_log = (
+                "res://assets/country_registry.json",
+                "res://assets/label_territory_map.json",
+                "res://assets/label_territory_map.png",
+                "res://assets/fonts/LibreBaskerville-Variable.ttf",
                 "res://assets/economy_definitions.json",
                 "res://assets/ai_definitions.json",
                 "res://assets/character_definitions.json",
@@ -183,6 +195,8 @@ def export_and_start(godot: Path) -> list[TestResult]:
                 "res://scripts/simulation/character_system.gd",
                 "res://scripts/simulation/country_depth_system.gd",
                 "res://scripts/simulation/country_depth_ai_system.gd",
+                "res://scripts/simulation/country_registry.gd",
+                "res://scripts/ui/country_label_layer.gd",
             )
             missing = [item for item in required_export_log if item not in export_result.output]
             if missing:
@@ -201,14 +215,46 @@ def export_and_start(godot: Path) -> list[TestResult]:
         startup_spec = TestSpec(
             "Exported build startup",
             (str(startup_exe), "--headless", "--quit-after", "10", "--log-file", str(startup_log)),
-            "Parsed Countries:1010",
+            "Parsed Countries:1009",
             timeout=60,
             category="Packaging",
         )
         startup_result = execute(startup_spec)
+        if not startup_result.passed and "error 4551" in startup_result.output.lower():
+            pack_path = export_dir / "Grand World.pck"
+            pack_spec = TestSpec(
+                "Windows PCK export for policy-safe startup",
+                (str(godot), "--headless", "--path", str(ROOT), "--export-pack", "Windows Desktop", str(pack_path)),
+                "Storing File: res://project.binary",
+                timeout=240,
+                category="Packaging",
+            )
+            pack_result = execute(pack_spec)
+            if pack_result.passed and pack_path.exists():
+                fallback_spec = TestSpec(
+                    "Exported build startup (trusted-host PCK fallback)",
+                    (str(godot), "--headless", "--main-pack", str(pack_path), "--quit-after", "10", "--log-file", str(startup_log)),
+                    "Parsed Countries:1009",
+                    timeout=60,
+                    category="Packaging",
+                )
+                fallback_result = execute(fallback_spec)
+                fallback_result.output = "\n".join(
+                    value for value in (
+                        "Unsigned exported executable launch was blocked by Windows Application Control (error 4551).",
+                        pack_result.output,
+                        fallback_result.output,
+                    ) if value
+                )
+                startup_result = fallback_result
+            else:
+                startup_result.output = "\n".join(
+                    value for value in (startup_result.output, pack_result.output) if value
+                )
+                startup_result.reason = "Application Control blocked the executable and PCK fallback export failed"
         log_text = startup_log.read_text(encoding="utf-8", errors="replace") if startup_log.exists() else ""
         startup_result.output = "\n".join(value for value in (startup_result.output, log_text) if value)
-        required_startup = ("Parsed Provinces:3924", "Parsed Country Colors:1022", "Parsed Countries:1010")
+        required_startup = ("Parsed Provinces:3924", "Parsed Country Colors:1023", "Parsed Countries:1009")
         missing = [item for item in required_startup if item not in startup_result.output]
         fatal = any(marker in startup_result.output for marker in ("SCRIPT ERROR:", "Failed to open directory", "requires valid Phase 4 economy definitions", "requires valid Phase 6 AI definitions", "requires valid Phase 7 character definitions", "requires valid Phase 8 country-depth definitions"))
         if missing or fatal:
@@ -259,7 +305,7 @@ def write_report(results: list[TestResult], godot: Path, started_at: dt.datetime
         "",
         "## Automated scope",
         "",
-        "This report covers map selection/search, camera controls, responsive UI containment, deterministic calendar/commands/RNG, save corruption and migrations, graph/pathfinding/movement, economy, construction, recruitment, diplomacy, warfare and peace, utility AI, campaign objectives, characters/dynasties/titles/claims, marriages, commanders, opinions, ruler modifiers, health, birth, death and succession, government, stability, unrest, rebels, control, culture, religion, conversion, technology, ideas, cores, claims, subjects, events, decisions, country formation/release, country-depth AI and UI, deterministic replay through 1700, the hundred-year multi-generation soak, the twenty-year Iberian AI soak, the ten-year global soak, and Windows export startup.",
+        "This report covers the canonical country registry and ownership integrity, territory-safe country labels, projected overlap/layout baselines, label lifecycle and performance budgets, map selection/search, camera controls, responsive UI containment, deterministic calendar/commands/RNG, save corruption and migrations, graph/pathfinding/movement, economy, construction, recruitment, diplomacy, warfare and peace, utility AI, campaign objectives, characters/dynasties/titles/claims, marriages, commanders, opinions, ruler modifiers, health, birth, death and succession, government, stability, unrest, rebels, control, culture, religion, conversion, technology, ideas, cores, claims, subjects, events, decisions, country formation/release, country-depth AI and UI, deterministic replay through 1700, the hundred-year multi-generation soak, the twenty-year Iberian AI soak, the ten-year global soak, and Windows export startup.",
         "",
         "## Human-only checks still required",
         "",
@@ -292,10 +338,18 @@ def main() -> int:
 
     specs: list[TestSpec] = []
     for name, path, marker in PYTHON_TESTS:
-        extra = ("--check",) if path.endswith("build_economy_data.py") else ()
+        extra = ("--check",) if path.endswith(("build_economy_data.py", "build_country_registry.py", "build_label_territory_map.py", "build_map_visual_audit.py")) else ()
         specs.append(TestSpec(name, (sys.executable, str(ROOT / path), *extra), marker, timeout=60, category="Data"))
     for name, path, marker in GODOT_TESTS:
         specs.append(TestSpec(name, (str(godot), "--headless", "--path", str(ROOT), "--script", f"res://{path}"), marker))
+    if args.visual:
+        specs.append(TestSpec(
+            "GPU-rendered country label screenshots",
+            (sys.executable, str(ROOT / "tools/map_labels/run_visual_regression.py"), "--godot", str(godot)),
+            "Country label rendered visual regression passed.",
+            timeout=240,
+            category="Visual",
+        ))
     if not args.quick:
         specs.append(TestSpec(
             "Phase 8 deterministic 1444-1700 Alpha campaign",

@@ -1,6 +1,6 @@
 graphical_culture = westerngfx
 
-color = { 252  209  22 }
+color = { 90 175 215 }
 revolutionary_colors = { 5 8 13 }
 
 historical_idea_groups = {
@@ -33,15 +33,15 @@ historical_units = {
 }
 
 leader_names = {
-	Ubmeje Nuoráne Gájka
-	Magga Guoládat Yugra
+	Ubmeje NuorÃ¡ne GÃ¡jka
+	Magga GuolÃ¡dat Yugra
 	Kaise Saiva
 	Syktyvkar Nylogid
 }
 
 ship_names = {
 	Haldi "Laib Olmai" Akka Beaivi Bieggolmai
-	Lieaibolmmai Ruohtta  Stallo  Tjaetsieålmaj Raedieahkka
+	Lieaibolmmai Ruohtta  Stallo  TjaetsieÃ¥lmaj Raedieahkka
 }
 
 monarch_names = {

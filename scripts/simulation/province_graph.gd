@@ -73,6 +73,16 @@ func anchor(province_id: int) -> Vector2i:
 	return Vector2i(-1, -1)
 
 
+func bounding_rect(province_id: int) -> Rect2i:
+	var stored = (_provinces.get(province_id, {}) as Dictionary).get("bbox", null)
+	if stored is Array and (stored as Array).size() == 4:
+		var values := stored as Array
+		var minimum := Vector2i(int(values[0]), int(values[1]))
+		var maximum := Vector2i(int(values[2]), int(values[3]))
+		return Rect2i(minimum, maximum - minimum + Vector2i.ONE)
+	return Rect2i()
+
+
 func land_neighbors(province_id: int) -> PackedInt32Array:
 	# Sorted ascending so every traversal visits neighbours in a stable order.
 	if _sorted_land_neighbors.has(province_id):

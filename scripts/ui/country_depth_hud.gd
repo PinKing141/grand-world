@@ -135,7 +135,7 @@ func _refresh_all() -> void:
 		panel.hide()
 		return
 	var runtime := simulation_controller.country_depth_snapshot(tag)
-	var country_name := String(simulation_controller.country_data.country_id_to_country_name.get(tag, tag))
+	var country_name := _country_name(tag)
 	title_label.text = "%s · Country & State" % country_name
 	_refresh_overview(tag, runtime)
 	_refresh_society()
@@ -151,7 +151,7 @@ func _refresh_overview(tag: String, runtime: Dictionary) -> void:
 	var reforms: Array = runtime.get("government_reforms", [])
 	var idea_id := String(runtime.get("idea_group_id", ""))
 	overview_label.text = "[b]%s · %s[/b]\nStability %+d · %s %.1f%% · Centralisation %.1f%% · War exhaustion %.1f%%\nTreasury %s · Monthly balance %s · Average unrest %.1f%%\nReforms: %s\nNational direction: %s" % [
-		tag, government_name, int(runtime.get("stability", 0)), String(government.get("authority_name", "Authority")), int(runtime.get("authority_bp", 0)) / 100.0,
+		_country_name(tag), government_name, int(runtime.get("stability", 0)), String(government.get("authority_name", "Authority")), int(runtime.get("authority_bp", 0)) / 100.0,
 		int(runtime.get("centralisation_bp", 0)) / 100.0, int(runtime.get("war_exhaustion_bp", 0)) / 100.0,
 		EconomySystemScript.format_money(int(runtime.get("treasury", 0))), EconomySystemScript.format_money(int(ledger.get("balance", 0))), int(runtime.get("average_unrest_bp", 0)) / 100.0,
 		", ".join(reforms) if not reforms.is_empty() else "none", idea_id if not idea_id.is_empty() else "not selected",
@@ -240,8 +240,8 @@ func _refresh_society() -> void:
 		for key in keys:
 			source_lines.append("%s %+0.1f%%" % [String(key).replace("_", " "), int(sources[key]) / 100.0])
 		province_label.text = "[b]Province %d · %s[/b]\nCulture %s · Religion %s · Control %.1f%% · Unrest %.1f%%\nCores: %s · Claims: %d\nUnrest sources: %s\nConversion: %s" % [
-			_selected_province_id, _selected_owner, String(economy.get("culture", "unknown")), String(economy.get("religion", "unknown")), int(economy.get("control_bp", 0)) / 100.0, int(economy.get("unrest_bp", 0)) / 100.0,
-			", ".join(economy.get("cores", [])) if not (economy.get("cores", []) as Array).is_empty() else "none", (economy.get("claims", []) as Array).size(),
+			_selected_province_id, _country_name(_selected_owner), String(economy.get("culture", "unknown")), String(economy.get("religion", "unknown")), int(economy.get("control_bp", 0)) / 100.0, int(economy.get("unrest_bp", 0)) / 100.0,
+			_country_name_list(economy.get("cores", [])), (economy.get("claims", []) as Array).size(),
 			", ".join(source_lines) if not source_lines.is_empty() else "awaiting monthly calculation", _conversion_text(economy.get("conversion", {})),
 		]
 		var owned := _selected_owner == _player()
@@ -273,7 +273,7 @@ func _refresh_subjects(tag: String, runtime: Dictionary) -> void:
 		var record: Dictionary = raw_record
 		if String(record.get("status", "active")) != "active":
 			continue
-		var relation_text := "%s → %s · %s · liberty %.1f%% · integration %.1f%%" % [String(record.get("overlord", "")), String(record.get("subject", "")), String(record.get("type", "")), int(record.get("liberty_desire_bp", 0)) / 100.0, int(record.get("integration_progress_bp", 0)) / 100.0]
+		var relation_text := "%s → %s · %s · liberty %.1f%% · integration %.1f%%" % [_country_name(String(record.get("overlord", ""))), _country_name(String(record.get("subject", ""))), String(record.get("type", "")), int(record.get("liberty_desire_bp", 0)) / 100.0, int(record.get("integration_progress_bp", 0)) / 100.0]
 		lines.append(relation_text)
 		if String(record.get("overlord", "")) == tag:
 			subject_option.add_item(relation_text)
@@ -292,7 +292,7 @@ func _populate_vassal_targets(tag: String) -> void:
 		var target := String(raw_tag)
 		if target == tag or simulation_controller.world.get_country_provinces(target).is_empty() or not CountryDepthSystemScript.overlord_of(simulation_controller.world, target).is_empty():
 			continue
-		target_country_option.add_item(target)
+		target_country_option.add_item(_country_name(target))
 		target_country_option.set_item_metadata(target_country_option.item_count - 1, target)
 	vassal_button.disabled = target_country_option.item_count == 0
 
@@ -308,7 +308,7 @@ func _populate_release_targets(tag: String) -> void:
 	var tags := candidates.keys()
 	tags.sort()
 	for raw_tag in tags:
-		release_option.add_item(String(raw_tag))
+		release_option.add_item(_country_name(String(raw_tag)))
 		release_option.set_item_metadata(release_option.item_count - 1, String(raw_tag))
 	release_button.disabled = release_option.item_count == 0
 
@@ -428,6 +428,19 @@ func _conversion_text(conversion: Dictionary) -> String:
 	if conversion.is_empty():
 		return "none"
 	return "%s → %s (%.1f%%)" % [String(conversion.get("type", "")), String(conversion.get("target", "")), int(conversion.get("progress_bp", 0)) / 100.0]
+
+
+func _country_name(tag: String) -> String:
+	return String(simulation_controller.country_data.country_id_to_country_name.get(tag, "Unknown country"))
+
+
+func _country_name_list(tags: Array) -> String:
+	if tags.is_empty():
+		return "none"
+	var names: Array[String] = []
+	for raw_tag in tags:
+		names.append(_country_name(String(raw_tag)))
+	return ", ".join(names)
 
 
 func _set_province_actions_disabled(disabled: bool) -> void:

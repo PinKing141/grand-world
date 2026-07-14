@@ -69,7 +69,7 @@ func _run() -> void:
 	hud._show_country_panel("SWE")
 	await process_frame
 	_require(hud.country_panel.visible, "country panel must open")
-	_require(hud.country_title.text.contains("Sweden"), "country panel must show the country name")
+	_require(hud.country_title.text == "Sweden" and not hud.country_title.text.contains("SWE"), "country panel must show only the full country name")
 	_require(not hud.country_province_count.text.begins_with("0 "), "country panel must count owned provinces")
 	hud._close_country_panel()
 
@@ -88,6 +88,8 @@ func _run() -> void:
 	# Search index and camera focus.
 	hud._on_search_text_changed("Stockholm")
 	_require(hud.search_results.item_count >= 1, "search must find Stockholm")
+	hud._on_search_text_changed("Sweden")
+	_require(hud.search_results.item_count >= 1 and hud.search_results.get_item_text(0) == "Sweden", "country search result must show the full name without its tag")
 	hud._on_search_text_changed("Sweden")
 	_require(hud.search_results.item_count >= 1, "search must find Sweden")
 	hud._on_search_text_changed("")

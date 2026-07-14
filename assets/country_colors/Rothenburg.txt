@@ -2,7 +2,7 @@
 
 graphical_culture = westerngfx
 
-color = { 194 16 16 }
+color = { 120 55 160 }
 
 historical_idea_groups = {
 	trade_ideas
@@ -67,7 +67,7 @@ monarch_names = {
 
 leader_names = {
 	"Ebner von Eschenbach"
-	"Fürer von Haimendorf"
+	"FÃ¼rer von Haimendorf"
 	"Geuder von Heroldsberg"
 	"von Altenthann und Weiherhaus"
 	"Gugel von Brand und Diepoltsdorf"
@@ -76,8 +76,8 @@ leader_names = {
 	"Holzschuher von Harrlach"
 	Imhoff
 	"Kress von Kressenstein"
-	"Löffelholz von Kolberg"
-	"Oelhafen von Schöllenbach"
+	"LÃ¶ffelholz von Kolberg"
+	"Oelhafen von SchÃ¶llenbach"
 	Praun
 	"Stromer von Reichenbach"
 	"Tucher von Simmelsdorf"
@@ -90,8 +90,8 @@ army_names = {
 }
 
 ship_names = {
-	"St. Sebaldus" Nürnberg  "St. Kilian" "Tassilo III"
-	"König Arnulf" "Graf von Bogen" "Graf von Andechs"
+	"St. Sebaldus" NÃ¼rnberg  "St. Kilian" "Tassilo III"
+	"KÃ¶nig Arnulf" "Graf von Bogen" "Graf von Andechs"
 	"Graf von Sulzbach" Wittelsbach "Graf von Diepolding"
 	Otto
 	Augsburg Andechs Burgau Diessen Friedberg Kempten Lindau

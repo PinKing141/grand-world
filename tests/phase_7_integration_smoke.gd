@@ -45,6 +45,8 @@ func _run() -> void:
 	simulation.scheduler.process_commands()
 	hud.panel.show()
 	hud._refresh_all()
+	_require(hud.country_option.get_item_text(hud.country_option.selected) == "Castile", "country selector must show the full country name")
+	_require(hud.ruler_label.text.contains("Castile") and not hud.ruler_label.text.contains("CAS"), "court header must show the full country name")
 	_require(hud.ruler_label.text.contains("Juan II"), "realm header must name the current ruler")
 	_require(hud.ruler_label.text.contains("Enrique"), "realm header must name the heir")
 	_require(hud.succession_label.text.contains("absolute primogeniture"), "succession screen must explain the active law")

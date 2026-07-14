@@ -34,7 +34,7 @@ func _run() -> void:
 
 	ai_hud.panel.show()
 	ai_hud._refresh_all()
-	_require(ai_hud.objective_label.text.contains("CAS"), "campaign panel must explain the selected country's objective")
+	_require(ai_hud.objective_label.text.contains("Castile") and not ai_hud.objective_label.text.contains("CAS"), "campaign panel must use the country's full display name")
 	_require(ai_hud.status_label.text.contains("Day 0/7305"), "campaign panel must show the twenty-year completion horizon")
 	_require(ai_hud.strategy_label.text.contains("Goal:"), "AI inspector must expose strategic state")
 	_require(ai_hud.resources_label.text.contains("desired"), "AI inspector must expose military and reserve targets")

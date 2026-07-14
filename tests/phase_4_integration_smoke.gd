@@ -35,6 +35,9 @@ func _run() -> void:
 	_require(hud.resource_bar.visible, "choosing a country must show treasury and manpower")
 	_require(hud.treasury_label.text.contains("Treasury"), "resource bar must show treasury")
 	_require(hud.manpower_label.text.contains("Manpower"), "resource bar must show manpower")
+	hud.economy_panel.show()
+	hud._refresh_all()
+	_require(hud.economy_title.text == "Sweden economy" and not hud.economy_title.text.contains("SWE"), "economy window must show only the full country name")
 
 	var info := {
 		"province_id": 1, "province_name": "Stockholm", "owner_tag": "SWE",

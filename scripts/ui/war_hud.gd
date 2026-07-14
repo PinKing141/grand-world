@@ -97,7 +97,7 @@ func _player_country() -> String:
 
 
 func _country_name(tag: String) -> String:
-	return String(simulation_controller.country_data.country_id_to_country_name.get(tag, tag))
+	return String(simulation_controller.country_data.country_id_to_country_name.get(tag, "Unknown country"))
 
 
 func _notify(message: String) -> void:
@@ -134,7 +134,7 @@ func _refresh_target() -> void:
 	var opinion := int((relationship.get("opinions", {}) as Dictionary).get(player, 0))
 	var truce_day := int(relationship.get("truce_until_day", -1))
 	var truce_text := SimulationDate.format_day(truce_day) if truce_day > simulation_controller.world.current_day else "none"
-	target_title.text = "%s · %s" % [_country_name(_target_country), _target_country]
+	target_title.text = _country_name(_target_country)
 	relation_summary.text = "Opinion %+d  ·  Alliance %s  ·  Access %s  ·  Truce %s" % [
 		opinion,
 		"yes" if bool(relationship.get("alliance", false)) else "no",
@@ -161,7 +161,7 @@ func _refresh_war_list() -> void:
 	var wars := simulation_controller.country_wars(_player_country())
 	for war_id in wars:
 		var war: Dictionary = simulation_controller.world.war_registry[war_id]
-		war_option.add_item(String(war.get("name", war_id)))
+		war_option.add_item(_war_display_name(war))
 		war_option.set_item_metadata(war_option.item_count - 1, war_id)
 	if wars.is_empty():
 		_current_war_id = ""
@@ -174,6 +174,16 @@ func _refresh_war_list() -> void:
 			if String(war_option.get_item_metadata(index)) == _current_war_id:
 				war_option.select(index)
 				break
+
+
+func _war_display_name(war: Dictionary) -> String:
+	var attacker := _country_name(String(war.get("attacker_leader", "")))
+	var defender := _country_name(String(war.get("defender_leader", "")))
+	var goal: Dictionary = war.get("war_goal", {})
+	if String(goal.get("type", "")) == "press_claim":
+		var title: Dictionary = simulation_controller.world.title_registry.get(String(goal.get("title_id", "")), {})
+		return "%s claim on %s" % [attacker, String(title.get("name", "a title"))]
+	return "%s conquest against %s" % [attacker, defender]
 
 
 func _refresh_war() -> void:

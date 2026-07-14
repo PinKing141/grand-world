@@ -42,6 +42,8 @@ func _run() -> void:
 	runtime["technology_points"] = {"administrative": 5000, "diplomatic": 5000, "military": 5000}
 	simulation.world.set_country_runtime("CAS", runtime)
 	hud._refresh_all()
+	_require(hud.title_label.text.contains("Castile") and not hud.title_label.text.contains("CAS"), "Country & State must show the full country name")
+	_require(hud.overview_label.text.contains("Castile") and not hud.overview_label.text.contains("CAS"), "country overview must not expose the internal tag")
 	_require(hud.overview_label.text.contains("Stability"), "government tab must explain stability and authority")
 	_require(hud.admin_tech_button.text.contains("next"), "technology controls must show level, points, and next cost")
 	_require(hud.reform_option.item_count > 0 and hud.idea_option.item_count > 0, "government reforms and national directions need player paths")

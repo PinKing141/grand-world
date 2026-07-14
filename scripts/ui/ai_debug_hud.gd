@@ -71,8 +71,7 @@ func _populate_countries() -> void:
 	for tag in simulation_controller.ai_definitions.country_tags():
 		if not simulation_controller.world.has_country(tag):
 			continue
-		var name: String = simulation_controller.country_data.country_id_to_country_name.get(tag, tag)
-		country_option.add_item("%s · %s" % [name, tag])
+		country_option.add_item(_country_name(tag))
 		country_option.set_item_metadata(country_option.item_count - 1, tag)
 	_select_option_for_tag(_selected_country)
 
@@ -102,7 +101,7 @@ func _refresh_campaign() -> void:
 	var objectives: Dictionary = world.global_flags.get("campaign_objectives", {})
 	var objective_tag := player if objectives.has(player) else _selected_country
 	var objective: Dictionary = objectives.get(objective_tag, {})
-	objective_label.text = "Objective · %s\n%s" % [objective_tag, String(objective.get("text", "Select an Iberian country to receive a campaign objective."))]
+	objective_label.text = "Objective · %s\n%s" % [_country_name(objective_tag), String(objective.get("text", "Select an Iberian country to receive a campaign objective."))]
 	var end_day := int(world.global_flags.get("vertical_slice_end_day", 7305))
 	status_label.text = "Status: %s  ·  Day %d/%d  ·  Ends %s  ·  Objective %s" % [
 		String(world.global_flags.get("campaign_status", "running")).capitalize(),
@@ -126,10 +125,17 @@ func _refresh_ai() -> void:
 		String(snapshot.get("government", "Unknown government")), String(snapshot.get("ruler", "Unknown ruler")),
 		String(snapshot.get("goal", "none")).replace("_", " ").capitalize(),
 		String(snapshot.get("posture", "none")).capitalize(),
-		String(snapshot.get("target_country", "none")),
+		_country_name_or_none(String(snapshot.get("target_country", "none"))),
 		int(snapshot.get("target_province_id", -1)),
 	]
-	plan_label.text = "Current plan\n%s" % String(snapshot.get("plan", "Observe."))
+	var plan_text := String(snapshot.get("plan", "Observe."))
+	var plan_target := String(snapshot.get("target_country", ""))
+	if not plan_target.is_empty():
+		plan_text = plan_text.replace(plan_target, _country_name(plan_target))
+	var threat_country := String((snapshot.get("highest_threat", {}) as Dictionary).get("country", ""))
+	if not threat_country.is_empty():
+		plan_text = plan_text.replace(threat_country, _country_name(threat_country))
+	plan_label.text = "Current plan\n%s" % plan_text
 	resources_label.text = "Army %d / desired %d  ·  Treasury reserve %s" % [
 		int(snapshot.get("current_army_strength", 0)),
 		int(snapshot.get("desired_army_strength", 0)),
@@ -137,7 +143,7 @@ func _refresh_ai() -> void:
 	]
 	var threat: Dictionary = snapshot.get("highest_threat", {})
 	threat_label.text = "Highest threat: %s  ·  score %d  ·  shared borders %d  ·  relative strength %d%%" % [
-		String(threat.get("country", "none")), int(threat.get("score", 0)),
+		_country_name_or_none(String(threat.get("country", "none"))), int(threat.get("score", 0)),
 		int(threat.get("border_count", 0)), int(threat.get("relative_strength_percent", 0)),
 	]
 	var decision: Dictionary = snapshot.get("last_decision", {})
@@ -180,11 +186,19 @@ func _format_summary(summary: Dictionary) -> String:
 		var tag := String(raw_tag)
 		var record: Dictionary = countries[raw_tag]
 		lines.append("%s · provinces %d · army %d · treasury %s · debt %s · objective %s" % [
-			tag, int(record.get("provinces", 0)), int(record.get("army_strength", 0)),
+			_country_name(tag), int(record.get("provinces", 0)), int(record.get("army_strength", 0)),
 			EconomySystemScript.format_money(int(record.get("treasury", 0))), EconomySystemScript.format_money(int(record.get("debt", 0))),
 			"complete" if bool(record.get("objective_complete", false)) else "failed",
 		])
 	return "\n".join(lines)
+
+
+func _country_name(tag: String) -> String:
+	return String(simulation_controller.country_data.country_id_to_country_name.get(tag, "Unknown country"))
+
+
+func _country_name_or_none(tag: String) -> String:
+	return "none" if tag.is_empty() or tag == "none" else _country_name(tag)
 
 
 func _notify(message: String) -> void:

@@ -18,6 +18,7 @@ Scale the feature-complete simulation and content pipeline to the full world, re
 - No planned 1.0 foundational system remains unimplemented.
 - Global content schemas and validators are stable.
 - Regional performance budgets have passed with scaling projections.
+- The Strategic Map Visual Production Roadmap has passed its Visual Greenlight and has an approved political/environment vertical-slice plan.
 
 ## Major Deliverables
 
@@ -46,6 +47,14 @@ Scale the feature-complete simulation and content pipeline to the full world, re
 - Map labels and culling.
 - Map-mode batching.
 - Memory and save-size control.
+
+### Strategic Map Visual Production
+
+- Execute the [Strategic Map Visual Production Roadmap](map_visual_production/README.md).
+- Lock a project-original EU4-led political-atlas art direction.
+- Complete political readability, terrain, water, hydrography, country labels, map objects, and zoom LOD.
+- Scale approved regional pipelines to the full world.
+- Meet visual regression, accessibility, provenance, performance, compatibility, and packaged-build gates.
 
 ### UI Completion
 
@@ -123,6 +132,7 @@ Scale the feature-complete simulation and content pipeline to the full world, re
 - Historical setup review complete.
 - Tutorial content complete.
 - No planned content category remains empty.
+- The map-visual track has passed Visual Content Complete, including the migrated country-label/name backlog.
 
 ## Beta Entry
 
@@ -158,6 +168,7 @@ Beta begins only when:
 - Legal and provenance checks pass.
 - Installer and rollback path pass.
 - Release notes and known issues prepared.
+- The map-visual track has passed its Visual Release Candidate gate.
 
 ## Acceptance Criteria for 1.0
 
@@ -185,4 +196,3 @@ Beta begins only when:
 - New mechanics after Alpha require removal of equivalent scope or deferral.
 - Historical flavour must use existing systems.
 - 1700–1821 work remains deferred until after 1.0 stability.
-

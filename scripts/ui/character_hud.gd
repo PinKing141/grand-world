@@ -68,7 +68,7 @@ func _connect_events() -> void:
 			_refresh_all())
 	events.succession_resolved.connect(func(country: String, _old: String, new_ruler: String, _heir: String) -> void:
 		if country == simulation_controller.world.player_country or panel.visible:
-			_notify("Succession in %s: %s now rules." % [country, _name(new_ruler)])
+			_notify("Succession in %s: %s now rules." % [_country_name(country), _name(new_ruler)])
 			_refresh_all())
 	events.commander_assigned.connect(func(_army: String, _character: String) -> void: _refresh_all())
 	events.claim_pressed.connect(func(_claim: String, _title: String, _holder: String) -> void: _refresh_all())
@@ -88,7 +88,7 @@ func _populate_countries() -> void:
 		var tag := String(raw_tag)
 		if CharacterSystemScript.ruler_id(simulation_controller.world, tag).is_empty():
 			continue
-		country_option.add_item(tag)
+		country_option.add_item(_country_name(tag))
 		country_option.set_item_metadata(country_option.item_count - 1, tag)
 	_select_country_option(_country_tag)
 
@@ -131,7 +131,7 @@ func _refresh_country() -> void:
 	var heir := CharacterSystemScript.character_summary(world, heir_id)
 	portrait_label.text = _initials(String(ruler.get("name", "?")))
 	ruler_label.text = "[b]%s · %s[/b]\nRuler: %s, age %d · %s\nHeir: %s, age %d\nLegitimacy: %.0f%%" % [
-		_country_tag, _title_name(String(world.country_runtime(_country_tag).get("primary_title_id", ""))),
+		_country_name(_country_tag), _title_name(String(world.country_runtime(_country_tag).get("primary_title_id", ""))),
 		String(ruler.get("name", "No ruler")), int(ruler.get("age", -1)), String(ruler.get("dynasty", "")),
 		String(heir.get("name", "No recognised heir")), int(heir.get("age", -1)),
 		int(world.country_runtime(_country_tag).get("legitimacy_bp", 0)) / 100.0,
@@ -206,7 +206,8 @@ func _populate_marriage_candidates() -> void:
 	for raw_id in ids:
 		var candidate_id := String(raw_id)
 		if CharacterSystemScript.can_marry(simulation_controller.world, _character_id, candidate_id).is_empty():
-			marriage_option.add_item("%s · %s" % [_name(candidate_id), String((simulation_controller.world.character_registry[candidate_id] as Dictionary).get("employer_country", ""))])
+			var employer := String((simulation_controller.world.character_registry[candidate_id] as Dictionary).get("employer_country", ""))
+			marriage_option.add_item("%s · %s" % [_name(candidate_id), _country_name(employer)])
 			marriage_option.set_item_metadata(marriage_option.item_count - 1, candidate_id)
 	_refresh_marriage_button()
 
@@ -284,6 +285,10 @@ func _name_or_none(character_id: String) -> String:
 
 func _title_name(title_id: String) -> String:
 	return String((simulation_controller.world.title_registry.get(title_id, {}) as Dictionary).get("name", title_id if not title_id.is_empty() else "No title"))
+
+
+func _country_name(tag: String) -> String:
+	return String(simulation_controller.country_data.country_id_to_country_name.get(tag, "Unknown country"))
 
 
 func _initials(name: String) -> String:

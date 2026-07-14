@@ -155,8 +155,8 @@ func _refresh_economy_panel() -> void:
 		return
 	var runtime := simulation_controller.country_economy(tag)
 	var ledger: Dictionary = runtime.get("ledger", {})
-	var country_name: String = simulation_controller.country_data.country_id_to_country_name.get(tag, tag)
-	economy_title.text = "%s economy  ·  %s" % [country_name, tag]
+	var country_name: String = simulation_controller.country_data.country_id_to_country_name.get(tag, "Unknown country")
+	economy_title.text = "%s economy" % country_name
 	ledger_label.text = "INCOME\n  Tax                         +%s\n  Production                  +%s\n  Other                       +%s\n  Total                       +%s\n\nEXPENSES\n  Army maintenance            -%s\n  Interest                    -%s\n  Other                       -%s\n  Total                       -%s\n\nMONTHLY BALANCE               %s%s" % [
 		EconomySystemScript.format_money(int(ledger.get("tax", 0))),
 		EconomySystemScript.format_money(int(ledger.get("production", 0))),

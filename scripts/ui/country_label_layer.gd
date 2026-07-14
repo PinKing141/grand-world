@@ -1,44 +1,42 @@
 class_name CountryLabelLayer
 extends Node3D
 
-## EU4/CK-style country name labels laid flat over each nation's main landmass.
+## Deterministic, shape-aware country labels.
 ##
-## For each country the largest contiguous block of owned land provinces (its
-## main body) is found through the province adjacency graph; the name is placed,
-## sized, and curved to fit that body only, ignoring scattered islands and
-## overseas holdings. Large bodies get true per-glyph curved names following a
-## fitted centreline; small ones get a single straight (optionally tilted) label.
-##
-## Each country owns a holder Node3D whose glyph children are pooled and reused.
-## Rebuilds happen only on ownership change; per frame there is only a cheap zoom
-## level-of-detail and overlap pass.
+## Layout is derived from a conservative province-ID raster. Each country name
+## follows the dominant axis of its main connected land body and is scaled from
+## that body's oriented extent. Tiny or ambiguous shapes use conservative
+## fallbacks. Only labels that survive zoom and projected screen-space collision
+## are instantiated, and ownership changes rebuild only the old/new countries.
 
 const GrandWorldSimulationController = preload("res://scripts/simulation/simulation_controller.gd")
 
+const FONT_PATH := "res://assets/fonts/LibreBaskerville-Variable.ttf"
+const TERRITORY_MAP_PATH := "res://assets/label_territory_map.png"
+const TERRITORY_METADATA_PATH := "res://assets/label_territory_map.json"
 const MAP_PIXEL_SIZE := 0.01
 const MAP_HALF_WIDTH := 28.16
 const MAP_HALF_HEIGHT := 10.24
 const LABEL_FONT_SIZE := 64
-const LABEL_LIFT := 0.03
-# The name spans this fraction of the main body's long axis, kept small and
-# clamped so nothing dominates the map.
-const NAME_FILL := 0.62
-# Low floor so a long name on a small realm shrinks to fit its borders rather
-# than overflowing into its neighbours (it stays readable once zoomed in on it).
-const MIN_PIXEL_SIZE := 0.0009
-const MAX_PIXEL_SIZE := 0.0085
-# Names may overlap only this fraction of their footprint before the smaller is
-# culled; higher = stricter spacing.
-const OVERLAP_TOLERANCE := 0.62
-const GLYPH_SPACING := 3.0
-# Main bodies with at least this many provinces get curved per-glyph names.
-const CURVE_MIN_COUNT := 6
-# Curvature is capped to this fraction of the name length so arcs stay gentle.
-const CURVE_LIMIT := 0.16
-# A straight name past this elongation follows the body's long axis, up to this
-# tilt so it never runs unreadably vertical.
-const ELONGATION_MIN := 1.7
-const MAX_TILT := deg_to_rad(38.0)
+const LABEL_OUTLINE_SIZE := 4
+const LABEL_LIFT := 0.035
+const LABEL_FILL := 0.94
+const SHAPE_LABEL_FILL := 0.54
+const MAX_PIXEL_SIZE := 0.0065
+const MIN_READABLE_PIXEL_SIZE := 0.0003
+const MIN_SHAPE_CELLS := 8
+const MIN_ALIGNMENT_ANISOTROPY := 0.18
+const MAX_LABEL_ANGLE_DEGREES := 72.0
+const MAJOR_AXIS_SIGMA_SPAN := 3.4
+const MINOR_AXIS_SIGMA_SPAN := 2.7
+const MIN_CLOSE_ZOOM_LABEL_SCALE := 0.48
+const MIN_LABEL_SCALE_CAMERA_HEIGHT := 0.8
+const FULL_LABEL_SCALE_CAMERA_HEIGHT := 2.4
+const SCREEN_COLLISION_PADDING := 3.0
+const COLLISION_GRID_SIZE := 128.0
+const MAX_INCREMENTAL_TAGS_PER_FRAME := 4
+const MAX_NODE_CREATIONS_PER_FRAME := 24
+const DEBUG_MAP_MODE := 2
 
 @export var simulation_controller: GrandWorldSimulationController
 @export var map_render: Node
@@ -46,80 +44,258 @@ const MAX_TILT := deg_to_rad(38.0)
 var _graph: ProvinceGraph
 var _height_image: Image
 var _height_scale := 0.35
+var _territory_image: Image
+var _territory_scale := 0
 var _label_font: FontVariation
-var _labels: Dictionary = {}          # tag -> Node3D holder
-var _label_weight: Dictionary = {}    # tag -> int main-body province count (0 = inactive)
-var _label_center: Dictionary = {}    # tag -> Vector2 world (x, z) footprint centre
-var _label_half: Dictionary = {}      # tag -> Vector2 half (width, height) footprint
-var _dirty := true
+
+var _layouts: Dictionary = {} # tag -> deterministic layout descriptor
+var _label_nodes: Dictionary = {} # tag -> lazily-created Label3D
+var _screen_rects: Dictionary = {} # visible tag -> projected Rect2
+var _desired_visible: Dictionary = {}
+var _pending_node_tags: Array[String] = []
+var _pending_tags: Dictionary = {}
 var _events_connected := false
-var _last_camera_height := -1.0
+var _full_rebuild_pending := true
+var _initial_rebuild_active := false
+var _initial_rebuild_started_usec := 0
+var _initial_layout_cpu_ms := 0.0
+var _visibility_dirty := true
+var _camera_signature_valid := false
+var _last_camera_transform := Transform3D.IDENTITY
+var _last_viewport_size := Vector2.ZERO
+var _last_rebuilt_tags: Array[String] = []
+var _visibility_revision := 0
+var _label_render_scale := 1.0
+var _metrics := {
+	"initial_layout_ms": 0.0,
+	"initial_wall_ms": 0.0,
+	"max_layout_batch_ms": 0.0,
+	"max_layout_batch_tags": [],
+	"last_incremental_ms": 0.0,
+	"last_visibility_ms": 0.0,
+	"last_node_batch_ms": 0.0,
+	"max_node_batch_ms": 0.0,
+	"layout_count": 0,
+	"node_count": 0,
+	"visible_count": 0,
+	"territory_fit_count": 0,
+	"shape_aligned_count": 0,
+	"full_name_count": 0,
+	"screen_fallback_count": 0,
+}
 
 
 func _ready() -> void:
-	var system_font := SystemFont.new()
-	system_font.font_names = PackedStringArray(["Georgia", "Times New Roman", "serif"])
-	_label_font = FontVariation.new()
-	_label_font.base_font = system_font
-	_label_font.spacing_glyph = int(GLYPH_SPACING)
 	_graph = ProvinceGraph.load_default()
-	var height_texture := load("res://assets/heightmap.png") as Texture2D
-	if height_texture != null:
-		_height_image = height_texture.get_image()
-		if _height_image != null and _height_image.is_compressed():
-			_height_image.decompress()
+	_load_bundled_font()
+	_load_territory_map()
+	_load_heightmap()
 	if map_render != null and map_render.get("final_material") != null:
 		var scale_param = map_render.final_material.get_shader_parameter("terrain_height_scale")
 		if scale_param != null:
 			_height_scale = float(scale_param)
 
 
-func _connect_events() -> void:
-	var events := simulation_controller.event_bus
-	if events == null:
+func _load_bundled_font() -> void:
+	var base_font := load(FONT_PATH) as Font
+	if base_font == null:
+		push_error("Country labels require bundled font %s" % FONT_PATH)
 		return
+	_label_font = FontVariation.new()
+	_label_font.base_font = base_font
+
+
+func _load_territory_map() -> void:
+	var metadata_file := FileAccess.open(TERRITORY_METADATA_PATH, FileAccess.READ)
+	if metadata_file == null:
+		push_error("Country label territory metadata is missing: %s" % TERRITORY_METADATA_PATH)
+		return
+	var metadata_json := JSON.new()
+	if metadata_json.parse(metadata_file.get_as_text()) != OK or not metadata_json.data is Dictionary:
+		push_error("Country label territory metadata is invalid.")
+		return
+	var metadata: Dictionary = metadata_json.data
+	_territory_scale = int(metadata.get("scale", 0))
+	if _territory_scale <= 0:
+		push_error("Country label territory scale must be positive.")
+		return
+	var file := FileAccess.open(TERRITORY_MAP_PATH, FileAccess.READ)
+	if file == null:
+		push_error("Country label territory map is missing: %s" % TERRITORY_MAP_PATH)
+		return
+	_territory_image = Image.new()
+	var error := _territory_image.load_png_from_buffer(file.get_buffer(file.get_length()))
+	if error != OK:
+		push_error("Country label territory map failed to decode: %s" % error_string(error))
+		_territory_image = null
+
+
+func _load_heightmap() -> void:
+	var height_texture := load("res://assets/heightmap.png") as Texture2D
+	if height_texture == null:
+		return
+	_height_image = height_texture.get_image()
+	if _height_image != null and _height_image.is_compressed():
+		_height_image.decompress()
+
+
+func _connect_events() -> void:
+	if _events_connected or simulation_controller.event_bus == null:
+		return
+	var events := simulation_controller.event_bus
 	_events_connected = true
-	events.province_owner_changed.connect(func(_p: int, _o: String, _n: String) -> void: _dirty = true)
-	events.world_reloaded.connect(func(_c: String) -> void: _dirty = true)
+	events.province_owner_changed.connect(_on_province_owner_changed)
+	events.world_reloaded.connect(func(_checksum: String) -> void: _request_full_rebuild())
+	events.country_formed.connect(func(old_tag: String, new_tag: String) -> void:
+		_queue_country(old_tag)
+		_queue_country(new_tag)
+	)
+	events.country_released.connect(func(releasing_tag: String, released_tag: String, _ids: Array) -> void:
+		_queue_country(releasing_tag)
+		_queue_country(released_tag)
+	)
+	events.country_extinct.connect(_queue_country)
+	var map_hud = simulation_controller.map_hud
+	if map_hud != null and map_hud.has_signal("map_mode_changed"):
+		map_hud.map_mode_changed.connect(func(_mode: int, _external: String) -> void:
+			_visibility_dirty = true
+		)
 
 
 func _process(_delta: float) -> void:
 	if simulation_controller == null or not simulation_controller.initialized:
 		return
-	if not _events_connected:
-		_connect_events()
-	if _dirty:
-		_dirty = false
-		_rebuild_labels()
-	_update_zoom_visibility()
+	_connect_events()
+	if _full_rebuild_pending:
+		_begin_full_rebuild()
+	if not _pending_tags.is_empty():
+		_process_incremental_layouts()
+	if _visibility_dirty or _camera_or_viewport_changed():
+		_update_visibility()
+	if not _pending_node_tags.is_empty():
+		_process_node_creation_queue()
 
 
-func _anchor_world(province_id: int) -> Vector3:
-	var anchor := _graph.anchor(province_id)
-	var world_x := anchor.x * MAP_PIXEL_SIZE - MAP_HALF_WIDTH
-	var world_z := anchor.y * MAP_PIXEL_SIZE - MAP_HALF_HEIGHT
-	var world_y := 0.0
-	if _height_image != null:
-		var sample_x := clampi(int(float(anchor.x) / _graph.map_size.x * _height_image.get_width()), 0, _height_image.get_width() - 1)
-		var sample_y := clampi(int(float(anchor.y) / _graph.map_size.y * _height_image.get_height()), 0, _height_image.get_height() - 1)
-		world_y = _height_image.get_pixel(sample_x, sample_y).r * _height_scale
-	return Vector3(world_x, world_y, world_z)
+func _request_full_rebuild() -> void:
+	_full_rebuild_pending = true
+	_pending_tags.clear()
+	_visibility_dirty = true
 
 
-func _main_body_anchors(owned_land: PackedInt32Array) -> Array[Vector3]:
-	# Largest contiguous block of owned land provinces via the adjacency graph.
+func _on_province_owner_changed(_province_id: int, old_owner: String, new_owner: String) -> void:
+	_queue_country(old_owner)
+	_queue_country(new_owner)
+
+
+func _queue_country(tag: String) -> void:
+	if tag.is_empty() or tag in ["No Owner", "Ocean"]:
+		return
+	_pending_tags[tag] = true
+
+
+func _begin_full_rebuild() -> void:
+	_full_rebuild_pending = false
+	_pending_tags.clear()
+	_last_rebuilt_tags.clear()
+	_initial_rebuild_active = true
+	_initial_rebuild_started_usec = Time.get_ticks_usec()
+	_initial_layout_cpu_ms = 0.0
+	_metrics["initial_layout_ms"] = 0.0
+	_metrics["initial_wall_ms"] = 0.0
+	_metrics["max_layout_batch_ms"] = 0.0
+	_metrics["max_layout_batch_tags"] = []
+	_metrics["max_node_batch_ms"] = 0.0
+	var active_tags := {}
+	var tags := simulation_controller.world.country_to_provinces.keys()
+	tags.sort()
+	for raw_tag in tags:
+		var tag := String(raw_tag)
+		active_tags[tag] = true
+		_pending_tags[tag] = true
+	for raw_tag in _layouts.keys():
+		var tag := String(raw_tag)
+		if not active_tags.has(tag):
+			_remove_country(tag)
+	_update_layout_metrics()
+	_visibility_dirty = false
+
+
+func _process_incremental_layouts() -> void:
+	var started := Time.get_ticks_usec()
+	_last_rebuilt_tags.clear()
+	var tags := _pending_tags.keys()
+	tags.sort()
+	var count := mini(tags.size(), MAX_INCREMENTAL_TAGS_PER_FRAME)
+	for index in count:
+		var tag := String(tags[index])
+		_pending_tags.erase(tag)
+		_rebuild_country_layout(tag)
+		_last_rebuilt_tags.append(tag)
+	var elapsed_ms := float(Time.get_ticks_usec() - started) / 1000.0
+	if _initial_rebuild_active:
+		_initial_layout_cpu_ms += elapsed_ms
+		_metrics["initial_layout_ms"] = _initial_layout_cpu_ms
+		if elapsed_ms > float(_metrics["max_layout_batch_ms"]):
+			_metrics["max_layout_batch_ms"] = elapsed_ms
+			_metrics["max_layout_batch_tags"] = _last_rebuilt_tags.duplicate()
+		if _pending_tags.is_empty():
+			_initial_rebuild_active = false
+			_metrics["initial_wall_ms"] = float(Time.get_ticks_usec() - _initial_rebuild_started_usec) / 1000.0
+			_visibility_dirty = true
+	else:
+		_metrics["last_incremental_ms"] = elapsed_ms
+		_visibility_dirty = true
+	_update_layout_metrics()
+
+
+func _rebuild_country_layout(tag: String) -> void:
+	var body := _main_land_body(tag)
+	if body.is_empty():
+		_remove_country(tag)
+		return
+	var shape := _shape_alignment(body)
+	var region := Rect2i() if not shape.is_empty() else _largest_safe_rectangle(body)
+	var layout := _make_layout(tag, body, region, shape)
+	if layout.is_empty():
+		_remove_country(tag)
+		return
+	_layouts[tag] = layout
+	if _label_nodes.has(tag):
+		_apply_layout(_label_nodes[tag] as Label3D, layout)
+
+
+func _remove_country(tag: String) -> void:
+	_layouts.erase(tag)
+	_screen_rects.erase(tag)
+	_desired_visible.erase(tag)
+	_pending_node_tags.erase(tag)
+	if _label_nodes.has(tag):
+		var node := _label_nodes[tag] as Label3D
+		_label_nodes.erase(tag)
+		node.queue_free()
+
+
+func _main_land_body(tag: String) -> PackedInt32Array:
+	var owned_land := PackedInt32Array()
+	for raw_id in simulation_controller.world.get_country_provinces(tag):
+		var province_id := int(raw_id)
+		if _graph.is_land(province_id):
+			owned_land.append(province_id)
+	if owned_land.is_empty():
+		return PackedInt32Array()
+	owned_land.sort()
 	var owned := {}
-	for pid in owned_land:
-		owned[pid] = true
+	for province_id in owned_land:
+		owned[province_id] = true
 	var visited := {}
-	var best: PackedInt32Array = PackedInt32Array()
-	for pid in owned_land:
-		if visited.has(pid):
+	var best := PackedInt32Array()
+	for province_id in owned_land:
+		if visited.has(province_id):
 			continue
-		var component: PackedInt32Array = PackedInt32Array()
-		var stack: PackedInt32Array = PackedInt32Array([pid])
-		visited[pid] = true
-		while stack.size() > 0:
+		var component := PackedInt32Array()
+		var stack := PackedInt32Array([province_id])
+		visited[province_id] = true
+		while not stack.is_empty():
 			var current := stack[stack.size() - 1]
 			stack.remove_at(stack.size() - 1)
 			component.append(current)
@@ -128,271 +304,546 @@ func _main_body_anchors(owned_land: PackedInt32Array) -> Array[Vector3]:
 					visited[neighbor] = true
 					stack.append(neighbor)
 		if component.size() > best.size():
+			component.sort()
 			best = component
-	var points: Array[Vector3] = []
-	for pid in best:
-		points.append(_anchor_world(pid))
-	return points
+	return best
 
 
-func _rebuild_labels() -> void:
-	var world := simulation_controller.world
-	var names: Dictionary = simulation_controller.country_data.country_id_to_country_name
-	var seen := {}
-	var country_tags := world.country_to_provinces.keys()
-	country_tags.sort()
-	for raw_tag in country_tags:
-		var tag := String(raw_tag)
-		if tag.is_empty():
-			continue
-		var country_name := String(names.get(tag, tag)).to_upper()
-		if country_name.is_empty() or country_name == "NO OWNER":
-			continue
-		var provinces: Array = world.country_to_provinces[raw_tag]
-		var owned_land: PackedInt32Array = PackedInt32Array()
-		for raw_pid in provinces:
-			var pid := int(raw_pid)
-			if _graph.is_land(pid):
-				owned_land.append(pid)
-		if owned_land.is_empty():
-			continue
-		var points := _main_body_anchors(owned_land)
-		var count := points.size()
-		if count == 0:
-			continue
-
-		var sum := Vector3.ZERO
-		for point in points:
-			sum += point
-		var center := sum / float(count)
-		var seat := points[0]
-		var best_dist := INF
-		for point in points:
-			var dist := (point.x - center.x) * (point.x - center.x) + (point.z - center.z) * (point.z - center.z)
-			if dist < best_dist:
-				best_dist = dist
-				seat = point
-
-		var axis := _principal_axis(points, center)
-		var span: float = float(axis["tmax"]) - float(axis["tmin"])
-		var text_px := _label_font.get_string_size(country_name, HORIZONTAL_ALIGNMENT_LEFT, -1.0, LABEL_FONT_SIZE).x
-		var pixel_size := clampf(span * NAME_FILL / maxf(text_px, 1.0), MIN_PIXEL_SIZE, MAX_PIXEL_SIZE)
-
-		var holder: Node3D = _labels.get(tag)
-		if holder == null:
-			holder = Node3D.new()
-			_labels[tag] = holder
-			add_child(holder)
-		var half: Vector2
-		if count >= CURVE_MIN_COUNT and country_name.strip_edges().length() >= 3:
-			half = _layout_curved(holder, country_name, points, center, axis, seat.y, pixel_size)
-		else:
-			half = _layout_straight(holder, country_name, seat, pixel_size, _straight_basis(axis))
-		_label_weight[tag] = count
-		_label_center[tag] = Vector2(seat.x, seat.z)
-		_label_half[tag] = half
-		seen[tag] = true
-
-	for tag in _labels.keys():
-		if not seen.has(tag):
-			_labels[tag].visible = false
-			_label_weight[tag] = 0
-	_last_camera_height = -1.0
+func _largest_safe_rectangle(body: PackedInt32Array) -> Rect2i:
+	if _territory_image == null or _territory_scale <= 0:
+		return Rect2i()
+	var owned := {}
+	var pixel_bounds := Rect2i()
+	var has_bounds := false
+	for province_id in body:
+		owned[province_id] = true
+		var province_bounds := _graph.bounding_rect(province_id)
+		if province_bounds.has_area():
+			pixel_bounds = province_bounds if not has_bounds else pixel_bounds.merge(province_bounds)
+			has_bounds = true
+	if not has_bounds:
+		return Rect2i()
+	var min_cell := Vector2i(
+		clampi(pixel_bounds.position.x / _territory_scale, 0, _territory_image.get_width() - 1),
+		clampi(pixel_bounds.position.y / _territory_scale, 0, _territory_image.get_height() - 1)
+	)
+	var pixel_end := pixel_bounds.end
+	var max_cell := Vector2i(
+		clampi(ceili(float(pixel_end.x) / float(_territory_scale)), min_cell.x + 1, _territory_image.get_width()),
+		clampi(ceili(float(pixel_end.y) / float(_territory_scale)), min_cell.y + 1, _territory_image.get_height())
+	)
+	var width := max_cell.x - min_cell.x
+	if width <= 0:
+		return Rect2i()
+	var heights := PackedInt32Array()
+	heights.resize(width)
+	var best := Rect2i()
+	for y in range(min_cell.y, max_cell.y):
+		for local_x in width:
+			var province_id := _territory_province_id(min_cell.x + local_x, y)
+			heights[local_x] = heights[local_x] + 1 if owned.has(province_id) else 0
+		var stack: Array[int] = []
+		for local_x in range(width + 1):
+			var current_height := heights[local_x] if local_x < width else 0
+			while not stack.is_empty() and heights[stack[-1]] > current_height:
+				var height := heights[stack.pop_back()]
+				var left := stack[-1] + 1 if not stack.is_empty() else 0
+				var candidate := Rect2i(
+					Vector2i(min_cell.x + left, y - height + 1),
+					Vector2i(local_x - left, height)
+				)
+				if _region_is_better(candidate, best):
+					best = candidate
+			stack.append(local_x)
+	return best
 
 
-func _principal_axis(points: Array[Vector3], center: Vector3) -> Dictionary:
-	var cxx := 0.0
-	var czz := 0.0
-	var cxz := 0.0
-	for point in points:
-		var dx := point.x - center.x
-		var dz := point.z - center.z
-		cxx += dx * dx
-		czz += dz * dz
-		cxz += dx * dz
-	var angle := 0.5 * atan2(2.0 * cxz, cxx - czz)
-	var major := Vector3(cos(angle), 0.0, sin(angle))
-	if absf(major.x) >= absf(major.z):
-		if major.x < 0.0:
-			major = -major
-	elif major.z < 0.0:
-		major = -major
-	var minor := Vector3(-major.z, 0.0, major.x)
-	var tmin := INF
-	var tmax := -INF
-	for point in points:
-		var t := (point.x - center.x) * major.x + (point.z - center.z) * major.z
-		tmin = minf(tmin, t)
-		tmax = maxf(tmax, t)
-	var mid := (cxx + czz) * 0.5
-	var radius := sqrt(pow((cxx - czz) * 0.5, 2.0) + cxz * cxz)
-	var elongation := (mid + radius) / maxf(mid - radius, 0.00001)
-	return {"major": major, "minor": minor, "tmin": tmin, "tmax": tmax, "elongation": elongation}
+func _region_is_better(candidate: Rect2i, current: Rect2i) -> bool:
+	var candidate_area := candidate.get_area()
+	var current_area := current.get_area()
+	if candidate_area != current_area:
+		return candidate_area > current_area
+	if candidate.size.x != current.size.x:
+		return candidate.size.x > current.size.x
+	if candidate.position.y != current.position.y:
+		return candidate.position.y < current.position.y
+	return candidate.position.x < current.position.x
 
 
-func _straight_basis(axis: Dictionary) -> Basis:
-	var tilt := 0.0
-	if float(axis["elongation"]) >= ELONGATION_MIN:
-		var major: Vector3 = axis["major"]
-		var angle := atan2(major.z, major.x)
-		if angle > PI * 0.5:
-			angle -= PI
-		elif angle < -PI * 0.5:
-			angle += PI
-		tilt = clampf(angle, -MAX_TILT, MAX_TILT)
-	var advance := Vector3(cos(tilt), 0.0, sin(tilt))
-	var glyph_up := Vector3(sin(tilt), 0.0, -cos(tilt))
-	return Basis(advance, glyph_up, Vector3(0.0, 1.0, 0.0))
+func _territory_province_id(x: int, y: int) -> int:
+	var colour := _territory_image.get_pixel(x, y)
+	return (
+		roundi(colour.r * 255.0) * 65536
+		+ roundi(colour.g * 255.0) * 256
+		+ roundi(colour.b * 255.0)
+	)
 
 
-func _ensure_glyphs(holder: Node3D, needed: int) -> void:
-	while holder.get_child_count() < needed:
-		holder.add_child(_make_glyph())
-	for i in holder.get_child_count():
-		(holder.get_child(i) as Label3D).visible = i < needed
+func _shape_alignment(body: PackedInt32Array) -> Dictionary:
+	if _territory_image == null or _territory_scale <= 0:
+		return {}
+	var owned := {}
+	var pixel_bounds := Rect2i()
+	var has_bounds := false
+	for province_id in body:
+		owned[province_id] = true
+		var province_bounds := _graph.bounding_rect(province_id)
+		if province_bounds.has_area():
+			pixel_bounds = province_bounds if not has_bounds else pixel_bounds.merge(province_bounds)
+			has_bounds = true
+	if not has_bounds:
+		return {}
+	var min_cell := Vector2i(
+		clampi(pixel_bounds.position.x / _territory_scale, 0, _territory_image.get_width() - 1),
+		clampi(pixel_bounds.position.y / _territory_scale, 0, _territory_image.get_height() - 1)
+	)
+	var max_cell := Vector2i(
+		clampi(ceili(float(pixel_bounds.end.x) / float(_territory_scale)), min_cell.x + 1, _territory_image.get_width()),
+		clampi(ceili(float(pixel_bounds.end.y) / float(_territory_scale)), min_cell.y + 1, _territory_image.get_height())
+	)
+	var count := 0
+	var coordinate_sum := Vector2.ZERO
+	var square_sum := Vector2.ZERO
+	var cross_sum := 0.0
+	for y in range(min_cell.y, max_cell.y):
+		for x in range(min_cell.x, max_cell.x):
+			if not owned.has(_territory_province_id(x, y)):
+				continue
+			var point := Vector2(float(x) + 0.5, float(y) + 0.5)
+			count += 1
+			coordinate_sum += point
+			square_sum += point * point
+			cross_sum += point.x * point.y
+	if count < MIN_SHAPE_CELLS:
+		return {}
+	var mean := coordinate_sum / float(count)
+	var covariance_xx := maxf(0.0, square_sum.x / float(count) - mean.x * mean.x)
+	var covariance_yy := maxf(0.0, square_sum.y / float(count) - mean.y * mean.y)
+	var covariance_xy := cross_sum / float(count) - mean.x * mean.y
+	var trace := covariance_xx + covariance_yy
+	var discriminant := sqrt(maxf(0.0, (covariance_xx - covariance_yy) * (covariance_xx - covariance_yy) + 4.0 * covariance_xy * covariance_xy))
+	var major_eigenvalue := maxf(0.0, (trace + discriminant) * 0.5)
+	var minor_eigenvalue := maxf(0.0, (trace - discriminant) * 0.5)
+	if major_eigenvalue <= 0.0001:
+		return {}
+	var anisotropy := clampf(1.0 - minor_eigenvalue / major_eigenvalue, 0.0, 1.0)
+	var angle := 0.5 * atan2(2.0 * covariance_xy, covariance_xx - covariance_yy)
+	var angle_degrees := rad_to_deg(angle)
+	if anisotropy < MIN_ALIGNMENT_ANISOTROPY:
+		angle_degrees = 0.0
+	angle_degrees = clampf(angle_degrees, -MAX_LABEL_ANGLE_DEGREES, MAX_LABEL_ANGLE_DEGREES)
+	if absf(angle_degrees) < 4.0:
+		angle_degrees = 0.0
+	angle = deg_to_rad(angle_degrees)
+	var direction := Vector2(cos(angle), sin(angle))
+	var perpendicular := Vector2(-direction.y, direction.x)
+	var major_variance := maxf(0.0, direction.x * direction.x * covariance_xx + 2.0 * direction.x * direction.y * covariance_xy + direction.y * direction.y * covariance_yy)
+	var minor_variance := maxf(0.0, perpendicular.x * perpendicular.x * covariance_xx + 2.0 * perpendicular.x * perpendicular.y * covariance_xy + perpendicular.y * perpendicular.y * covariance_yy)
+	var major_span_cells := maxf(1.0, sqrt(major_variance) * MAJOR_AXIS_SIGMA_SPAN)
+	var minor_span_cells := maxf(1.0, sqrt(minor_variance) * MINOR_AXIS_SIGMA_SPAN)
+	return {
+		"center": mean * float(_territory_scale),
+		"angle_degrees": angle_degrees,
+		"anisotropy": anisotropy,
+		"cell_count": count,
+		"world_size": Vector2(major_span_cells, minor_span_cells) * float(_territory_scale) * MAP_PIXEL_SIZE,
+	}
 
 
-func _make_glyph() -> Label3D:
-	var label := Label3D.new()
-	if _label_font != null:
-		label.font = _label_font
-	label.font_size = LABEL_FONT_SIZE
-	label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
-	label.double_sided = true
-	# Draw over the terrain so raised relief never clips the name.
-	label.no_depth_test = true
-	label.render_priority = 2
-	label.outline_render_priority = 1
-	label.modulate = Color(0.96, 0.94, 0.86)
-	label.outline_modulate = Color(0.03, 0.03, 0.05, 0.9)
-	label.outline_size = 8
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	return label
+func _label_basis(angle_degrees: float) -> Basis:
+	var angle := deg_to_rad(angle_degrees)
+	var direction := Vector2(cos(angle), sin(angle))
+	return Basis(
+		Vector3(direction.x, 0.0, direction.y),
+		Vector3(direction.y, 0.0, -direction.x),
+		Vector3.UP
+	)
 
 
-func _layout_straight(holder: Node3D, text: String, seat: Vector3, pixel_size: float, orientation: Basis) -> Vector2:
-	_ensure_glyphs(holder, 1)
-	var glyph := holder.get_child(0) as Label3D
-	glyph.text = text
-	glyph.pixel_size = pixel_size
-	glyph.position = Vector3(seat.x, seat.y + LABEL_LIFT, seat.z)
-	glyph.basis = orientation
-	var width := _label_font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, LABEL_FONT_SIZE).x * pixel_size
-	return Vector2(width * 0.5, float(LABEL_FONT_SIZE) * pixel_size * 0.5)
+func _make_layout(tag: String, body: PackedInt32Array, region: Rect2i, shape: Dictionary) -> Dictionary:
+	if _label_font == null:
+		return {}
+	var full_name: String = String(simulation_controller.country_registry.display_name(tag))
+	if full_name.is_empty():
+		return {}
+	var map_center := Vector2.ZERO
+	var region_world_size := Vector2.ZERO
+	if region.has_area():
+		map_center = (Vector2(region.position) + Vector2(region.size) * 0.5) * float(_territory_scale)
+		region_world_size = Vector2(region.size) * float(_territory_scale) * MAP_PIXEL_SIZE
+	else:
+		var anchor: Vector2i = _graph.anchor(body[0])
+		map_center = Vector2(anchor)
+		region_world_size = Vector2(MAP_PIXEL_SIZE, MAP_PIXEL_SIZE)
+	var angle_degrees := 0.0
+	var fit_world_size := region_world_size
+	var fit_mode := "territory"
+	if not shape.is_empty():
+		map_center = shape["center"]
+		angle_degrees = float(shape["angle_degrees"])
+		fit_world_size = shape["world_size"]
+		fit_mode = "shape_aligned"
+
+	var text: String = full_name
+	var text_pixels := _text_pixel_bounds(text)
+	var pixel_size := _fit_pixel_size(text_pixels, fit_world_size, SHAPE_LABEL_FILL if not shape.is_empty() else LABEL_FILL)
+	var fits_territory := pixel_size > 0.0
+	if pixel_size < MIN_READABLE_PIXEL_SIZE:
+		fit_mode = "screen_fallback"
+		pixel_size = MIN_READABLE_PIXEL_SIZE
+		fits_territory = false
+	pixel_size = minf(pixel_size, MAX_PIXEL_SIZE)
+	var world_position := Vector3(
+		map_center.x * MAP_PIXEL_SIZE - MAP_HALF_WIDTH,
+		_height_at_map_pixel(map_center) + LABEL_LIFT,
+		map_center.y * MAP_PIXEL_SIZE - MAP_HALF_HEIGHT
+	)
+	var half_world := text_pixels * pixel_size * 0.5
+	var territory_world := Rect2(
+		Vector2(
+			float(region.position.x * _territory_scale) * MAP_PIXEL_SIZE - MAP_HALF_WIDTH,
+			float(region.position.y * _territory_scale) * MAP_PIXEL_SIZE - MAP_HALF_HEIGHT
+		),
+		region_world_size
+	)
+	return {
+		"tag": tag,
+		"full_name": full_name,
+		"text": text,
+		"fit_mode": fit_mode,
+		"fits_territory": fits_territory,
+		"position": world_position,
+		"basis": _label_basis(angle_degrees),
+		"angle_degrees": angle_degrees,
+		"alignment_anisotropy": float(shape.get("anisotropy", 0.0)),
+		"shape_cell_count": int(shape.get("cell_count", 0)),
+		"fit_world_size": fit_world_size,
+		"pixel_size": pixel_size,
+		"half_world": half_world,
+		"weight": body.size(),
+		"body_province_count": body.size(),
+		"territory_rect_cells": region,
+		"territory_rect_world": territory_world,
+	}
 
 
-func _layout_curved(holder: Node3D, text: String, points: Array[Vector3], center: Vector3, axis: Dictionary, base_y: float, pixel_size: float) -> Vector2:
-	var major: Vector3 = axis["major"]
-	var minor: Vector3 = axis["minor"]
-	# Fit perpendicular offset perp(t) = a t^2 + b t + c so the name bends with
-	# the body, then cap the curvature so it stays gentle.
-	var s0 := 0.0
-	var s1 := 0.0
-	var s2 := 0.0
-	var s3 := 0.0
-	var s4 := 0.0
-	var p0 := 0.0
-	var p1 := 0.0
-	var p2 := 0.0
-	for point in points:
-		var d := Vector3(point.x - center.x, 0.0, point.z - center.z)
-		var t := d.dot(major)
-		var perp := d.dot(minor)
-		var t2 := t * t
-		s0 += 1.0
-		s1 += t
-		s2 += t2
-		s3 += t2 * t
-		s4 += t2 * t2
-		p0 += perp
-		p1 += perp * t
-		p2 += perp * t2
-	var coeffs := _solve3(s4, s3, s2, s3, s2, s1, s2, s1, s0, p2, p1, p0)
-	var a := coeffs.x
-	var b := coeffs.y
-	var c := coeffs.z
-
-	var advances := PackedFloat32Array()
-	var total := 0.0
-	for i in text.length():
-		var w := (_label_font.get_char_size(text.unicode_at(i), LABEL_FONT_SIZE).x + GLYPH_SPACING) * pixel_size
-		advances.append(w)
-		total += w
-
-	var half_span := total * 0.5
-	var dev := maxf(absf(a * half_span * half_span + b * half_span + c), absf(a * half_span * half_span - b * half_span + c))
-	var limit := CURVE_LIMIT * total
-	if dev > limit and dev > 0.0001:
-		var scale := limit / dev
-		a *= scale
-		b *= scale
-		c *= scale
-
-	_ensure_glyphs(holder, text.length())
-	var cursor := -total * 0.5
-	for i in text.length():
-		var advance := advances[i]
-		var t := cursor + advance * 0.5
-		var perp := a * t * t + b * t + c
-		var pos := center + major * t + minor * perp
-		var tangent := (major + minor * (2.0 * a * t + b)).normalized()
-		var glyph := holder.get_child(i) as Label3D
-		glyph.text = text[i]
-		glyph.pixel_size = pixel_size
-		glyph.position = Vector3(pos.x, base_y + LABEL_LIFT, pos.z)
-		var glyph_up := Vector3(tangent.z, 0.0, -tangent.x)
-		glyph.basis = Basis(tangent, glyph_up, Vector3(0.0, 1.0, 0.0))
-		cursor += advance
-	return Vector2(total * 0.5, float(LABEL_FONT_SIZE) * pixel_size * 0.5)
+func _text_pixel_bounds(text: String) -> Vector2:
+	var size := _label_font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, LABEL_FONT_SIZE)
+	var outline := float(LABEL_OUTLINE_SIZE * 2)
+	return Vector2(size.x + outline, maxf(size.y, _label_font.get_height(LABEL_FONT_SIZE)) + outline)
 
 
-func _solve3(m00: float, m01: float, m02: float, m10: float, m11: float, m12: float, m20: float, m21: float, m22: float, r0: float, r1: float, r2: float) -> Vector3:
-	var det := m00 * (m11 * m22 - m12 * m21) - m01 * (m10 * m22 - m12 * m20) + m02 * (m10 * m21 - m11 * m20)
-	if absf(det) < 1e-9:
-		return Vector3.ZERO
-	var det_a := r0 * (m11 * m22 - m12 * m21) - m01 * (r1 * m22 - m12 * r2) + m02 * (r1 * m21 - m11 * r2)
-	var det_b := m00 * (r1 * m22 - m12 * r2) - r0 * (m10 * m22 - m12 * m20) + m02 * (m10 * r2 - r1 * m20)
-	var det_c := m00 * (m11 * r2 - r1 * m21) - m01 * (m10 * r2 - r1 * m20) + r0 * (m10 * m21 - m11 * m20)
-	return Vector3(det_a / det, det_b / det, det_c / det)
+func _fit_pixel_size(text_pixels: Vector2, region_world_size: Vector2, fill: float) -> float:
+	if text_pixels.x <= 0.0 or text_pixels.y <= 0.0 or region_world_size.x <= 0.0 or region_world_size.y <= 0.0:
+		return 0.0
+	return minf(region_world_size.x / text_pixels.x, region_world_size.y / text_pixels.y) * fill
 
 
-func _update_zoom_visibility() -> void:
+func _height_at_map_pixel(pixel: Vector2) -> float:
+	if _height_image == null or _height_image.is_empty():
+		return 0.0
+	var sample_x := clampi(int(pixel.x / float(_graph.map_size.x) * _height_image.get_width()), 0, _height_image.get_width() - 1)
+	var sample_y := clampi(int(pixel.y / float(_graph.map_size.y) * _height_image.get_height()), 0, _height_image.get_height() - 1)
+	return _height_image.get_pixel(sample_x, sample_y).r * _height_scale
+
+
+func _camera_or_viewport_changed() -> bool:
+	var camera := get_viewport().get_camera_3d()
+	if camera == null:
+		return false
+	var viewport_size := get_viewport().get_visible_rect().size
+	var changed := (
+		not _camera_signature_valid
+		or not camera.global_transform.is_equal_approx(_last_camera_transform)
+		or not viewport_size.is_equal_approx(_last_viewport_size)
+	)
+	if changed:
+		_camera_signature_valid = true
+		_last_camera_transform = camera.global_transform
+		_last_viewport_size = viewport_size
+	return changed
+
+
+func _country_labels_allowed() -> bool:
+	var map_hud = simulation_controller.map_hud
+	if map_hud == null:
+		return true
+	if map_hud.has_method("country_labels_visible"):
+		return bool(map_hud.country_labels_visible())
+	if map_hud.has_method("get_map_mode"):
+		return int(map_hud.get_map_mode()) != DEBUG_MAP_MODE
+	return true
+
+
+func _update_visibility() -> void:
+	var started := Time.get_ticks_usec()
+	_visibility_dirty = false
+	_visibility_revision += 1
+	_screen_rects.clear()
+	if not _country_labels_allowed():
+		_desired_visible.clear()
+		_pending_node_tags.clear()
+		_hide_all_nodes()
+		_finish_visibility_metrics(started)
+		return
 	var camera := get_viewport().get_camera_3d()
 	if camera == null:
 		return
-	var camera_height := camera.global_position.y
-	if absf(camera_height - _last_camera_height) < 0.05:
-		return
-	_last_camera_height = camera_height
-	# Steeper cut so a zoomed-out view shows only the major powers and never
-	# feels crowded; zooming in progressively reveals the smaller realms.
-	var min_count := maxf(1.0, (camera_height - 0.8) * 1.5)
-	var candidates: Array = []
-	for tag in _labels.keys():
-		var weight: int = _label_weight.get(tag, 0)
-		if weight > 0 and float(weight) >= min_count:
-			candidates.append(tag)
-		else:
-			_labels[tag].visible = false
-	candidates.sort_custom(func(a: String, b: String) -> bool: return int(_label_weight[a]) > int(_label_weight[b]))
-	var kept: Array[Rect2] = []
+	_label_render_scale = _camera_label_scale(camera)
+	var min_count := maxf(1.0, (camera.global_position.y - 0.8) * 1.5)
+	var candidates: Array[String] = []
+	for raw_tag in _layouts:
+		var tag := String(raw_tag)
+		var layout: Dictionary = _layouts[tag]
+		if float(layout.get("weight", 0)) >= min_count:
+			if String(layout.get("fit_mode", "")) != "screen_fallback" or camera.global_position.y <= 2.2:
+				candidates.append(tag)
+	var close_zoom := camera.global_position.y <= 2.2
+	var screen_distances := {}
+	if close_zoom:
+		var viewport_center := get_viewport().get_visible_rect().size * 0.5
+		for tag in candidates:
+			var position: Vector3 = (_layouts[tag] as Dictionary)["position"]
+			screen_distances[tag] = camera.unproject_position(position).distance_squared_to(viewport_center)
+	candidates.sort_custom(func(first: String, second: String) -> bool:
+		var first_weight := int((_layouts[first] as Dictionary).get("weight", 0))
+		var second_weight := int((_layouts[second] as Dictionary).get("weight", 0))
+		if close_zoom:
+			var first_distance := float(screen_distances.get(first, INF))
+			var second_distance := float(screen_distances.get(second, INF))
+			if not is_equal_approx(first_distance, second_distance):
+				return first_distance < second_distance
+		return first < second if first_weight == second_weight else first_weight > second_weight
+	)
+
+	var collision_grid: Dictionary = {}
+	var kept_rects: Dictionary = {}
+	var visible := {}
+	var visible_order: Array[String] = []
+	var viewport_bounds := Rect2(Vector2.ZERO, get_viewport().get_visible_rect().size).grow(64.0)
 	for tag in candidates:
-		var rect := _label_rect(tag)
-		var clash := false
-		for other in kept:
-			if rect.intersects(other):
-				clash = true
-				break
-		_labels[tag].visible = not clash
-		if not clash:
-			kept.append(rect)
+		var rect := _projected_screen_rect(camera, _layouts[tag])
+		if not rect.has_area():
+			continue
+		rect = rect.grow(SCREEN_COLLISION_PADDING)
+		if not rect.intersects(viewport_bounds):
+			continue
+		# A country close to the camera horizon can project far beyond the
+		# viewport. Off-screen area cannot collide with a visible label, and
+		# clipping it here prevents unbounded collision-grid iteration.
+		rect = rect.intersection(viewport_bounds)
+		if not rect.has_area():
+			continue
+		if _screen_rect_collides(rect, collision_grid, kept_rects):
+			continue
+		visible[tag] = true
+		visible_order.append(tag)
+		kept_rects[tag] = rect
+		_screen_rects[tag] = rect
+		_add_screen_rect_to_grid(tag, rect, collision_grid)
+
+	_desired_visible = visible
+	_pending_node_tags.clear()
+	for raw_tag in _label_nodes:
+		var label := _label_nodes[raw_tag] as Label3D
+		label.visible = visible.has(raw_tag)
+		if _layouts.has(raw_tag):
+			label.pixel_size = float((_layouts[raw_tag] as Dictionary)["pixel_size"]) * _label_render_scale
+	for tag in visible_order:
+		if not _label_nodes.has(tag):
+			_pending_node_tags.append(tag)
+	_finish_visibility_metrics(started)
 
 
-func _label_rect(tag: String) -> Rect2:
-	var c: Vector2 = _label_center.get(tag, Vector2.ZERO)
-	var h: Vector2 = _label_half.get(tag, Vector2.ZERO)
-	var width := h.x * 2.0 * OVERLAP_TOLERANCE
-	var height := h.y * 2.0 * OVERLAP_TOLERANCE
-	return Rect2(c.x - width * 0.5, c.y - height * 0.5, width, height)
+func _process_node_creation_queue() -> void:
+	var started := Time.get_ticks_usec()
+	var count := mini(_pending_node_tags.size(), MAX_NODE_CREATIONS_PER_FRAME)
+	for _index in count:
+		var tag: String = _pending_node_tags.pop_front()
+		if not _desired_visible.has(tag) or not _layouts.has(tag):
+			continue
+		var label := _ensure_label_node(tag)
+		label.pixel_size = float((_layouts[tag] as Dictionary)["pixel_size"]) * _label_render_scale
+		label.visible = true
+	var elapsed_ms := float(Time.get_ticks_usec() - started) / 1000.0
+	_metrics["last_node_batch_ms"] = elapsed_ms
+	_metrics["max_node_batch_ms"] = maxf(float(_metrics["max_node_batch_ms"]), elapsed_ms)
+	_metrics["node_count"] = _label_nodes.size()
+
+
+func _projected_screen_rect(camera: Camera3D, layout: Dictionary) -> Rect2:
+	var position: Vector3 = layout["position"]
+	if camera.is_position_behind(position):
+		return Rect2()
+	var basis: Basis = layout["basis"]
+	var half: Vector2 = (layout["half_world"] as Vector2) * _label_render_scale
+	var points: Array[Vector2] = []
+	var directions: Array[float] = [-1.0, 1.0]
+	for horizontal in directions:
+		for vertical in directions:
+			var corner: Vector3 = position + basis.x * half.x * horizontal + basis.y * half.y * vertical
+			if camera.is_position_behind(corner):
+				return Rect2()
+			points.append(camera.unproject_position(corner))
+	var rect := Rect2(points[0], Vector2.ZERO)
+	for point in points:
+		rect = rect.expand(point)
+	return rect
+
+
+func _camera_label_scale(camera: Camera3D) -> float:
+	var height_ratio := clampf(inverse_lerp(MIN_LABEL_SCALE_CAMERA_HEIGHT, FULL_LABEL_SCALE_CAMERA_HEIGHT, camera.global_position.y), 0.0, 1.0)
+	return lerpf(MIN_CLOSE_ZOOM_LABEL_SCALE, 1.0, height_ratio)
+
+
+func _screen_rect_collides(rect: Rect2, grid: Dictionary, kept_rects: Dictionary) -> bool:
+	var checked := {}
+	var cell_min := Vector2i(floori(rect.position.x / COLLISION_GRID_SIZE), floori(rect.position.y / COLLISION_GRID_SIZE))
+	var cell_max := Vector2i(floori(rect.end.x / COLLISION_GRID_SIZE), floori(rect.end.y / COLLISION_GRID_SIZE))
+	for cell_y in range(cell_min.y, cell_max.y + 1):
+		for cell_x in range(cell_min.x, cell_max.x + 1):
+			var cell := Vector2i(cell_x, cell_y)
+			for raw_tag in (grid.get(cell, []) as Array):
+				var tag := String(raw_tag)
+				if checked.has(tag):
+					continue
+				checked[tag] = true
+				if rect.intersects(kept_rects[tag] as Rect2):
+					return true
+	return false
+
+
+func _add_screen_rect_to_grid(tag: String, rect: Rect2, grid: Dictionary) -> void:
+	var cell_min := Vector2i(floori(rect.position.x / COLLISION_GRID_SIZE), floori(rect.position.y / COLLISION_GRID_SIZE))
+	var cell_max := Vector2i(floori(rect.end.x / COLLISION_GRID_SIZE), floori(rect.end.y / COLLISION_GRID_SIZE))
+	for cell_y in range(cell_min.y, cell_max.y + 1):
+		for cell_x in range(cell_min.x, cell_max.x + 1):
+			var cell := Vector2i(cell_x, cell_y)
+			if not grid.has(cell):
+				grid[cell] = []
+			(grid[cell] as Array).append(tag)
+
+
+func _ensure_label_node(tag: String) -> Label3D:
+	if _label_nodes.has(tag):
+		return _label_nodes[tag]
+	var label := Label3D.new()
+	label.name = "Country_%s" % tag
+	label.font = _label_font
+	label.font_size = LABEL_FONT_SIZE
+	label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
+	label.double_sided = true
+	label.no_depth_test = true
+	label.render_priority = 2
+	label.outline_render_priority = 1
+	label.modulate = Color(0.055, 0.045, 0.035, 0.98)
+	label.outline_modulate = Color(0.94, 0.9, 0.76, 0.62)
+	label.outline_size = LABEL_OUTLINE_SIZE
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	add_child(label)
+	_label_nodes[tag] = label
+	_apply_layout(label, _layouts[tag])
+	return label
+
+
+func _apply_layout(label: Label3D, layout: Dictionary) -> void:
+	label.text = String(layout["text"])
+	label.pixel_size = float(layout["pixel_size"])
+	label.position = layout["position"]
+	label.basis = layout["basis"]
+
+
+func _hide_all_nodes() -> void:
+	for label in _label_nodes.values():
+		(label as Label3D).visible = false
+
+
+func _update_layout_metrics() -> void:
+	var territory_fit_count := 0
+	var shape_aligned_count := 0
+	var screen_fallback_count := 0
+	for layout in _layouts.values():
+		match String((layout as Dictionary).get("fit_mode", "")):
+			"territory": territory_fit_count += 1
+			"shape_aligned": shape_aligned_count += 1
+			"screen_fallback": screen_fallback_count += 1
+	_metrics["layout_count"] = _layouts.size()
+	_metrics["territory_fit_count"] = territory_fit_count + shape_aligned_count
+	_metrics["shape_aligned_count"] = shape_aligned_count
+	_metrics["full_name_count"] = territory_fit_count + shape_aligned_count + screen_fallback_count
+	_metrics["screen_fallback_count"] = screen_fallback_count
+	_metrics["node_count"] = _label_nodes.size()
+
+
+func _finish_visibility_metrics(started_usec: int) -> void:
+	_metrics["last_visibility_ms"] = float(Time.get_ticks_usec() - started_usec) / 1000.0
+	_metrics["node_count"] = _label_nodes.size()
+	_metrics["visible_count"] = _screen_rects.size()
+
+
+# Test/profiling API. These methods intentionally return copies.
+func debug_metrics() -> Dictionary:
+	_update_layout_metrics()
+	return _metrics.duplicate(true)
+
+
+func debug_layout(tag: String) -> Dictionary:
+	return (_layouts.get(tag, {}) as Dictionary).duplicate(true)
+
+
+func debug_layout_count() -> int:
+	return _layouts.size()
+
+
+func debug_layout_tags() -> Array[String]:
+	var tags: Array[String] = []
+	for raw_tag in _layouts:
+		tags.append(String(raw_tag))
+	tags.sort()
+	return tags
+
+
+func debug_node_count() -> int:
+	return _label_nodes.size()
+
+
+func debug_has_node(tag: String) -> bool:
+	return _label_nodes.has(tag)
+
+
+func debug_visible_tags() -> Array[String]:
+	var tags: Array[String] = []
+	for raw_tag in _screen_rects:
+		tags.append(String(raw_tag))
+	tags.sort()
+	return tags
+
+
+func debug_screen_rects() -> Dictionary:
+	return _screen_rects.duplicate(true)
+
+
+func debug_pending_count() -> int:
+	return _pending_tags.size() + _pending_node_tags.size() + (1 if _full_rebuild_pending else 0)
+
+
+func debug_last_rebuilt_tags() -> Array[String]:
+	return _last_rebuilt_tags.duplicate()
+
+
+func debug_visibility_revision() -> int:
+	return _visibility_revision
+
+
+func debug_render_scale() -> float:
+	return _label_render_scale
+
+
+func debug_viewport_size() -> Vector2:
+	return _last_viewport_size
+
+
+func debug_font_path() -> String:
+	return FONT_PATH

@@ -3,6 +3,7 @@ extends Node
 
 const CampaignWorldState = preload("res://scripts/simulation/campaign_world_state.gd")
 const CampaignScenarioDefinition = preload("res://scripts/simulation/campaign_scenario_definition.gd")
+const CountryRegistryScript = preload("res://scripts/simulation/country_registry.gd")
 const SimulationEventBus = preload("res://scripts/simulation/simulation_event_bus.gd")
 const SimulationScheduler = preload("res://scripts/simulation/simulation_scheduler.gd")
 const SimulationCommand = preload("res://scripts/simulation/commands/simulation_command.gd")
@@ -87,6 +88,7 @@ const SPEED_DAYS_PER_SECOND: Array[float] = [0.0, 1.0, 3.0, 10.0, 30.0, 90.0]
 
 var world := CampaignWorldState.new()
 var scenario_definition: CampaignScenarioDefinition
+var country_registry
 var event_bus: SimulationEventBus
 var scheduler: SimulationScheduler
 var ai_definitions: AIDefinitions
@@ -605,8 +607,16 @@ func _bootstrap_scenario() -> void:
 	if country_data == null:
 		push_error("SimulationController requires CountryData.")
 		return
+	country_registry = CountryRegistryScript.new().load_registry()
+	if not country_registry.is_valid():
+		push_error("SimulationController requires a valid country registry: %s" % country_registry.error())
+		return
+	country_registry.sync_presentation_country_data(country_data)
 	scenario_definition = CampaignScenarioDefinition.new()
-	scenario_definition.initialize_from_country_data(country_data, scenario_id)
+	scenario_definition.initialize_from_country_registry(country_data, country_registry, scenario_id)
+	if not scenario_definition.is_valid():
+		push_error("SimulationController rejected scenario ownership: %s" % scenario_definition.error())
+		return
 	world.initialize(
 		scenario_definition.province_initial_owners(),
 		scenario_definition.country_names(),

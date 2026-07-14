@@ -71,6 +71,34 @@ Optimised and validated:
 
 Phase 8's first validated country-depth runtime bundle is `assets/country_depth_definitions.json` (`phase8-iberia-1`). It validates government/reform references, contiguous technology levels, culture/religion IDs, idea groups, event/decision localisation and supported effects, country provenance, province provenance, and authored cross-references. Its explicit “historical review required” provenance is a production flag, not a claim of final historical accuracy.
 
+### Canonical Country Registry
+
+`assets/country_registry.json` is the authoritative baked catalogue for country identity. Each scenario-country record owns its stable tag, display-name and adjective localisation keys, political colour, canonical history/colour source paths and source hashes, and scenario/selectable status. `No Owner` and `Ocean` are separately declared non-scenario pseudo-countries.
+
+Campaign bootstrap validates province ownership against this registry before constructing `WorldState`. Unknown non-empty owner tags are fatal data errors; they are never silently converted to unowned land. The native `CountryData` dictionaries are presentation mirrors regenerated from the registry at startup, not the campaign authority.
+
+After changing country history, country colours, or the 1444 ownership manifest, regenerate and validate with:
+
+~~~powershell
+python tools/country_registry/build_country_registry.py
+python tools/country_registry/build_country_registry.py --check
+~~~
+
+The blocking validator rejects malformed filenames, duplicate tags, missing colour definitions, unresolved manifest owners or localisation keys, unapproved duplicate display names, and stale generated source hashes. The headless runtime gate additionally checks registry/bootstrap parity, pseudo-country exclusion, and complete province-owner resolution.
+
+### Country Label Presentation Bake
+
+`assets/label_territory_map.png` is a conservative quarter-resolution province-ID raster generated from `assets/provinces.bmp`. A baked cell is usable only when its entire `4x4` source block belongs to one province, allowing runtime label rectangles to remain inside owned political territory. `assets/label_territory_map.json` records the source hashes, scale, dimensions, encoding, and PNG hash.
+
+Country labels use the bundled OFL-licensed Libre Baskerville font, projected screen-space collision bounds, off-screen culling, lazy node creation, and incremental old/new-owner layout queues. Regenerate and validate the territory bake with:
+
+~~~powershell
+python tools/map_labels/build_label_territory_map.py
+python tools/map_labels/build_label_territory_map.py --check
+~~~
+
+The headless suite checks lifecycle, territory fit modes, overlap, camera/viewport invalidation, map-mode policy, save/load refresh, and explicit CPU/node budgets. GPU-rendered reference images are checked separately with `python tools/testing/run_all_tests.py --quick --visual` because that gate opens a rendering window.
+
 ### Campaign Save Data
 
 Only changing campaign state:

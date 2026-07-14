@@ -49,6 +49,8 @@ func _run() -> void:
 			break
 	_require(target_id >= 0, "the scenario needs a justified foreign target province")
 	hud._on_province_selected({"province_id": target_id, "owner_tag": target_tag, "owner_name": target_tag, "is_playable": true})
+	var target_name := String(simulation.country_data.country_id_to_country_name.get(target_tag, "Unknown country"))
+	_require(hud.target_title.text == target_name and not hud.target_title.text.contains(target_tag), "diplomacy target must show only the full country name")
 	_require(not hud.declare_war_button.disabled, "a valid foreign province must enable the declaration flow")
 	hud._declare_war()
 	simulation.scheduler.process_commands()
@@ -58,6 +60,7 @@ func _run() -> void:
 	var war_id := wars[0]
 	_require(DiplomacySystemScript.are_at_war(simulation.world, player, target_tag), "the target must become hostile")
 	_require(hud.war_option.item_count == 1 and hud._current_war_id == war_id, "war overview must select the new war")
+	_require(not hud.war_option.get_item_text(0).contains(player) and not hud.war_option.get_item_text(0).contains(target_tag), "war list must use full country names instead of tags")
 	_require(hud.war_summary.text.contains("War score"), "war overview must explain score and goal")
 
 	hud._show_war_map()

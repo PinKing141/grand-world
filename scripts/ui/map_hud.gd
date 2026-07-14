@@ -1,6 +1,8 @@
 extends Control
 class_name MapHUD
 
+signal map_mode_changed(mode: int, external_mode: String)
+
 const MAP_PIXEL_SIZE := 0.01
 const MAP_HALF_WIDTH := 28.16
 const MAP_HALF_HEIGHT := 10.24
@@ -115,10 +117,15 @@ func set_map_mode(mode: int) -> void:
 	if map_render != null and map_render.has_method("set_map_mode"):
 		map_render.set_map_mode(_current_map_mode)
 	_apply_mode_to_buttons()
+	map_mode_changed.emit(_current_map_mode, _external_map_mode)
 
 
 func get_map_mode() -> int:
 	return _current_map_mode
+
+
+func country_labels_visible() -> bool:
+	return _current_map_mode != MODE_DEBUG or not _external_map_mode.is_empty()
 
 
 func _apply_mode_to_buttons() -> void:
@@ -139,6 +146,7 @@ func set_economy_map_mode(mode_name: String, legend: String, values: Dictionary)
 		map_render.apply_economy_heatmap(values)
 	mode_legend.text = legend
 	_apply_mode_to_buttons()
+	map_mode_changed.emit(_current_map_mode, _external_map_mode)
 
 
 func set_strategy_map_overlay(mode_name: String, legend: String, colors: Dictionary) -> void:
@@ -147,6 +155,7 @@ func set_strategy_map_overlay(mode_name: String, legend: String, colors: Diction
 		map_render.apply_strategy_overlay(colors)
 	mode_legend.text = legend
 	_apply_mode_to_buttons()
+	map_mode_changed.emit(_current_map_mode, _external_map_mode)
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -181,7 +190,7 @@ func _build_search_entries() -> void:
 		var country_name: String = country_data.country_id_to_country_name[tag]
 		_search_entries.append({
 			"kind": "country",
-			"label": "%s  ·  %s" % [country_name, tag],
+			"label": country_name,
 			"needle": ("%s %s" % [country_name, tag]).to_lower(),
 			"tag": tag,
 		})
@@ -286,7 +295,7 @@ func _centroid_to_world(centroid: Vector2) -> Vector3:
 # --- Country panel ----------------------------------------------------------
 
 func _country_display_name(tag: String) -> String:
-	return country_data.country_id_to_country_name.get(tag, tag)
+	return country_data.country_id_to_country_name.get(tag, "Unknown country")
 
 
 func _count_country_provinces(tag: String) -> int:
@@ -301,7 +310,7 @@ func _show_country_panel(tag: String) -> void:
 	if tag.is_empty() or tag in ["No Owner", "Ocean"]:
 		return
 	_panel_country_tag = tag
-	country_title.text = "%s  ·  %s" % [_country_display_name(tag), tag]
+	country_title.text = _country_display_name(tag)
 	country_swatch.color = country_data.country_id_to_color.get(tag, Color.GRAY)
 	country_province_count.text = "%d provinces" % _count_country_provinces(tag)
 	country_capital.text = "Not yet classified"
@@ -334,7 +343,7 @@ func _owner_text(info: Dictionary) -> String:
 	var owner_name: String = info.get("owner_name", "")
 	if owner_tag.is_empty() or owner_tag in ["No Owner", "Ocean"] or owner_name.is_empty():
 		return "Non-country terrain"
-	return "%s  ·  %s" % [owner_name, owner_tag]
+	return owner_name
 
 
 func _terrain_text(province_id: int) -> String:

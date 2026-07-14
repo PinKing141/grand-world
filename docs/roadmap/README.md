@@ -2,7 +2,7 @@
 
 ## Current Milestone
 
-**Phase 8 — Country Depth and Historical Content is implemented and in Alpha validation.** Build `0.8.0-phase8` adds authoritative government, stability, unrest/rebels/control, culture/religion/conversion, three technology tracks, national directions, cores/claims, subjects and personal unions, events/decisions, country formation/release, expanded buildings/units, deterministic country AI, schema-5 saves, a Country & State interface, and a deterministic 1444–1700 gate. Remaining work is full-suite/package validation, hands-on balance and UX, historical review, and Phase 9 global content production.
+**Phase 8 — Country Depth and Historical Content is implemented and in Alpha validation.** Build `0.8.0-phase8` adds authoritative government, stability, unrest/rebels/control, culture/religion/conversion, three technology tracks, national directions, cores/claims, subjects and personal unions, events/decisions, country formation/release, expanded buildings/units, deterministic country AI, schema-5 saves, a Country & State interface, and a deterministic 1444–1700 gate. The country-name/map-label audit's P0 catalogue authority and P1 player-facing correctness/performance work are complete. Remaining label P2–P4 work and the wider map-quality push are now managed through the Strategic Map Visual Production cross-cutting roadmap, alongside hands-on balance/UX, historical review, and Phase 9 global content production.
 
 The roadmap converts the long-term grand-strategy vision into smaller production phases with explicit gates.
 
@@ -29,6 +29,8 @@ The roadmap converts the long-term grand-strategy vision into smaller production
 ## Cross-Cutting Plans
 
 - [Content pipeline](CONTENT_PIPELINE.md)
+- [Country names and map labels priority audit](COUNTRY_NAMES_MAP_LABELS_AUDIT.md)
+- [Strategic map visual production roadmap](map_visual_production/README.md)
 - [Quality, performance, and release gates](QA_PERFORMANCE_RELEASE_GATES.md)
 - [Risk register](RISK_REGISTER.md)
 

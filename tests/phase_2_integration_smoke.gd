@@ -30,11 +30,19 @@ func _run() -> void:
 	_require(simulation.world.current_day == 0, "campaign must begin at day zero")
 	_require(simulation.world.paused, "new campaigns must begin paused")
 	_require(simulation_hud.date_label.text == "11 November 1444", "HUD must show the scenario date")
+	_require(not simulation_hud.debug_panel.visible, "the expensive checksum panel must start hidden")
+	var hidden_checksum_text := simulation_hud.checksum_label.text
+	simulation_hud._process(1.1)
+	_require(simulation_hud.checksum_label.text == hidden_checksum_text, "a hidden debug panel must not recompute the global checksum")
+	simulation_hud._refresh_debug_checksum()
+	_require(simulation_hud.checksum_label.text.begins_with("State  ") and simulation_hud.checksum_label.text != hidden_checksum_text, "an explicit debug refresh must still produce a checksum")
 
 	simulation.choose_player_country("SWE")
 	simulation.scheduler.process_commands()
 	_require(simulation.world.player_country == "SWE", "country selection must enter WorldState")
-	_require(simulation_hud.player_label.text.contains("Sweden"), "HUD must show the player country")
+	_require(simulation_hud.player_label.text == "Sweden" and not simulation_hud.player_label.text.contains("SWE"), "HUD must show only the player's full country name")
+	simulation_hud._show_status("ENG and SWE are internal identifiers.")
+	_require(simulation_hud.status_label.text == "England and Sweden are internal identifiers.", "player-facing status messages must expand embedded country tags")
 
 	var checksum_before := simulation.world_checksum()
 	simulation.change_province_owner_for_testing(1, "DAN")

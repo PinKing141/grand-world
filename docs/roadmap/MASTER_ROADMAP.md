@@ -12,7 +12,7 @@
 
 ## Current Production Status
 
-Phase 8's complete thin-loop 1.0 system set is implemented in `0.8.0-phase8` and is undergoing Alpha validation. Phase 9 is the next production roadmap: reviewed global content, global-scale scheduling/performance, UI completion, onboarding/accessibility, Beta hardening, packaging, and release-candidate work.
+Phase 8's complete thin-loop 1.0 system set is implemented in `0.8.0-phase8` and is undergoing Alpha validation. Phase 9 is the next production roadmap: reviewed global content, global-scale scheduling/performance, UI completion, onboarding/accessibility, Beta hardening, packaging, and release-candidate work. The [Strategic Map Visual Production Roadmap](map_visual_production/README.md) is the cross-cutting art/rendering/content track required to bring the world map and remaining country-label work to Phase 9 release quality.
 
 ## Roadmap Summary
 
@@ -106,6 +106,14 @@ These run throughout production:
 - Accessibility.
 - Tutorialisation.
 - Error recovery.
+
+### Strategic Map Visual Production
+
+- Approved political-atlas art direction and benchmark scenes.
+- Sharp render output, political palette, borders, overlays, terrain, water, rivers, and map objects.
+- Full-name country labels, localisation, historical review, and campaign lifecycle.
+- Zoom LOD, accessibility, visual regression, asset provenance, and map performance gates.
+- Detailed plan: [Strategic Map Visual Production Roadmap](map_visual_production/README.md).
 
 ## Milestone Build Expectations
 

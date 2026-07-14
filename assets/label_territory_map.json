@@ -1,0 +1,20 @@
+{
+  "conservative_rule": "all pixels in each 4x4 source block must share one province colour",
+  "definition_sha256": "5763569f87da1ca81cfbd74798d659345841ea5da3bfc2aa295d056a9046278d",
+  "definition_source": "assets/definition.csv",
+  "encoding": "RGB24 big-endian province ID; 0 means unsafe/mixed block",
+  "generator": "tools/map_labels/build_label_territory_map.py",
+  "map_size": [
+    1408,
+    512
+  ],
+  "png_sha256": "9e6f0e7c9630df54330aa2859988cf8c80659a51ae3f0de13e9d515c325d5412",
+  "scale": 4,
+  "schema_version": 1,
+  "source": "assets/provinces.bmp",
+  "source_sha256": "40348545baf1886009eb46d8ffba0a76684061e44faa64ec788c756ce607e5c8",
+  "source_size": [
+    5632,
+    2048
+  ]
+}

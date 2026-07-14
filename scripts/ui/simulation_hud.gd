@@ -80,13 +80,18 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# A complete global checksum serializes every authoritative registry and is
+	# intentionally expensive. The old one-second refresh paid that cost even
+	# while this developer-only panel was hidden, causing periodic 600–800 ms
+	# presentation stalls. Normal gameplay performs no checksum work here.
+	if not debug_panel.visible or not simulation_controller.initialized:
+		_debug_refresh_accumulator = 0.0
+		return
 	_debug_refresh_accumulator += delta
-	if _debug_refresh_accumulator < 1.0 or not simulation_controller.initialized:
+	if _debug_refresh_accumulator < 0.25:
 		return
 	_debug_refresh_accumulator = 0.0
 	tick_label.text = "Tick  %.2f ms" % (simulation_controller.last_tick_cost_usec / 1000.0)
-	var checksum := simulation_controller.world_checksum()
-	checksum_label.text = "State  %s" % checksum.left(10)
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -98,7 +103,17 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif key_event.keycode == KEY_F10:
 		debug_panel.visible = not debug_panel.visible
+		if debug_panel.visible:
+			_refresh_debug_checksum()
 		get_viewport().set_input_as_handled()
+
+
+func _refresh_debug_checksum() -> void:
+	if not simulation_controller.initialized:
+		checksum_label.text = "State  loading"
+		return
+	var checksum := simulation_controller.world_checksum()
+	checksum_label.text = "State  %s" % checksum.left(10)
 
 
 func _connect_event_bus() -> void:
@@ -110,7 +125,8 @@ func _connect_event_bus() -> void:
 	events.pause_changed.connect(_on_pause_changed)
 	events.speed_changed.connect(_on_speed_changed)
 	events.command_rejected.connect(_on_command_rejected)
-	events.world_reloaded.connect(func(_checksum: String) -> void:
+	events.world_reloaded.connect(func(checksum: String) -> void:
+		checksum_label.text = "State  %s" % checksum.left(10)
 		_deselect_army()
 		_refresh_all())
 	events.army_movement_ordered.connect(func(army_id: String, _path: PackedInt32Array, arrival_day: int) -> void:
@@ -153,8 +169,8 @@ func _on_player_country_changed(_old_country: String, new_country: String) -> vo
 	if new_country.is_empty():
 		player_label.text = "Observer"
 	else:
-		var country_name: String = country_data.country_id_to_country_name.get(new_country, new_country)
-		player_label.text = "%s  ·  %s" % [country_name, new_country]
+		var country_name: String = country_data.country_id_to_country_name.get(new_country, "Unknown country")
+		player_label.text = country_name
 	_refresh_selection_actions()
 
 
@@ -182,9 +198,29 @@ func _on_load_completed(success: bool, message: String) -> void:
 
 
 func _show_status(message: String) -> void:
-	status_label.text = message
+	status_label.text = _replace_country_tags(message)
 	status_panel.show()
 	status_timer.start()
+
+
+func _replace_country_tags(value: String) -> String:
+	var result := ""
+	var token := ""
+	for index in value.length():
+		var code := value.unicode_at(index)
+		var is_ascii_alphanumeric := (
+			(code >= 48 and code <= 57)
+			or (code >= 65 and code <= 90)
+			or (code >= 97 and code <= 122)
+		)
+		if is_ascii_alphanumeric:
+			token += value.substr(index, 1)
+			continue
+		result += String(country_data.country_id_to_country_name.get(token, token))
+		token = ""
+		result += value.substr(index, 1)
+	result += String(country_data.country_id_to_country_name.get(token, token))
+	return result
 
 
 func _on_province_selected(info: Dictionary) -> void:
@@ -284,7 +320,7 @@ func _on_province_hovered_for_army(info: Dictionary, _screen_position: Vector2) 
 		]
 	else:
 		army_layer.clear_preview_path()
-		army_route_info.text = String(route.get("failure_reason", ""))
+		army_route_info.text = _replace_country_tags(String(route.get("failure_reason", "")))
 
 
 func _refresh_army_panel() -> void:
@@ -296,8 +332,8 @@ func _refresh_army_panel() -> void:
 		_deselect_army()
 		return
 	var owner_tag := String(army.get("owner_country_id", ""))
-	var owner_name: String = country_data.country_id_to_country_name.get(owner_tag, owner_tag)
-	army_title.text = "%s army  ·  %s" % [owner_name, _selected_army_id]
+	var owner_name: String = country_data.country_id_to_country_name.get(owner_tag, "Unknown country")
+	army_title.text = "%s army" % owner_name
 	var status := String(army.get("status", "idle"))
 	army_economy_info.text = "%d regiment  ·  strength %d  ·  morale %d%%  ·  maintenance %s/month" % [
 		int(army.get("regiment_count", 1)), int(army.get("strength", 1000)),
@@ -350,11 +386,11 @@ func _refresh_selection_actions() -> void:
 	var can_choose_country := not _selected_country.is_empty() and _selected_country != player_country
 	play_as_button.visible = can_choose_country
 	if can_choose_country:
-		var country_name: String = country_data.country_id_to_country_name.get(_selected_country, _selected_country)
+		var country_name: String = country_data.country_id_to_country_name.get(_selected_country, "Unknown country")
 		play_as_button.text = "Play as %s" % country_name
 	transfer_button.visible = not player_country.is_empty() and _selected_country != player_country
 	if transfer_button.visible:
-		transfer_button.text = "Test transfer to %s" % player_country
+		transfer_button.text = "Test transfer to %s" % country_data.country_id_to_country_name.get(player_country, "Unknown country")
 	var armies := simulation_controller.world.armies_in_province(_selected_province_id) if simulation_controller.initialized else []
 	select_army_button.visible = not armies.is_empty()
 	if select_army_button.visible:
