@@ -111,7 +111,24 @@ func _ready() -> void:
 	event_bus.province_controller_changed.connect(_on_province_controller_changed)
 	event_bus.world_reloaded.connect(_on_world_reloaded)
 	event_bus.player_country_changed.connect(_on_character_player_changed)
+	event_bus.subject_created.connect(func(_id: String, _overlord: String, _subject: String, _type: String) -> void:
+		if initialized:
+			_sync_all_owners_to_presentation()
+	)
+	event_bus.subject_integrated.connect(func(_id: String, _overlord: String, _subject: String) -> void:
+		if initialized:
+			_sync_all_owners_to_presentation()
+	)
 	_bootstrap_scenario()
+	if initialized and bool(get_tree().root.get_meta("grand_world_continue_campaign", false)):
+		get_tree().root.set_meta("grand_world_continue_campaign", false)
+		call_deferred("_load_menu_requested_campaign")
+
+
+func _load_menu_requested_campaign() -> void:
+	var result := quick_load()
+	if not bool(result.get("ok", false)):
+		push_warning("The main menu could not continue the campaign: %s" % String(result.get("message", "Unknown load error.")))
 
 
 func _exit_tree() -> void:
@@ -640,6 +657,15 @@ func _bootstrap_scenario() -> void:
 		push_error("SimulationController requires valid Phase 8 country-depth definitions: %s" % country_depth_definitions.error())
 		return
 	CountryDepthSystemScript.initialize_world(world, country_depth_definitions)
+	for initial_subject in scenario_definition.initial_subjects():
+		CountryDepthSystemScript.create_subject(
+			world,
+			event_bus,
+			String(initial_subject.get("overlord", "")),
+			String(initial_subject.get("subject", "")),
+			String(initial_subject.get("type", "vassal")),
+			String(initial_subject.get("presentation", ""))
+		)
 	ai_definitions = AIDefinitionsScript.load_default()
 	if not ai_definitions.is_valid():
 		push_error("SimulationController requires valid Phase 6 AI definitions: %s" % ai_definitions.error())
@@ -691,6 +717,7 @@ func _bootstrap_scenario() -> void:
 
 func _on_province_owner_changed(province_id: int, old_owner: String, new_owner: String) -> void:
 	_sync_owner_to_presentation(province_id, new_owner)
+	_sync_control_to_presentation(province_id)
 	if bool(world.global_flags.get("country_depth_enabled", false)):
 		CountryDepthSystemScript.mark_province_dynamic(world, province_id)
 	if not old_owner.is_empty():
@@ -702,6 +729,7 @@ func _on_province_owner_changed(province_id: int, old_owner: String, new_owner: 
 
 
 func _on_world_reloaded(_checksum: String) -> void:
+	_sync_all_owners_to_presentation()
 	if map_hud != null and map_hud.has_method("refresh_authoritative_ownership"):
 		map_hud.refresh_authoritative_ownership(-1)
 
@@ -709,9 +737,12 @@ func _on_world_reloaded(_checksum: String) -> void:
 func _on_character_player_changed(_old_country: String, new_country: String) -> void:
 	if initialized:
 		CharacterSystemScript.mark_player_dynasty(world, new_country)
+		if map_render != null and map_render.has_method("apply_control_states"):
+			map_render.apply_control_states(world.province_states, new_country)
 
 
 func _on_province_controller_changed(province_id: int, _old_controller: String, _new_controller: String) -> void:
+	_sync_control_to_presentation(province_id)
 	var owner := world.get_province_owner(province_id)
 	if not owner.is_empty():
 		EconomySystemScript.recalculate_country(world, owner)
@@ -722,10 +753,22 @@ func _on_province_controller_changed(province_id: int, _old_controller: String, 
 func _sync_owner_to_presentation(province_id: int, owner_tag: String) -> void:
 	var presentation_owner := owner_tag if not owner_tag.is_empty() else "No Owner"
 	country_data.province_id_to_owner[province_id] = presentation_owner
-	if map_render == null or not map_render.has_method("update_color_map"):
+	if map_render == null:
 		return
-	var owner_color: Color = country_data.country_id_to_color.get(owner_tag, Color(0.0, 0.0, 0.0, 0.0))
-	map_render.update_color_map(province_id, owner_color)
+	if map_render.has_method("update_province_owner"):
+		map_render.update_province_owner(province_id, owner_tag)
+	elif map_render.has_method("update_color_map"):
+		var owner_color: Color = country_data.country_id_to_color.get(owner_tag, Color(0.0, 0.0, 0.0, 0.0))
+		map_render.update_color_map(province_id, owner_color)
+
+
+func _sync_control_to_presentation(province_id: int) -> void:
+	if map_render == null or not map_render.has_method("update_province_control"):
+		return
+	var state: Dictionary = world.province_states.get(province_id, {})
+	var owner_tag := String(state.get("owner", ""))
+	var controller_tag := String(state.get("controller", owner_tag))
+	map_render.update_province_control(province_id, owner_tag, controller_tag, world.player_country)
 
 
 func _sync_all_owners_to_presentation() -> void:
@@ -738,7 +781,9 @@ func _sync_all_owners_to_presentation() -> void:
 		presentation_owners[province_id] = owner_tag
 		country_data.province_id_to_owner[province_id] = owner_tag if not owner_tag.is_empty() else "No Owner"
 	if map_render != null and map_render.has_method("apply_world_state_owners"):
-		map_render.apply_world_state_owners(presentation_owners)
+		map_render.apply_world_state_owners(presentation_owners, world.subject_registry)
+	if map_render != null and map_render.has_method("apply_control_states"):
+		map_render.apply_control_states(world.province_states, world.player_country)
 
 
 func _stable_category_color(category_id: String) -> Color:

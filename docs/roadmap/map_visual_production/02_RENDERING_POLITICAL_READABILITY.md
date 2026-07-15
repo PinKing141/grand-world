@@ -14,9 +14,9 @@ The current implementation is a useful prototype but has structural limits:
 - `shaders/political_map.gdshader` uses strong black country edges and fixed edge parameters that can read like sticker outlines.
 - Several visual assets are lower resolution than the province ownership source, creating softness and alignment pressure.
 - No complete project-level anti-aliasing and output-quality policy has been locked.
-- Current captures show dark/saturated fills, heavy borders, bright coast edges, pixel stair-stepping, and placeholder marker shapes.
+- Earlier captures showed dark/saturated fills, heavy borders, bright coast edges, pixel stair-stepping, and debug marker shapes. Borders/coasts and the first complete historical-placeholder marker family have since received engineering passes; bespoke final art remains.
 
-Before implementation, MV-0 must confirm these observations with a GPU frame capture and import-setting inventory.
+The first MV-1 pass now uses a normalized palette, distinct subject/appanage realm tint, lighter internal-realm edges, dark sovereign/coast edges, restrained navy water, the corrected categorical terrain-class input, and final-output derivative-based line weights that remain stable during zoom. Province detail fades by zoom band; hover, selection, and occupation have higher-priority outlines. Art review and close-zoom topology quality remain open.
 
 ## Target Render-Layer Contract
 
@@ -72,6 +72,8 @@ Map geometry, province data, label samples, markers, terrain, and borders must d
 
 ### RP-1.3 Choose anti-aliasing and sampling policy — P1 / M
 
+**MV-0 decision:** Accepted and initially implemented. Use final-silhouette analytic AA from the canonical edge lattice for regional/close political borders, a country-distance fallback for distant minification, MSDF for map labels, exact nearest sampling for categorical/ID textures, linear mip sampling for continuous height and presentation art, and no default FXAA/TAA/global blur. Keep 3D MSAA disabled on the low-end default; measure an optional 2× object-quality tier later. See [MV-0 Rendering Architecture and Budgets](mv0/MV0_RENDERING_ARCHITECTURE_AND_BUDGET_DECISIONS.md).
+
 Run a controlled spike comparing viable Forward+ options for borders, coastlines, text, and thin rivers. Consider camera jitter, MSAA, TAA, FXAA, texture supersampling, signed-distance borders, mip bias, and pixel alignment. Do not enable a global option without measuring text softness, motion shimmer, and GPU cost.
 
 **Done when**
@@ -82,6 +84,8 @@ Run a controlled spike comparing viable Forward+ options for borders, coastlines
 
 ### RP-1.4 Define texture resolution tiers — P1 / M
 
+**MV-0 decision:** Accepted for the vertical slice. Semantic authority stays at `5632×2048`; continuous macro height/terrain/water stays at `2816×1024`; geographic richness comes from tileable micro material/normal layers. Full-resolution macro art requires measured MV-3 benefit and budget approval.
+
 Current province identity is `5632 × 2048`, while major terrain outputs are lower resolution. Establish intentional source, bake, and runtime tiers.
 
 Example policy to validate:
@@ -89,7 +93,7 @@ Example policy to validate:
 | Asset class | Source expectation | Runtime tiers |
 |---|---|---|
 | Province/ownership IDs | Lossless authoritative full resolution | Full resolution only |
-| Coast/country/province distance fields | Generated from authoritative IDs | Quality-dependent but alignment-validated |
+| Province edge lattice and strategic country distance field | Generated from authoritative IDs | Exact regional/close adjacency; minification-safe strategic fallback |
 | Macro terrain/height/normal | Highest justified source | Low/medium/high variants |
 | Micro terrain materials | Tileable | Shared across world, quality-dependent |
 | Water normals/foam/noise | Tileable + coast masks | Shared variants |
@@ -137,6 +141,8 @@ Anti-aliasing cannot restore geographic detail that does not exist in the author
 
 ### RP-2.1 Author a palette specification — P1 / M
 
+**Implementation status:** Engineering and tools first pass live. Runtime HSV normalization narrows extreme saturation/value while preserving authored hue and neutral colours. The map settings expose Normal, Red-green safe, Blue-yellow safe, and High contrast profiles; the final political pass changes both palette opposition and the strength of non-colour patterns, while semantic accents are reserved per profile. Automated state propagation and rendered red-green-safe capture coverage are live. The deterministic [neighbour-colour production report](MV1_NEIGHBOUR_COLOUR_REPORT.md) checks all 1,542 starting country adjacencies in Oklab, ranks protanopia/deuteranopia/tritanopia simulation risks, records shared-border exposure, and generates advisory one-country-at-a-time candidates. Art approval, authored exceptions, dense-Europe captures, and hands-on review with affected players remain.
+
 Build on the existing duplicate and neighbour-distance validation by adding art-direction ranges for luminance, chroma, and saturation. Reserve colours for selection, invalid actions, war states, overlays, and debug data.
 
 **Done when**
@@ -147,6 +153,8 @@ Build on the existing duplicate and neighbour-distance validation by adding art-
 - Political colour remains recognisable after terrain blending.
 
 ### RP-2.2 Define country versus realm grouping — P1 / M
+
+**Implementation status:** First pass live. Legal owners retain distinct colours; active appanages/vassals receive presentation-only tint toward their ultimate overlord, a subtle subject cue texture, and lighter internal-realm edges. France's four 1444 appanages resolve to the French realm while Brittany and Provence do not. Ownership and save state remain unchanged.
 
 Write the visual rules for sovereigns, subjects, personal unions, vassals, appanages, colonial nations, occupied territory, and temporary control.
 
@@ -190,6 +198,8 @@ Replace one global strength with art-directed parameters by map mode, zoom band,
 
 ### RP-3.1 Generate semantic border classes — P1 / L
 
+**Implementation status:** Engineering first pass live. The final-output pass classifies sovereign/realm-internal/ocean-coast/lake-shore/province edges from owner, terrain, lake-mask, and realm lookup data and styles them independently. Temporary control is supplied by a compact province-state lookup and receives an occupation outline/pattern. War goals retain the underlying side/control colour and receive a dedicated screen-stable double border. Command paths use a separate screen-stable outlined route layer with preview, active, retreat, and invalid-target shapes. River and invalid-terrain classes remain.
+
 Country, subject, province, coast, lake, river, impassable, selected, occupied, and command-path edges should not compete through one generic black distance field.
 
 **Done when**
@@ -199,6 +209,8 @@ Country, subject, province, coast, lake, river, impassable, selected, occupied, 
 - Border classes can be styled independently without rebaking unrelated terrain.
 
 ### RP-3.2 Use zoom-aware screen-space line weights — P1 / L
+
+**Implementation status:** Engineering first pass live. The former per-province interior SDF has been removed from the live province-border path. A full-resolution two-channel lattice stores each vertical and horizontal adjacency between texels exactly once. The final shader computes screen distance to those shared segments, classifies subject/sovereign/coast status from the two authoritative province IDs before dilation, and uses the old country SDF only as a wide-strategic minification fallback. Camera-normalized zoom controls sovereign, subject, coast, province, hover, selection, and occupation weights; province borders fade out toward the widest strategic band. Ordinary boundaries use an opaque solid core with a narrow anti-aliased outer transition, growing from `0.80 px` strategic weight to `1.45 px` close weight; hollow/double-ring treatment is reserved for the war-goal semantic. No erosion or blind topology cleanup is applied, preserving tiny provinces, islands, enclaves, and corridors. Forward+ capture, an exact lattice/ID contract test, and camera tests verify the live path. Final art approval and broader close-zoom topology fixtures remain.
 
 Fixed world-space widths become too thick or too thin. Establish clamped screen-pixel targets per zoom band.
 
@@ -219,6 +231,8 @@ Provisional art targets to validate rather than blindly implement:
 
 ### RP-3.3 Replace neon coastline artefacts — P1 / M
 
+**Implementation status:** First pass live. The cyan-biased ocean multiplier was removed and land-side coasts now use a restrained dark navy edge. Benchmark review at islands, straits, and pale terrain remains.
+
 Separate coastline definition from water glow. If foam or shallow shelf exists, it uses a restrained independent mask and mode-aware intensity.
 
 **Done when**
@@ -228,6 +242,8 @@ Separate coastline definition from water glow. If foam or shallow shelf exists, 
 - Islands keep their silhouette at supported zooms.
 
 ### RP-3.4 Add pattern and shape alternatives — P1 / M
+
+**Implementation status:** Engineering first pass live. Occupied provinces combine a screen-stable outline with a restrained diagonal hatch, using distinct player-controlled, player-occupied, and third-party colours. Appanages use a dot cue, ordinary vassals a diagonal cue, and personal unions crosshatching in addition to their presentation tint. Route previews and retreats use distinct dashed rhythms while active movement is solid, all with a dark contrast outline. Invalid destinations use a geometric X and explanatory text rather than a colour-only failure cue. War goals use a double-ring shape and preserve occupation beneath them. The shader explicitly applies passive borders → occupation → war goal → hover → selection, and an automated dense-overlap fixture exercises all five levels on one province. Four player-selectable colour-vision/contrast profiles adjust palette and pattern strength. Hands-on colour-vision and moving-camera moiré review remain before art approval.
 
 War, occupation, invalid terrain, subject grouping, and other semantic states cannot rely only on hue.
 

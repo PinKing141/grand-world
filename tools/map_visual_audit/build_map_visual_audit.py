@@ -26,8 +26,10 @@ SCENE_PATH = ROOT / "scenes" / "main.tscn"
 SHADER_PATHS = (
     ROOT / "shaders" / "final_output_political_map.gdshader",
     ROOT / "shaders" / "political_map.gdshader",
-    ROOT / "shaders" / "province_sdf.gdshader",
+    ROOT / "shaders" / "province_edge_lattice.gdshader",
     ROOT / "shaders" / "country_sdf.gdshader",
+    ROOT / "shaders" / "army_flag_marker.gdshader",
+    ROOT / "shaders" / "cartographic_marker_icon.gdshader",
 )
 
 MAP_ASSET_PATHS = (
@@ -42,8 +44,15 @@ MAP_ASSET_PATHS = (
     "assets/color_map.png",
     "assets/mask_political_map.png",
     "assets/label_territory_map.png",
+    "assets/lake_mask.png",
+    "assets/lake_mask_metadata.json",
     "assets/noise.tres",
     "assets/fonts/LibreBaskerville-Variable.ttf",
+    "assets/marker_art/source_flags/source_manifest.json",
+    "assets/marker_art/generated/country_shield_atlas.png",
+    "assets/marker_art/generated/marker_icon_atlas.png",
+    "assets/marker_art/generated/marker_asset_manifest.json",
+    "assets/marker_art/THIRD_PARTY_NOTICES.md",
 )
 
 EXPECTED_PRESENTATION_LAYERS = (
@@ -56,12 +65,14 @@ EXPECTED_PRESENTATION_LAYERS = (
 )
 
 DATA_TEXTURES = {
+    "assets/biome_map.png",
     "assets/provinces.bmp",
     "assets/color_lookup_map.png",
     "assets/color_map.png",
     "assets/mask_political_map.png",
     "assets/terrain_class_map.png",
     "assets/label_territory_map.png",
+    "assets/lake_mask.png",
 }
 
 
@@ -97,7 +108,11 @@ def parse_import(path: Path) -> dict[str, Any]:
         if not line or line.startswith("[") or "=" not in line:
             continue
         key, value = line.split("=", 1)
-        if key.startswith(("compress/", "mipmaps/", "process/", "detect_3d/")):
+        if key.startswith(("compress/", "mipmaps/", "process/", "detect_3d/", "msdf_")) or key in {
+            "antialiasing",
+            "generate_mipmaps",
+            "multichannel_signed_distance_field",
+        }:
             values[key] = parse_scalar(value)
     return values
 
@@ -205,6 +220,8 @@ def asset_record(relative: str, manifest_record: dict[str, Any]) -> dict[str, An
     if path.suffix.lower() in {".png", ".bmp", ".jpg", ".jpeg", ".webp"}:
         record["image"] = image_metadata(path)
         record["import"] = parse_import(Path(f"{path}.import"))
+    elif path.suffix.lower() in {".ttf", ".otf"}:
+        record["import"] = parse_import(Path(f"{path}.import"))
     return record
 
 
@@ -266,6 +283,14 @@ def build_audit() -> dict[str, Any]:
             "priority": "P1",
             "id": "height_compression",
             "message": "assets/heightmap.png drives geometry but uses a compressed import path; compare displacement error and memory before locking settings.",
+        })
+
+    font_settings = by_path["assets/fonts/LibreBaskerville-Variable.ttf"].get("import", {})
+    if font_settings.get("multichannel_signed_distance_field") is not True:
+        findings.append({
+            "priority": "P1",
+            "id": "label_font_sampling",
+            "message": "The country-label font is not imported as MSDF; scaled Label3D text is likely to blur or grain in motion.",
         })
 
     province_image = by_path["assets/provinces.bmp"].get("image", {})

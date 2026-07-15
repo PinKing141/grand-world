@@ -15,9 +15,9 @@ The concepts use the existing deterministic camera bookmarks so every review can
 
 | Target | Bookmark | State | Primary question |
 |---|---|---|---|
-| A — France and Low Countries | `current_france_low_countries_political_1920x1080.png` | **In production** | Can dense 1444 ownership read cleanly without France consuming appanages? |
-| B — Sahara and Nile | `current_sahara_nile_terrain_1700x960.png` | **Brief locked; concept queued** | Can geography, river structure, wasteland, and sparse settlement read without political noise? |
-| C — Italy and Alps | `current_italy_alps_political_1152x648.png` | **Brief locked; concept queued** | Can diagonal realms, mountains, coasts, microstates, and typography coexist? |
+| A — France and Low Countries | `current_france_low_countries_political_1920x1080.png` | **Concept produced; review pending** | Can dense 1444 ownership read cleanly without France consuming appanages? |
+| B — Sahara and Nile | `current_sahara_nile_terrain_1700x960.png` | **Concept produced; review pending** | Can geography, river structure, wasteland, and sparse settlement read without political noise? |
+| C — Italy and Alps | `current_italy_alps_political_1152x648.png` | **Concept produced; review pending** | Can diagonal realms, mountains, coasts, microstates, and typography coexist? |
 
 Approval means Art/Product accept the direction and Technical Art can describe a plausible in-engine path. A generated concept alone is not approval.
 
@@ -232,4 +232,3 @@ Any score below the requirement blocks Visual Greenlight. Reviewers must identif
 5. Build the MV-1 France/Low Countries in-engine slice.
 6. Validate political correctness, label fit, click agreement, movement sharpness, memory, and frame time.
 7. Extend the accepted stack to Sahara/Nile and Italy/Alps before global rollout.
-

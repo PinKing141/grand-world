@@ -7,6 +7,8 @@ const MAP_PIXEL_SIZE := 0.01
 const MAP_HALF_WIDTH := 28.16
 const MAP_HALF_HEIGHT := 10.24
 const MAX_SEARCH_RESULTS := 12
+const ACCESSIBILITY_CONFIG_PATH := "user://map_accessibility.cfg"
+const COLOUR_VISION_PROFILES: Array[String] = ["Normal", "Red-green safe", "Blue-yellow safe", "High contrast"]
 
 const MODE_POLITICAL := 0
 const MODE_TERRAIN := 1
@@ -53,6 +55,7 @@ const MODE_LEGENDS: Array[String] = [
 @onready var mode_terrain_button: Button = %ModeTerrain
 @onready var mode_debug_button: Button = %ModeDebug
 @onready var mode_legend: Label = %ModeLegend
+@onready var colour_vision_option: OptionButton = %ColourVision
 @onready var search_field: LineEdit = %SearchField
 @onready var search_results: ItemList = %SearchResults
 @onready var map_mode_bar: PanelContainer = $MapModeBar
@@ -91,6 +94,10 @@ func _ready() -> void:
 	mode_political_button.pressed.connect(func() -> void: set_map_mode(MODE_POLITICAL))
 	mode_terrain_button.pressed.connect(func() -> void: set_map_mode(MODE_TERRAIN))
 	mode_debug_button.pressed.connect(func() -> void: set_map_mode(MODE_DEBUG))
+	for profile_name in COLOUR_VISION_PROFILES:
+		colour_vision_option.add_item(profile_name)
+	colour_vision_option.item_selected.connect(func(index: int) -> void: set_colour_vision_profile(index))
+	_load_accessibility_settings()
 	search_field.text_changed.connect(_on_search_text_changed)
 	search_field.text_submitted.connect(_on_search_submitted)
 	search_results.item_activated.connect(_on_search_result_activated)
@@ -98,6 +105,29 @@ func _ready() -> void:
 		if button == MOUSE_BUTTON_LEFT:
 			_on_search_result_activated(index))
 	_apply_mode_to_buttons()
+
+
+func _load_accessibility_settings() -> void:
+	var config := ConfigFile.new()
+	var profile := 0
+	if config.load(ACCESSIBILITY_CONFIG_PATH) == OK:
+		profile = int(config.get_value("map", "colour_vision_profile", 0))
+	set_colour_vision_profile(profile, false)
+
+
+func set_colour_vision_profile(profile: int, persist := true) -> void:
+	var selected_profile := clampi(profile, 0, COLOUR_VISION_PROFILES.size() - 1)
+	colour_vision_option.select(selected_profile)
+	if map_render != null and map_render.has_method("set_accessibility_profile"):
+		map_render.set_accessibility_profile(selected_profile)
+	if persist:
+		var config := ConfigFile.new()
+		config.set_value("map", "colour_vision_profile", selected_profile)
+		config.save(ACCESSIBILITY_CONFIG_PATH)
+
+
+func get_colour_vision_profile() -> int:
+	return colour_vision_option.selected
 
 
 func _set_mouse_filter_recursive(node: Node, filter: Control.MouseFilter) -> void:
@@ -149,10 +179,10 @@ func set_economy_map_mode(mode_name: String, legend: String, values: Dictionary)
 	map_mode_changed.emit(_current_map_mode, _external_map_mode)
 
 
-func set_strategy_map_overlay(mode_name: String, legend: String, colors: Dictionary) -> void:
+func set_strategy_map_overlay(mode_name: String, legend: String, colors: Dictionary, war_goal_province_id := -1) -> void:
 	_external_map_mode = mode_name
 	if map_render != null and map_render.has_method("apply_strategy_overlay"):
-		map_render.apply_strategy_overlay(colors)
+		map_render.apply_strategy_overlay(colors, war_goal_province_id)
 	mode_legend.text = legend
 	_apply_mode_to_buttons()
 	map_mode_changed.emit(_current_map_mode, _external_map_mode)
@@ -437,6 +467,9 @@ func _process(_delta: float) -> void:
 	var simulation_top_bar := get_node_or_null("../SimulationHUD/TopBar") as Control
 	if simulation_top_bar != null:
 		top_blockers.append(simulation_top_bar)
+	var country_hud := get_node_or_null("../EconomyHUD/ResourceBar") as Control
+	if country_hud != null:
+		top_blockers.append(country_hud)
 	for blocker in top_blockers:
 		if not blocker.visible:
 			continue

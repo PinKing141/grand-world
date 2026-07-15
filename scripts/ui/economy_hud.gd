@@ -11,14 +11,24 @@ const RecruitUnitCommandScript = preload("res://scripts/simulation/commands/recr
 @export var province_selector: ProvinceSelector
 @export var map_hud: MapHUD
 @export var notification_hud: SimulationHUD
+@export var war_hud: Node
+@export var country_depth_hud: Node
+@export var character_hud: Node
 
 @onready var resource_bar: PanelContainer = %ResourceBar
+@onready var shield_button: Button = %ShieldButton
 @onready var treasury_label: Label = %TreasuryLabel
 @onready var balance_label: Label = %BalanceLabel
 @onready var manpower_label: Label = %ManpowerLabel
 @onready var queue_label: Label = %QueueLabel
 @onready var debt_label: Label = %DebtLabel
+@onready var country_status_label: Label = %CountryStatusLabel
+@onready var alert_label: Label = %AlertLabel
 @onready var economy_button: Button = %EconomyButton
+@onready var government_button: Button = %GovernmentButton
+@onready var military_button: Button = %MilitaryButton
+@onready var diplomacy_button: Button = %DiplomacyButton
+@onready var religion_button: Button = %ReligionButton
 @onready var economy_panel: PanelContainer = %EconomyPanel
 @onready var economy_title: Label = %EconomyTitle
 @onready var ledger_label: Label = %LedgerLabel
@@ -48,9 +58,12 @@ func _ready() -> void:
 	for percentage in [25, 50, 75, 100]:
 		maintenance_option.add_item("%d%%" % percentage)
 		maintenance_option.set_item_metadata(maintenance_option.item_count - 1, percentage * 100)
-	economy_button.pressed.connect(func() -> void:
-		economy_panel.visible = not economy_panel.visible
-		_refresh_economy_panel())
+	economy_button.pressed.connect(toggle_economy_panel)
+	government_button.pressed.connect(func() -> void: _open_country_state(0))
+	military_button.pressed.connect(_open_military)
+	diplomacy_button.pressed.connect(_open_diplomacy)
+	religion_button.pressed.connect(func() -> void: _open_country_state(1))
+	shield_button.pressed.connect(_open_characters)
 	close_economy_button.pressed.connect(economy_panel.hide)
 	maintenance_option.item_selected.connect(_on_maintenance_selected)
 	take_loan_button.pressed.connect(_take_loan)
@@ -77,6 +90,8 @@ func _ready() -> void:
 func _connect_events() -> void:
 	var events := simulation_controller.event_bus
 	events.player_country_changed.connect(func(_old: String, _new: String) -> void: _refresh_all())
+	events.war_declared.connect(func(_war: String, _attacker: String, _defender: String, _goal: int) -> void: _refresh_all())
+	events.peace_signed.connect(func(_war: String, _attacker: String, _defender: String, _truce_day: int) -> void: _refresh_all())
 	events.date_changed.connect(func(_day: int, _date: Dictionary) -> void:
 		if province_economy_panel.visible:
 			_refresh_province_panel())
@@ -117,6 +132,36 @@ func _player_country() -> String:
 	return simulation_controller.world.player_country if simulation_controller.initialized else ""
 
 
+func toggle_economy_panel() -> void:
+	economy_panel.visible = not economy_panel.visible
+	_refresh_economy_panel()
+
+
+func open_economy_panel() -> void:
+	economy_panel.show()
+	_refresh_economy_panel()
+
+
+func _open_country_state(tab_index: int) -> void:
+	if country_depth_hud != null and country_depth_hud.has_method("open_country_state"):
+		country_depth_hud.call("open_country_state", tab_index)
+
+
+func _open_diplomacy() -> void:
+	if war_hud != null and war_hud.has_method("open_diplomacy_panel"):
+		war_hud.call("open_diplomacy_panel")
+
+
+func _open_military() -> void:
+	if notification_hud != null:
+		notification_hud.open_military_panel()
+
+
+func _open_characters() -> void:
+	if character_hud != null and character_hud.has_method("open_character_panel"):
+		character_hud.call("open_character_panel")
+
+
 func _refresh_all() -> void:
 	var tag := _player_country()
 	resource_bar.visible = not tag.is_empty()
@@ -126,16 +171,37 @@ func _refresh_all() -> void:
 		return
 	var runtime := simulation_controller.country_economy(tag)
 	var ledger: Dictionary = runtime.get("ledger", {})
-	treasury_label.text = "Treasury  %s" % EconomySystemScript.format_money(int(runtime.get("treasury", 0)))
+	var country_name: String = simulation_controller.country_data.country_id_to_country_name.get(tag, "Unknown country")
+	country_status_label.text = country_name
+	treasury_label.text = "Treasury %s" % EconomySystemScript.format_money(int(runtime.get("treasury", 0)))
 	var balance := int(ledger.get("balance", 0))
-	balance_label.text = "%s%s / month" % ["+" if balance >= 0 else "", EconomySystemScript.format_money(balance)]
+	balance_label.text = "%s%s/mo" % ["+" if balance >= 0 else "", EconomySystemScript.format_money(balance)]
 	balance_label.modulate = Color("8bd49c") if balance >= 0 else Color("ef8d82")
 	manpower_label.text = "Manpower  %d / %d" % [int(runtime.get("manpower", 0)), int(runtime.get("maximum_manpower", 0))]
 	queue_label.text = "Build %d  ·  Recruit %d" % [_country_queue_count(tag, true), _country_queue_count(tag, false)]
 	debt_label.text = "Debt  %s" % EconomySystemScript.format_money(int(runtime.get("debt", 0)))
 	debt_label.visible = int(runtime.get("debt", 0)) > 0
+	_refresh_country_alerts(tag, runtime)
 	_refresh_economy_panel()
 	_refresh_province_panel()
+
+
+func _refresh_country_alerts(tag: String, runtime: Dictionary) -> void:
+	var alerts: Array[String] = []
+	var active_wars: Array = simulation_controller.country_wars(tag)
+	if not active_wars.is_empty():
+		alerts.append("At war: %d" % active_wars.size())
+	var debt := int(runtime.get("debt", 0))
+	if debt > 0:
+		alerts.append("Debt %s" % EconomySystemScript.format_money(debt))
+	var construction_count := _country_queue_count(tag, true)
+	var recruitment_count := _country_queue_count(tag, false)
+	if construction_count > 0:
+		alerts.append("Building %d" % construction_count)
+	if recruitment_count > 0:
+		alerts.append("Recruiting %d" % recruitment_count)
+	alert_label.text = " · ".join(alerts) if not alerts.is_empty() else "At peace · No active alerts"
+	alert_label.modulate = Color("efb36b") if not active_wars.is_empty() or debt > 0 else Color.WHITE
 
 
 func _country_queue_count(tag: String, construction: bool) -> int:

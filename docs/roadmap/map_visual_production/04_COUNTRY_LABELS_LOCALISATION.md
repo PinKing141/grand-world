@@ -25,11 +25,11 @@ This document absorbs all remaining P2–P4 work from [Country Names and Map Lab
 - Conservative territory raster bake.
 - Dominant-axis country fit with deterministic scale and rotation.
 - Projected screen-space collision and off-screen culling.
-- Lazy one-label-per-visible-country lifecycle.
+- Batched screen-space MSDF glyph lifecycle, grouped by atlas page.
 - Incremental invalidation for affected countries.
 - Deterministic layout, lifecycle, performance, export, and five-view visual-regression coverage.
 
-Any replacement architecture must match these correctness and performance gates before the old path is removed.
+The disabled `Label3D` code path is a migration fallback only; tests require zero fallback nodes in normal batched mode.
 
 ## Epic CL-1 — Identity and Localisation Architecture
 
@@ -229,7 +229,9 @@ The spike must compare:
 
 ### CL-4.1 Choose final label render method — P1 / L spike
 
-The current `Label3D` path is correct enough to test but can appear soft because of projection, outline, filtering, depth policy, and camera conditions. Compare:
+**MV-1 implementation:** The final path is now batched screen-space atlas text using a shared MSDF glyph atlas and the existing deterministic territory fitting/collision model. `Label3D` remains a disabled migration fallback only. The regression suite requires the normal renderer to allocate zero fallback nodes and stay within eight atlas-page submissions; the measured view uses three. The MSDF atlas is sampled as linear distance data rather than sRGB colour, eliminating the gamma-shifted contour that previously malformed thin strokes. The pale four-pixel highlight/outline has been removed completely: country names render as clean warm atlas ink over a transparent background, and labels below an 11-pixel projected height wait for a closer zoom instead of collapsing into blurred bars.
+
+The completed spike compared:
 
 - Improved `Label3D`/MSDF configuration.
 - Screen-space labels anchored to projected world bounds.
@@ -429,4 +431,3 @@ The label/name work is complete only when:
 - Labels are visibly sharp at target resolutions and stable in camera motion.
 - Mode policies, player settings, marker priority, and terrain interaction pass.
 - Global layout, lifecycle, performance, visual-regression, export, and hands-on UX gates pass.
-

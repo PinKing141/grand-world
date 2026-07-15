@@ -4,6 +4,8 @@ class_name StrategyCameraController
 signal map_click_requested(screen_position: Vector2)
 signal drag_started()
 signal drag_finished()
+signal projection_changed(projection: Camera3D.ProjectionType)
+signal zoom_changed(camera_height: float, normalized_zoom: float)
 
 @export_group("Keyboard Panning")
 @export var keyboard_pan_speed := 8.0
@@ -23,6 +25,13 @@ signal drag_finished()
 @export var reference_camera_height := 3.5
 @export var zoom_to_cursor := true
 
+@export_group("Projection")
+@export var use_orthographic_strategic_view := true
+@export var enable_close_perspective := false
+@export_range(0.8, 3.0, 0.05) var close_perspective_enter_height := 1.15
+@export_range(0.8, 3.5, 0.05) var close_perspective_exit_height := 1.4
+@export_range(20.0, 60.0, 1.0) var close_perspective_fov := 42.0
+
 @export_group("Map Limits")
 @export var map_plane_height := 0.0
 @export var map_bounds := Rect2(-28.16, -10.24, 56.32, 20.48)
@@ -37,14 +46,24 @@ var _drag_anchor := Vector3.ZERO
 var _drag_anchor_valid := false
 var _keyboard_velocity := Vector3.ZERO
 var _initial_transform := Transform3D.IDENTITY
+var _initial_camera_projection := Camera3D.PROJECTION_PERSPECTIVE
+var _initial_camera_size := 1.0
+var _initial_camera_fov := 75.0
+var _orthographic_size_per_height := 1.0
+var _projection_initialized := false
+var _close_perspective_active := false
+var _perspective_entry_fov := 75.0
+var _last_synced_height := -1.0
 
 
 func _ready() -> void:
 	_initial_transform = global_transform
 	_ensure_default_input_actions()
+	_initialize_projection_policy()
 
 
 func _process(delta: float) -> void:
+	_sync_projection_to_height()
 	_update_keyboard_pan(delta)
 	if Input.is_action_just_pressed("camera_zoom_in"):
 		_zoom_at_screen(get_viewport().get_visible_rect().size * 0.5, -1.0, 1.0)
@@ -56,7 +75,37 @@ func _process(delta: float) -> void:
 
 func reset_camera() -> void:
 	global_transform = _initial_transform
+	camera.projection = _initial_camera_projection
+	camera.size = _initial_camera_size
+	camera.fov = _initial_camera_fov
+	_close_perspective_active = false
+	_last_synced_height = camera.global_position.y
 	_keyboard_velocity = Vector3.ZERO
+	projection_changed.emit(camera.projection)
+	zoom_changed.emit(camera.global_position.y, normalized_zoom())
+
+
+func normalized_zoom() -> float:
+	return inverse_lerp(max_camera_height, min_camera_height, camera.global_position.y)
+
+
+func is_strategic_orthographic() -> bool:
+	return camera != null and camera.projection == Camera3D.PROJECTION_ORTHOGONAL
+
+
+func set_close_perspective_enabled(enabled: bool) -> void:
+	enable_close_perspective = enabled
+	if not enabled and _close_perspective_active:
+		_switch_to_orthographic_preserving_view()
+
+
+func set_strategic_projection(orthographic: bool) -> void:
+	use_orthographic_strategic_view = orthographic
+	_close_perspective_active = false
+	if orthographic:
+		_switch_to_orthographic_preserving_view()
+	else:
+		_switch_to_perspective_preserving_view(false)
 
 
 func focus_world_position(target: Vector3) -> void:
@@ -222,6 +271,7 @@ func _zoom_at_screen(screen_position: Vector2, direction: float, amount: float) 
 		return
 	requested_motion *= (target_height - current_height) / requested_motion.y
 	global_position += requested_motion
+	_sync_projection_to_height(true)
 
 	if zoom_to_cursor and not before.is_empty():
 		var after := _screen_to_map_plane(screen_position)
@@ -230,6 +280,128 @@ func _zoom_at_screen(screen_position: Vector2, direction: float, amount: float) 
 			var anchor_after: Vector3 = after["point"]
 			global_position += Vector3(anchor_before.x - anchor_after.x, 0.0, anchor_before.z - anchor_after.z)
 	_clamp_to_map_bounds()
+	zoom_changed.emit(camera.global_position.y, normalized_zoom())
+
+
+func _initialize_projection_policy() -> void:
+	if camera == null:
+		return
+	var original_span := _visible_map_vertical_span()
+	if use_orthographic_strategic_view:
+		camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+		if original_span > 0.0001:
+			_fit_orthographic_size_to_span(original_span)
+		else:
+			camera.size = maxf(camera.global_position.y * 1.65, 0.1)
+		_orthographic_size_per_height = camera.size / maxf(camera.global_position.y, 0.001)
+	_initial_camera_projection = camera.projection
+	_initial_camera_size = camera.size
+	_initial_camera_fov = camera.fov
+	_last_synced_height = camera.global_position.y
+	_projection_initialized = true
+	projection_changed.emit(camera.projection)
+	zoom_changed.emit(camera.global_position.y, normalized_zoom())
+
+
+func _sync_projection_to_height(force := false) -> void:
+	if not _projection_initialized or camera == null:
+		return
+	var height := camera.global_position.y
+	if not force and is_equal_approx(height, _last_synced_height):
+		return
+	if enable_close_perspective and use_orthographic_strategic_view:
+		if _close_perspective_active:
+			if height >= close_perspective_exit_height:
+				_switch_to_orthographic_preserving_view()
+			else:
+				var blend := inverse_lerp(close_perspective_enter_height, min_camera_height, height)
+				camera.fov = lerpf(_perspective_entry_fov, close_perspective_fov, clampf(blend, 0.0, 1.0))
+		elif height <= close_perspective_enter_height:
+			_switch_to_perspective_preserving_view(true)
+	elif camera.projection == Camera3D.PROJECTION_ORTHOGONAL:
+		camera.size = maxf(height * _orthographic_size_per_height, 0.05)
+	_last_synced_height = camera.global_position.y
+	zoom_changed.emit(camera.global_position.y, normalized_zoom())
+
+
+func _switch_to_orthographic_preserving_view() -> void:
+	if camera == null or camera.projection == Camera3D.PROJECTION_ORTHOGONAL:
+		_close_perspective_active = false
+		return
+	var center_position := get_viewport().get_visible_rect().size * 0.5
+	var anchor := _screen_to_map_plane(center_position)
+	var target_span := _visible_map_vertical_span()
+	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	if target_span > 0.0001:
+		_fit_orthographic_size_to_span(target_span)
+		_orthographic_size_per_height = camera.size / maxf(camera.global_position.y, 0.001)
+	_close_perspective_active = false
+	_recenter_after_projection_change(center_position, anchor)
+	projection_changed.emit(camera.projection)
+
+
+func _switch_to_perspective_preserving_view(close_transition: bool) -> void:
+	if camera == null or camera.projection == Camera3D.PROJECTION_PERSPECTIVE:
+		_close_perspective_active = close_transition
+		return
+	var center_position := get_viewport().get_visible_rect().size * 0.5
+	var anchor := _screen_to_map_plane(center_position)
+	var target_span := _visible_map_vertical_span()
+	camera.projection = Camera3D.PROJECTION_PERSPECTIVE
+	if target_span > 0.0001:
+		camera.fov = _matched_perspective_fov(target_span)
+	_perspective_entry_fov = camera.fov
+	_close_perspective_active = close_transition
+	_recenter_after_projection_change(center_position, anchor)
+	projection_changed.emit(camera.projection)
+
+
+func _fit_orthographic_size_to_span(target_span: float) -> void:
+	camera.size = maxf(target_span, 0.05)
+	for _iteration in 5:
+		var measured := _visible_map_vertical_span()
+		if measured <= 0.0001:
+			break
+		camera.size *= target_span / measured
+
+
+func _matched_perspective_fov(target_span: float) -> float:
+	var low := 5.0
+	var high := 120.0
+	for _iteration in 12:
+		var candidate := (low + high) * 0.5
+		camera.fov = candidate
+		var measured := _visible_map_vertical_span()
+		if measured < target_span:
+			low = candidate
+		else:
+			high = candidate
+	return (low + high) * 0.5
+
+
+func _recenter_after_projection_change(screen_position: Vector2, anchor: Dictionary) -> void:
+	if anchor.is_empty():
+		return
+	var after := _screen_to_map_plane(screen_position)
+	if after.is_empty():
+		return
+	var before_point: Vector3 = anchor["point"]
+	var after_point: Vector3 = after["point"]
+	global_position += Vector3(before_point.x - after_point.x, 0.0, before_point.z - after_point.z)
+
+
+func _visible_map_vertical_span() -> float:
+	var viewport_size := get_viewport().get_visible_rect().size
+	if viewport_size.y <= 0.0:
+		return 0.0
+	var center_x := viewport_size.x * 0.5
+	var top := _screen_to_map_plane(Vector2(center_x, 0.0))
+	var bottom := _screen_to_map_plane(Vector2(center_x, viewport_size.y))
+	if top.is_empty() or bottom.is_empty():
+		return 0.0
+	var top_point: Vector3 = top["point"]
+	var bottom_point: Vector3 = bottom["point"]
+	return Vector2(top_point.x, top_point.z).distance_to(Vector2(bottom_point.x, bottom_point.z))
 
 
 func _clamp_to_map_bounds() -> void:

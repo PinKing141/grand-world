@@ -44,27 +44,27 @@ No known P0 is intentionally scheduled at roadmap creation. Any of the following
 
 1. MV-0 baseline captures, art bible, reference board, render architecture, hardware, and provenance audit.
 2. One authoritative map transform/configuration.
-3. Sharp output, sampling/AA decision, texture tier and colour-space policy.
-4. Political status semantics for countries, subjects, occupation, uncolonised land, wasteland, and water.
-5. Political palette normalization and accessible neighbour separation.
-6. Zoom-aware country/province/coast/interaction border hierarchy.
+3. Implement the accepted sharp-output, sampling/AA, texture-tier, and colour-space policy globally. **Decision locked in MV-0; rollout open.**
+4. Implement and approve political status presentation for countries, subjects, occupation, uncolonised land, wasteland, and water. **France appanage data/rules implemented; global presentation open.**
+5. Political palette normalization and accessible neighbour separation. **Four runtime profiles and automated propagation/capture coverage are live; neighbour tooling and human review remain.**
+6. Zoom-aware country/province/coast/interaction border hierarchy. **Engineering pass and dense semantic-overlap fixture are live; art approval remains.**
 7. Declarative map-mode and overlay composition.
 8. Political atlas vertical slice including France/Orléans, Italy, and Iberia.
 9. Terrain/normal/material and hydrography vertical slice.
-10. Label render-method decision and crispness gate.
+10. Implement the accepted batched screen-space MSDF label renderer and pass the crispness/performance gate.
 11. Runtime localisation service and no-tag fallback validation.
 12. Disconnected-realm/strait/island component policy.
 13. Dynamic names, save/replay behaviour, and label invalidation.
-14. Essential marker replacement and marker/label hierarchy.
+14. Essential marker replacement and marker/label hierarchy. **Batched flag-atlas armies, route geometry, atlas-backed battle/siege clusters, shader count badges, marker clicking, source provenance, and a complete placeholder icon family are live. Bespoke final art, expanded historical source coverage, and remaining non-conflict runtime marker layers remain.**
 15. Shared zoom LOD/culling service.
 16. Deterministic map bake orchestration and cross-layer validation.
-17. GPU-rendered visual regression and reference-hardware budgets.
+17. GPU-rendered visual regression, accepted reference-hardware budgets, and the still-missing external GPU trace.
 
 ### P1 — Critical path before Visual Content Complete
 
 1. Global country editorial/historical review.
 2. Global political-status review.
-3. Major river/lake/coast production and review.
+3. Major river/lake/coast production and review. The canonical lake engineering pass and topology fixtures are live; authoritative river sourcing/content and final water art remain.
 4. Regional terrain/material production waves.
 5. Global label outlier review and visual matrix.
 6. Capitals, ports, essential settlements, armies, battles, sieges, and occupation marker coverage.
@@ -164,4 +164,3 @@ P0 items cannot be waived for Release Candidate.
 ## Completion Statement
 
 This roadmap has absorbed the unfinished label-audit backlog when every row in the migration table is complete, explicitly deferred with an approved waiver, or superseded by a documented decision that passes the same original acceptance intent.
-

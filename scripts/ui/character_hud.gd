@@ -5,6 +5,7 @@ const CharacterSystemScript = preload("res://scripts/simulation/character_system
 
 @export var simulation_controller: GrandWorldSimulationController
 @export var notification_hud: SimulationHUD
+@export var show_legacy_open_button := false
 
 @onready var court_button: Button = %CourtButton
 @onready var panel: PanelContainer = %CharacterPanel
@@ -31,6 +32,7 @@ var _character_id := ""
 
 func _ready() -> void:
 	panel.hide()
+	court_button.visible = show_legacy_open_button
 	court_button.pressed.connect(func() -> void:
 		panel.visible = not panel.visible
 		if panel.visible:
@@ -44,6 +46,11 @@ func _ready() -> void:
 	claim_button.pressed.connect(_press_claim)
 	_connect_events()
 	_populate_countries()
+	_refresh_all()
+
+
+func open_character_panel() -> void:
+	panel.show()
 	_refresh_all()
 
 

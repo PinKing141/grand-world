@@ -12,7 +12,7 @@ config_version=5
 
 config/name="Grand World V2"
 config/version="0.8.0-phase8"
-run/main_scene="uid://cgoxd520waiho"
+run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 

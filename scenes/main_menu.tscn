@@ -1,0 +1,476 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu"]
+[ext_resource type="Texture2D" path="res://assets/terrain_base_map.png" id="2_map"]
+[ext_resource type="FontFile" path="res://assets/fonts/LibreBaskerville-Variable.ttf" id="3_font"]
+[ext_resource type="Shader" path="res://shaders/main_menu_vignette.gdshader" id="4_vignette"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_europe"]
+atlas = ExtResource("2_map")
+region = Rect2(1173, 57, 704, 341)
+filter_clip = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+shader = ExtResource("4_vignette")
+
+[sub_resource type="Theme" id="Theme_menu"]
+default_font = ExtResource("3_font")
+default_font_size = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_dock"]
+bg_color = Color(0.018, 0.027, 0.043, 0.97)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.56, 0.40, 0.18, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+shadow_color = Color(0, 0, 0, 0.72)
+shadow_size = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_button"]
+bg_color = Color(0.034, 0.055, 0.075, 0.98)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.54, 0.39, 0.19, 0.95)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_button_hover"]
+bg_color = Color(0.075, 0.105, 0.125, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.82, 0.63, 0.30, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_button_pressed"]
+bg_color = Color(0.018, 0.032, 0.048, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.91, 0.73, 0.38, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_button_disabled"]
+bg_color = Color(0.025, 0.035, 0.045, 0.82)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.24, 0.22, 0.18, 0.8)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_plaque"]
+bg_color = Color(0.025, 0.036, 0.05, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.49, 0.34, 0.16, 0.95)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+shadow_color = Color(0, 0, 0, 0.55)
+shadow_size = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_modal"]
+bg_color = Color(0.016, 0.025, 0.039, 0.985)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.64, 0.46, 0.21, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_color = Color(0, 0, 0, 0.75)
+shadow_size = 14
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("Theme_menu")
+script = ExtResource("1_menu")
+
+[node name="EuropeBackdrop" type="TextureRect" parent="."]
+texture_filter = 2
+modulate = Color(1.32, 1.32, 1.32, 1)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("AtlasTexture_europe")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="BackdropVignette" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_vignette")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+
+[node name="TopGoldRule" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 3.0
+grow_horizontal = 2
+mouse_filter = 2
+color = Color(0.58, 0.41, 0.18, 0.82)
+
+[node name="TitleBlock" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 34.0
+offset_top = 24.0
+offset_right = 600.0
+offset_bottom = 170.0
+mouse_filter = 2
+
+[node name="TitleLabel" type="Label" parent="TitleBlock"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 78.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.91, 0.71, 0.34, 1)
+theme_override_colors/font_shadow_color = Color(0.03, 0.015, 0.005, 0.98)
+theme_override_constants/shadow_offset_x = 4
+theme_override_constants/shadow_offset_y = 4
+theme_override_constants/outline_size = 2
+theme_override_colors/font_outline_color = Color(0.16, 0.075, 0.025, 1)
+theme_override_font_sizes/font_size = 58
+text = "GRAND WORLD V2"
+vertical_alignment = 1
+
+[node name="TitleRule" type="ColorRect" parent="TitleBlock"]
+layout_mode = 0
+offset_left = 4.0
+offset_top = 82.0
+offset_right = 470.0
+offset_bottom = 85.0
+color = Color(0.72, 0.51, 0.23, 0.88)
+
+[node name="SubtitleLabel" type="Label" parent="TitleBlock"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 5.0
+offset_top = 92.0
+offset_right = 540.0
+offset_bottom = 128.0
+theme_override_colors/font_color = Color(0.84, 0.81, 0.70, 0.94)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.9)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 18
+text = "A GRAND STRATEGY CAMPAIGN  ·  1444–1700"
+
+[node name="VersionPlaque" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -76.0
+offset_right = 238.0
+offset_bottom = -18.0
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBox_plaque")
+
+[node name="VersionLabel" type="Label" parent="VersionPlaque"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.84, 0.81, 0.7, 1)
+theme_override_font_sizes/font_size = 13
+text = "GRAND WORLD V2\nDevelopment Build"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MainDock" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -360.0
+offset_top = -260.0
+offset_right = 360.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBox_dock")
+
+[node name="DockMargin" type="MarginContainer" parent="MainDock"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 10
+
+[node name="DockContent" type="VBoxContainer" parent="MainDock/DockMargin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ContinueButton" type="Button" parent="MainDock/DockMargin/DockContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93, 0.86, 0.67, 1)
+theme_override_colors/font_hover_color = Color(1, 0.9, 0.58, 1)
+theme_override_colors/font_disabled_color = Color(0.44, 0.43, 0.39, 1)
+theme_override_font_sizes/font_size = 19
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+theme_override_styles/pressed = SubResource("StyleBox_button_pressed")
+theme_override_styles/focus = SubResource("StyleBox_button_hover")
+theme_override_styles/disabled = SubResource("StyleBox_button_disabled")
+text = "CONTINUE CAMPAIGN"
+
+[node name="ContinueDetail" type="Label" parent="MainDock/DockMargin/DockContent"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.68, 0.72, 0.72, 1)
+theme_override_font_sizes/font_size = 12
+text = "Begin or select a country in the 11 November 1444 scenario"
+horizontal_alignment = 1
+text_overrun_behavior = 3
+
+[node name="ModeRow" type="HBoxContainer" parent="MainDock/DockMargin/DockContent"]
+layout_mode = 2
+theme_override_constants/separation = 7
+
+[node name="SinglePlayerButton" type="Button" parent="MainDock/DockMargin/DockContent/ModeRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.93, 0.86, 0.67, 1)
+theme_override_font_sizes/font_size = 17
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+theme_override_styles/pressed = SubResource("StyleBox_button_pressed")
+theme_override_styles/focus = SubResource("StyleBox_button_hover")
+text = "SINGLE PLAYER"
+
+[node name="MultiplayerButton" type="Button" parent="MainDock/DockMargin/DockContent/ModeRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.93, 0.86, 0.67, 1)
+theme_override_font_sizes/font_size = 17
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+theme_override_styles/pressed = SubResource("StyleBox_button_pressed")
+theme_override_styles/focus = SubResource("StyleBox_button_hover")
+text = "MULTIPLAYER"
+
+[node name="UtilityRow" type="HBoxContainer" parent="MainDock/DockMargin/DockContent"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="TutorialButton" type="Button" parent="MainDock/DockMargin/DockContent/UtilityRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+theme_override_styles/pressed = SubResource("StyleBox_button_pressed")
+theme_override_styles/focus = SubResource("StyleBox_button_hover")
+text = "TUTORIAL"
+
+[node name="CreditsButton" type="Button" parent="MainDock/DockMargin/DockContent/UtilityRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+theme_override_styles/pressed = SubResource("StyleBox_button_pressed")
+theme_override_styles/focus = SubResource("StyleBox_button_hover")
+text = "CREDITS"
+
+[node name="OptionsButton" type="Button" parent="MainDock/DockMargin/DockContent/UtilityRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+theme_override_styles/pressed = SubResource("StyleBox_button_pressed")
+theme_override_styles/focus = SubResource("StyleBox_button_hover")
+text = "OPTIONS"
+
+[node name="ExitButton" type="Button" parent="MainDock/DockMargin/DockContent/UtilityRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+theme_override_styles/pressed = SubResource("StyleBox_button_pressed")
+theme_override_styles/focus = SubResource("StyleBox_button_hover")
+text = "EXIT"
+
+[node name="StatusLabel" type="Label" parent="MainDock/DockMargin/DockContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.72, 0.58, 1)
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 1
+text_overrun_behavior = 3
+
+[node name="OptionsPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -230.0
+offset_top = -135.0
+offset_right = 230.0
+offset_bottom = 135.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBox_modal")
+
+[node name="Margin" type="MarginContainer" parent="OptionsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="Content" type="VBoxContainer" parent="OptionsPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 13
+
+[node name="Heading" type="Label" parent="OptionsPanel/Margin/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.71, 0.34, 1)
+theme_override_font_sizes/font_size = 26
+text = "OPTIONS"
+horizontal_alignment = 1
+
+[node name="VolumeLabel" type="Label" parent="OptionsPanel/Margin/Content"]
+layout_mode = 2
+text = "Master Volume"
+
+[node name="MasterVolume" type="HSlider" parent="OptionsPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+max_value = 100.0
+step = 1.0
+value = 80.0
+
+[node name="FullscreenToggle" type="CheckButton" parent="OptionsPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Fullscreen"
+
+[node name="OptionsCloseButton" type="Button" parent="OptionsPanel/Margin/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+theme_override_styles/pressed = SubResource("StyleBox_button_pressed")
+theme_override_styles/focus = SubResource("StyleBox_button_hover")
+text = "DONE"
+
+[node name="CreditsPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -170.0
+offset_right = 260.0
+offset_bottom = 170.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBox_modal")
+
+[node name="Margin" type="MarginContainer" parent="CreditsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 26
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 26
+theme_override_constants/margin_bottom = 22
+
+[node name="Content" type="VBoxContainer" parent="CreditsPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Heading" type="Label" parent="CreditsPanel/Margin/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.71, 0.34, 1)
+theme_override_font_sizes/font_size = 27
+text = "GRAND WORLD V2"
+horizontal_alignment = 1
+
+[node name="CreditsText" type="Label" parent="CreditsPanel/Margin/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.82, 0.82, 0.76, 1)
+text = "Design, code and original world simulation\nFavour and project contributors\n\nBuilt with Godot Engine\n\nHistorical research and final art credits will be expanded as production continues."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="CreditsCloseButton" type="Button" parent="CreditsPanel/Margin/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+theme_override_styles/pressed = SubResource("StyleBox_button_pressed")
+theme_override_styles/focus = SubResource("StyleBox_button_hover")
+text = "BACK"

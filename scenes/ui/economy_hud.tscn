@@ -30,62 +30,160 @@ script = ExtResource("1")
 [node name="ResourceBar" type="PanelContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -330.0
-offset_top = 58.0
-offset_right = 330.0
-offset_bottom = 94.0
-grow_horizontal = 2
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 728.0
+offset_bottom = 142.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_econ_panel")
 
 [node name="Margin" type="MarginContainer" parent="ResourceBar"]
 layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 4
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 4
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 7
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 7
 
-[node name="Row" type="HBoxContainer" parent="ResourceBar/Margin"]
+[node name="Layout" type="VBoxContainer" parent="ResourceBar/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 4
 
-[node name="TreasuryLabel" type="Label" parent="ResourceBar/Margin/Row"]
+[node name="MainRow" type="HBoxContainer" parent="ResourceBar/Margin/Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="ShieldButton" type="Button" parent="ResourceBar/Margin/Layout/MainRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(84, 72)
+layout_mode = 2
+focus_mode = 1
+tooltip_text = "Temporary country shield slot · open Court & Dynasty"
+
+[node name="CountryShieldLabel" type="Label" parent="ResourceBar/Margin/Layout/MainRow/ShieldButton"]
+unique_name_in_owner = true
+mouse_filter = 2
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.8, 1)
+theme_override_font_sizes/font_size = 10
+text = "COUNTRY\nSHIELD"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CountryInformation" type="VBoxContainer" parent="ResourceBar/Margin/Layout/MainRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 5
+
+[node name="ResourceRow" type="HBoxContainer" parent="ResourceBar/Margin/Layout/MainRow/CountryInformation"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 9
+
+[node name="TreasuryLabel" type="Label" parent="ResourceBar/Margin/Layout/MainRow/CountryInformation/ResourceRow"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
-text = "Treasury  0.00"
+theme_override_font_sizes/font_size = 11
+text = "Treasury 0.00"
+tooltip_text = "Current treasury"
 
-[node name="BalanceLabel" type="Label" parent="ResourceBar/Margin/Row"]
+[node name="BalanceLabel" type="Label" parent="ResourceBar/Margin/Layout/MainRow/CountryInformation/ResourceRow"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
-text = "+0.00 / month"
+theme_override_font_sizes/font_size = 11
+text = "+0.00/mo"
+tooltip_text = "Authoritative monthly balance"
 
-[node name="ManpowerLabel" type="Label" parent="ResourceBar/Margin/Row"]
+[node name="ManpowerLabel" type="Label" parent="ResourceBar/Margin/Layout/MainRow/CountryInformation/ResourceRow"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
-text = "Manpower  0 / 0"
+theme_override_font_sizes/font_size = 11
+text = "Manpower 0/0"
+tooltip_text = "Available manpower and capacity"
 
-[node name="QueueLabel" type="Label" parent="ResourceBar/Margin/Row"]
+[node name="QueueLabel" type="Label" parent="ResourceBar/Margin/Layout/MainRow/CountryInformation/ResourceRow"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 11
 text = "Build 0 · Recruit 0"
+tooltip_text = "Active construction and recruitment queues"
 
-[node name="DebtLabel" type="Label" parent="ResourceBar/Margin/Row"]
+[node name="DebtLabel" type="Label" parent="ResourceBar/Margin/Layout/MainRow/CountryInformation/ResourceRow"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.55, 0.48, 1)
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 11
 text = "Debt 0.00"
+tooltip_text = "Outstanding debt"
 
-[node name="EconomyButton" type="Button" parent="ResourceBar/Margin/Row"]
+[node name="StatusDivider" type="HSeparator" parent="ResourceBar/Margin/Layout/MainRow/CountryInformation"]
+layout_mode = 2
+
+[node name="StatusRow" type="HBoxContainer" parent="ResourceBar/Margin/Layout/MainRow/CountryInformation"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="CountryStatusLabel" type="Label" parent="ResourceBar/Margin/Layout/MainRow/CountryInformation/StatusRow"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
-text = "Economy"
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.88, 0.82, 0.62, 1)
+theme_override_font_sizes/font_size = 12
+text = "Observer"
+text_overrun_behavior = 3
+
+[node name="AlertLabel" type="Label" parent="ResourceBar/Margin/Layout/MainRow/CountryInformation/StatusRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.74, 0.82, 0.88, 1)
+theme_override_font_sizes/font_size = 11
+text = "No active alerts"
+horizontal_alignment = 2
+text_overrun_behavior = 3
+
+[node name="NavigationRow" type="HBoxContainer" parent="ResourceBar/Margin/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ShieldSpacer" type="Control" parent="ResourceBar/Margin/Layout/NavigationRow"]
+custom_minimum_size = Vector2(84, 0)
+layout_mode = 2
+
+[node name="GovernmentButton" type="Button" parent="ResourceBar/Margin/Layout/NavigationRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(70, 28)
+layout_mode = 2
+text = "Gov"
+tooltip_text = "Open government, technology, subjects, events, and decisions"
+
+[node name="EconomyButton" type="Button" parent="ResourceBar/Margin/Layout/NavigationRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(70, 28)
+layout_mode = 2
+text = "Eco"
+tooltip_text = "Open treasury, income, maintenance, debt, and queues"
+
+[node name="MilitaryButton" type="Button" parent="ResourceBar/Margin/Layout/NavigationRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(70, 28)
+layout_mode = 2
+text = "Mil"
+tooltip_text = "Open the player army controls"
+
+[node name="DiplomacyButton" type="Button" parent="ResourceBar/Margin/Layout/NavigationRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(70, 28)
+layout_mode = 2
+text = "Dip"
+tooltip_text = "Open diplomacy, active wars, and peace"
+
+[node name="ReligionButton" type="Button" parent="ResourceBar/Margin/Layout/NavigationRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(70, 28)
+layout_mode = 2
+text = "Rel"
+tooltip_text = "Open culture, religion, unrest, and conversion"
 
 [node name="EconomyPanel" type="PanelContainer" parent="."]
 unique_name_in_owner = true

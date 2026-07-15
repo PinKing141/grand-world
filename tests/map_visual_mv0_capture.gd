@@ -111,6 +111,8 @@ var _scene: Node
 var _labels: CountryLabelLayer
 var _camera_controller: StrategyCameraController
 var _map_hud: MapHUD
+var _hide_armies := false
+var _view_filter := ""
 
 
 func _initialize() -> void:
@@ -126,6 +128,10 @@ func _run() -> void:
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--output-dir="):
 			_output_directory = argument.trim_prefix("--output-dir=")
+		elif argument == "--hide-armies":
+			_hide_armies = true
+		elif argument.begins_with("--view="):
+			_view_filter = argument.trim_prefix("--view=")
 	if _output_directory.is_empty():
 		_fail("pass --output-dir=<absolute directory>")
 		return
@@ -143,6 +149,10 @@ func _run() -> void:
 	_scene = packed.instantiate()
 	root.add_child(_scene)
 	current_scene = _scene
+	if _hide_armies:
+		var army_layer := _scene.get_node_or_null("ArmyLayer") as Node3D
+		if army_layer != null:
+			army_layer.visible = false
 	await process_frame
 	await process_frame
 
@@ -178,6 +188,8 @@ func _run() -> void:
 	}
 
 	for view in VIEW_DEFINITIONS:
+		if not _view_filter.is_empty() and String(view["name"]) != _view_filter:
+			continue
 		var capture_result := await _capture_view(view)
 		if capture_result.is_empty():
 			return
@@ -233,7 +245,10 @@ func _capture_view(view: Dictionary) -> Dictionary:
 	_map_hud.set_map_mode(int(view["mode"]))
 	_hide_hud()
 	await _focus_view(view)
-	for _settle_frame in 10:
+	# Owner/realm LUT updates trigger two ordered SubViewport redraws. Give that
+	# pipeline a deterministic warm-up instead of accidentally capturing the
+	# terrain-only frame on fast headless/rendered runs.
+	for _settle_frame in 30:
 		await process_frame
 	if not await _wait_for_labels(120):
 		_fail("label allocation did not settle for %s" % view["name"])

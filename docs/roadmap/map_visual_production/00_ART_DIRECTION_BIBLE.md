@@ -10,6 +10,8 @@ The map should feel like a living early-modern political atlas laid over a tacti
 
 The intended result is inspired by the clarity of Europa Universalis IV and the regional texture of Crusader Kings II, but it must not imitate proprietary assets or reproduce another game's exact look. The project's identity should come from its own palette, type system, terrain materials, border language, and historical content.
 
+**Placeholder marker decision (15 July 2026):** Use an original painted cartographic shield/icon system with EU4-like information hierarchy, not copied Paradox artwork. Country markers use openly licensed historical banners, arms, royal standards, or near-period evidence. Every sourced image retains provenance and an evidence warning; unsourced country slots remain transparent rather than displaying invented heraldry. See [Historical Placeholder Marker Art Specification](MARKER_PLACEHOLDER_ART_SPEC.md) and the generated [Historical Shield Research Register](HISTORICAL_SHIELD_RESEARCH_REGISTER.md).
+
 ## Reference Breakdown
 
 Reference material should be studied by function rather than copied as a whole.

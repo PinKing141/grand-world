@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "coordinate_space": "map_pixels",
+  "map_size": [5632, 2048],
+  "production_status": "template_only_not_a_shipping_asset",
+  "source": {
+    "title": "Replace with approved hydrography source",
+    "uri": "unresolved",
+    "license": "unresolved",
+    "attribution": "unresolved",
+    "review_status": "unresolved"
+  },
+  "rivers": []
+}

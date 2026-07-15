@@ -41,28 +41,29 @@ script = ExtResource("1_sim_hud")
 
 [node name="TopBar" type="PanelContainer" parent="."]
 layout_mode = 0
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -450.0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -386.0
 offset_top = 8.0
-offset_right = 450.0
-offset_bottom = 54.0
-grow_horizontal = 2
+offset_right = -8.0
+offset_bottom = 43.0
+grow_horizontal = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_sim_bar")
 
 [node name="Margin" type="MarginContainer" parent="TopBar"]
 layout_mode = 2
-theme_override_constants/margin_left = 9
-theme_override_constants/margin_top = 5
-theme_override_constants/margin_right = 9
-theme_override_constants/margin_bottom = 5
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 3
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 3
 
 [node name="Row" type="HBoxContainer" parent="TopBar/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 5
+theme_override_constants/separation = 3
 
 [node name="PlayerLabel" type="Label" parent="TopBar/Margin/Row"]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(125, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
@@ -71,62 +72,63 @@ text_overrun_behavior = 3
 
 [node name="DateLabel" type="Label" parent="TopBar/Margin/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(130, 0)
+custom_minimum_size = Vector2(126, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 11
 text = "11 November 1444"
 horizontal_alignment = 1
 
 [node name="PauseButton" type="Button" parent="TopBar/Margin/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(42, 0)
+custom_minimum_size = Vector2(30, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 11
 text = "▶"
 tooltip_text = "Pause or resume the authoritative campaign clock (Space)"
 
 [node name="Speed1" type="Button" parent="TopBar/Margin/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(30, 0)
+custom_minimum_size = Vector2(24, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 11
 text = "1"
 tooltip_text = "Run at speed 1"
 
 [node name="Speed2" type="Button" parent="TopBar/Margin/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(30, 0)
+custom_minimum_size = Vector2(24, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 11
 text = "2"
 tooltip_text = "Run at speed 2"
 
 [node name="Speed3" type="Button" parent="TopBar/Margin/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(30, 0)
+custom_minimum_size = Vector2(24, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 11
 text = "3"
 tooltip_text = "Run at speed 3"
 
 [node name="Speed4" type="Button" parent="TopBar/Margin/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(30, 0)
+custom_minimum_size = Vector2(24, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 11
 text = "4"
 tooltip_text = "Run at speed 4"
 
 [node name="Speed5" type="Button" parent="TopBar/Margin/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(30, 0)
+custom_minimum_size = Vector2(24, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 11
 text = "5"
 tooltip_text = "Run at speed 5"
 
 [node name="StepButton" type="Button" parent="TopBar/Margin/Row"]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(42, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
@@ -135,6 +137,7 @@ tooltip_text = "Pause and advance exactly one deterministic day"
 
 [node name="MonthButton" type="Button" parent="TopBar/Margin/Row"]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(42, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
@@ -143,16 +146,18 @@ tooltip_text = "Pause and advance to the first day of the next month"
 
 [node name="SaveButton" type="Button" parent="TopBar/Margin/Row"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
-text = "Save"
+theme_override_font_sizes/font_size = 11
+text = "S"
 tooltip_text = "Write the versioned campaign quick save"
 
 [node name="LoadButton" type="Button" parent="TopBar/Margin/Row"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
-text = "Load"
+theme_override_font_sizes/font_size = 11
+text = "L"
 tooltip_text = "Load the versioned campaign quick save"
 
 [node name="StatusPanel" type="PanelContainer" parent="."]

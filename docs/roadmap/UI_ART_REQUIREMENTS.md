@@ -1,5 +1,7 @@
 # UI Art & Style Requirements
 
+> Detailed production instructions now live in the [Grand World UI Production Handbook](../ui_production/README.md). This file remains the high-level roadmap inventory; use the handbook for tool training, screen specifications, asset IDs, Godot handoff, accessibility, performance, and approval criteria.
+
 Everything needed to take the interface from the current flat debug look to an
 EU4-calibre themed UI. Derived from the systems each roadmap phase introduces:
 an asset is listed in the earliest phase whose systems display it. Nothing here

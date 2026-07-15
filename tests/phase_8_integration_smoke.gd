@@ -25,6 +25,7 @@ func _run() -> void:
 	await process_frame
 	var simulation := scene.get_node("SimulationController") as ControllerScript
 	var hud := scene.get_node("CountryDepthHUD") as CountryDepthHUDScript
+	var country_hud := scene.get_node("EconomyHUD") as EconomyHUD
 	var map_render := scene.get_node("Map")
 	var map_hud := scene.get_node("MapHUD") as MapHUD
 	_require(simulation.initialized, "campaign must initialize")
@@ -32,11 +33,39 @@ func _run() -> void:
 	_require(int(simulation.world.global_flags.get("country_depth_version", 0)) == 1, "main campaign must initialize Phase 8 state")
 	_require(hud != null and hud.open_button != null, "country-depth HUD must instantiate")
 
+	var expected_appanages := ["AUV", "BOU", "FOI", "ORL"]
+	var actual_appanages: Array[String] = []
+	for raw_record in simulation.world.subject_registry.values():
+		var subject_record: Dictionary = raw_record
+		if String(subject_record.get("overlord", "")) == "FRA" and String(subject_record.get("presentation", "")) == "appanage":
+			actual_appanages.append(String(subject_record.get("subject", "")))
+	actual_appanages.sort()
+	_require(actual_appanages == expected_appanages, "1444 France must initialize Auvergne, Bourbonnais, Foix, and Orleans as separately owned appanages")
+	_require(not actual_appanages.has("BRI") and not actual_appanages.has("PRO"), "Brittany and Provence must remain outside France's starting subject realm")
+	for appanage_tag in expected_appanages:
+		_require(not simulation.world.get_country_provinces(appanage_tag).is_empty(), "%s must retain its own legal provinces" % appanage_tag)
+		_require(map_render.debug_realm_root(appanage_tag) == "FRA", "%s must render inside France's political realm" % appanage_tag)
+		var appanage_province := int(simulation.world.get_country_provinces(appanage_tag)[0])
+		var appanage_cue: Color = map_render.debug_subject_cue(appanage_province)
+		_require(appanage_cue.r > 0.9, "%s provinces must carry the subject/appanage presentation cue" % appanage_tag)
+		_require(absf(appanage_cue.g - 0.25) < 0.02, "%s must select the appanage dot-pattern class rather than a generic colour-only subject cue" % appanage_tag)
+		_require(map_render.debug_presentation_color(appanage_tag) != map_render.debug_presentation_color("FRA"), "%s must retain a distinct legal-owner colour" % appanage_tag)
+	_require(map_render.debug_realm_root("BRI") == "BRI" and map_render.debug_realm_root("PRO") == "PRO", "Brittany and Provence must not receive France's realm presentation")
+	var occupation_probe := int(simulation.world.get_country_provinces("ORL")[0])
+	map_render.update_province_control(occupation_probe, "ORL", "FRA", "FRA")
+	var occupation_cue: Color = map_render.debug_control_cue(occupation_probe)
+	_require(occupation_cue.r > 0.9 and occupation_cue.g > 0.9, "player-controlled occupation must reach the final map lookup")
+	map_render.update_province_control(occupation_probe, "ORL", "ORL", "FRA")
+	_require(map_render.debug_control_cue(occupation_probe).r < 0.1, "restoring legal control must clear the occupation cue")
+
 	simulation.choose_player_country("CAS")
 	simulation.scheduler.process_commands()
 	await process_frame
-	_require(hud.open_button.visible, "choosing a country must expose Country & State")
-	hud.panel.show()
+	_require(not hud.open_button.visible, "the legacy floating Country & State button must remain hidden")
+	_require(country_hud.government_button.visible and country_hud.government_button.text == "Gov", "choosing a country must expose government through the unified top-left HUD")
+	country_hud.government_button.pressed.emit()
+	await process_frame
+	_require(hud.panel.visible and hud.tabs.current_tab == 0, "the unified Gov button must open the government tab")
 	var runtime := simulation.world.country_runtime("CAS")
 	runtime["treasury"] = 500000
 	runtime["technology_points"] = {"administrative": 5000, "diplomatic": 5000, "military": 5000}

@@ -18,6 +18,8 @@ func _require(condition: bool, message: String) -> void:
 
 
 func _disjoint(first: Control, second: Control, label: String) -> void:
+	if not first.is_visible_in_tree() or not second.is_visible_in_tree():
+		return
 	_require(not first.get_global_rect().intersects(second.get_global_rect()), "%s overlap: %s / %s" % [
 		label,
 		first.get_global_rect(),
@@ -37,7 +39,9 @@ func _check_layout(scene: Node, viewport_size: Vector2i) -> void:
 	var search := scene.get_node("MapHUD/SearchBox") as Control
 	var hint_bar := scene.get_node("MapHUD/HintBar") as Control
 	var province_panel := scene.get_node("MapHUD/ProvincePanel") as Control
-	var province_content := scene.get_node("MapHUD/ProvincePanel/Margin/Content") as Control
+	var province_content := scene.get_node("MapHUD/ProvincePanel").find_child("CampaignScroll", true, false) as Control
+	if province_content == null:
+		province_content = scene.get_node("MapHUD/ProvincePanel").find_child("Content", true, false) as Control
 	var tooltip := scene.get_node("MapHUD/ProvinceTooltip") as Control
 	var resource_bar := scene.get_node("EconomyHUD/ResourceBar") as Control
 	var economy_panel := scene.get_node("EconomyHUD/EconomyPanel") as Control
@@ -46,6 +50,8 @@ func _check_layout(scene: Node, viewport_size: Vector2i) -> void:
 	var ai_panel := scene.get_node("AIDebugHUD/AIPanel") as Control
 	var character_panel := scene.get_node("CharacterHUD/CharacterPanel") as Control
 	var country_depth_panel := scene.get_node("CountryDepthHUD/CountryStatePanel") as Control
+	_require(resource_bar.get_global_rect().position.x <= 10.0 and resource_bar.get_global_rect().position.y <= 10.0, "country HUD must remain anchored at the top-left at %s: %s" % [viewport_size, resource_bar.get_global_rect()])
+	_require(top_bar.get_global_rect().end.x >= root.get_visible_rect().size.x - 10.0 and top_bar.get_global_rect().position.y <= 10.0, "compact campaign clock must remain anchored at the top-right at %s: %s" % [viewport_size, top_bar.get_global_rect()])
 	_disjoint(top_bar, map_modes, "campaign bar and map modes at %s" % viewport_size)
 	_disjoint(top_bar, search, "campaign bar and search at %s" % viewport_size)
 	_disjoint(map_modes, search, "map modes and search at %s" % viewport_size)
@@ -128,6 +134,13 @@ func _run() -> void:
 	simulation_hud._show_status("Layout test notification")
 	simulation.choose_player_country("SWE")
 	simulation.scheduler.process_commands()
+	_require(economy_hud.resource_bar.visible, "choosing a country must reveal the top-left country HUD")
+	_require(economy_hud.government_button.text == "Gov" and economy_hud.economy_button.text == "Eco", "country HUD must expose the government and economy navigation slots")
+	_require(economy_hud.military_button.text == "Mil" and economy_hud.diplomacy_button.text == "Dip" and economy_hud.religion_button.text == "Rel", "country HUD must expose military, diplomacy, and religion navigation slots")
+	_require(not war_hud.diplomacy_button.visible and not character_hud.court_button.visible and not country_depth_hud.open_button.visible, "legacy floating system buttons must stay hidden after HUD consolidation")
+	economy_hud.shield_button.pressed.emit()
+	await process_frame
+	_require(character_hud.panel.visible, "the country shield must preserve access to Court & Dynasty")
 	economy_hud._on_province_selected(info)
 	economy_hud.economy_panel.show()
 	war_hud.diplomacy_panel.show()

@@ -8,10 +8,12 @@ const CountryDepthSystemScript = preload("res://scripts/simulation/country_depth
 @export var province_selector: ProvinceSelector
 @export var map_hud: MapHUD
 @export var notification_hud: SimulationHUD
+@export var show_legacy_open_button := false
 
 @onready var open_button: Button = %CountryStateButton
 @onready var panel: PanelContainer = %CountryStatePanel
 @onready var close_button: Button = %CloseButton
+@onready var tabs: TabContainer = %Tabs
 @onready var title_label: Label = %TitleLabel
 @onready var overview_label: RichTextLabel = %OverviewLabel
 @onready var stability_button: Button = %StabilityButton
@@ -117,6 +119,12 @@ func _toggle_panel() -> void:
 		_refresh_all()
 
 
+func open_country_state(tab_index := 0) -> void:
+	panel.show()
+	tabs.current_tab = clampi(tab_index, 0, tabs.get_tab_count() - 1)
+	_refresh_all()
+
+
 func _player() -> String:
 	return simulation_controller.world.player_country if simulation_controller.initialized else ""
 
@@ -130,7 +138,7 @@ func _refresh_all() -> void:
 	if not is_node_ready() or not simulation_controller.initialized:
 		return
 	var tag := _player()
-	open_button.visible = not tag.is_empty()
+	open_button.visible = show_legacy_open_button and not tag.is_empty()
 	if tag.is_empty():
 		panel.hide()
 		return

@@ -161,6 +161,28 @@ func _refresh_all() -> void:
 	_refresh_selection_actions()
 
 
+func open_military_panel() -> void:
+	if not simulation_controller.initialized:
+		return
+	var player := simulation_controller.world.player_country
+	if player.is_empty():
+		_show_status("Choose a playable country before opening military controls.")
+		return
+	var army_ids := simulation_controller.world.army_registry.keys()
+	army_ids.sort()
+	for raw_army_id in army_ids:
+		var army_id := String(raw_army_id)
+		var army: Dictionary = simulation_controller.world.army_registry[raw_army_id]
+		if String(army.get("owner_country_id", "")) != player:
+			continue
+		_selected_army_id = army_id
+		army_layer.set_selected_army(army_id)
+		army_panel.show()
+		_refresh_army_panel()
+		return
+	_show_status("No player army exists yet. Recruit infantry from an owned province.")
+
+
 func _on_date_changed(day_count: int, _date: Dictionary) -> void:
 	date_label.text = SimulationDate.format_day(day_count)
 
@@ -319,7 +341,7 @@ func _on_province_hovered_for_army(info: Dictionary, _screen_position: Vector2) 
 			String(route.get("arrival_text", "")), int(route.get("total_cost_days", 0)), strait_note,
 		]
 	else:
-		army_layer.clear_preview_path()
+		army_layer.set_invalid_destination(int(info.get("province_id", -1)))
 		army_route_info.text = _replace_country_tags(String(route.get("failure_reason", "")))
 
 

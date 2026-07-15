@@ -9,6 +9,7 @@ const CountryDepthSystemScript = preload("res://scripts/simulation/country_depth
 @export var province_selector: ProvinceSelector
 @export var map_hud: MapHUD
 @export var notification_hud: SimulationHUD
+@export var show_legacy_open_button := false
 
 @onready var diplomacy_button: Button = %DiplomacyButton
 @onready var diplomacy_panel: PanelContainer = %DiplomacyPanel
@@ -32,6 +33,8 @@ const CountryDepthSystemScript = preload("res://scripts/simulation/country_depth
 var _target_country := ""
 var _target_province_id := -1
 var _current_war_id := ""
+var _inspected_foreign_war_id := ""
+var _focused_marker_context: Dictionary = {}
 
 
 func _ready() -> void:
@@ -111,9 +114,27 @@ func _on_province_selected(info: Dictionary) -> void:
 	_refresh_target()
 
 
+func focus_conflict_marker(marker: Dictionary) -> void:
+	var war_id := String(marker.get("war_id", ""))
+	if war_id.is_empty() or not simulation_controller.world.war_registry.has(war_id):
+		return
+	_current_war_id = war_id
+	_inspected_foreign_war_id = war_id
+	_focused_marker_context = marker.duplicate(true)
+	_target_province_id = int(marker.get("province_id", -1))
+	_target_country = simulation_controller.world.get_province_owner(_target_province_id)
+	diplomacy_panel.show()
+	_refresh_all()
+
+
+func open_diplomacy_panel() -> void:
+	diplomacy_panel.show()
+	_refresh_all()
+
+
 func _refresh_all() -> void:
 	var player := _player_country()
-	diplomacy_button.visible = not player.is_empty()
+	diplomacy_button.visible = show_legacy_open_button and not player.is_empty()
 	_refresh_target()
 	_refresh_war_list()
 	_refresh_war()
@@ -158,7 +179,12 @@ func _refresh_target() -> void:
 func _refresh_war_list() -> void:
 	var previous := _current_war_id
 	war_option.clear()
-	var wars := simulation_controller.country_wars(_player_country())
+	var wars: Array = simulation_controller.country_wars(_player_country())
+	if not _inspected_foreign_war_id.is_empty() and simulation_controller.world.war_registry.has(_inspected_foreign_war_id):
+		var inspected: Dictionary = simulation_controller.world.war_registry[_inspected_foreign_war_id]
+		if String(inspected.get("status", "active")) == "active" and not wars.has(_inspected_foreign_war_id):
+			wars.append(_inspected_foreign_war_id)
+	wars.sort()
 	for war_id in wars:
 		var war: Dictionary = simulation_controller.world.war_registry[war_id]
 		war_option.add_item(_war_display_name(war))
@@ -236,6 +262,13 @@ func _refresh_war() -> void:
 		(war.get("occupied_provinces", {}) as Dictionary).size(),
 		offers.size(),
 	]) + result_text
+	if String(_focused_marker_context.get("war_id", "")) == _current_war_id:
+		details_label.text += "\nFocused %s · province %d · marker %d of %d in cluster" % [
+			String(_focused_marker_context.get("marker_type", "conflict")).capitalize(),
+			int(_focused_marker_context.get("province_id", -1)),
+			int(_focused_marker_context.get("cluster_member_index", 0)) + 1,
+			int(_focused_marker_context.get("cluster_size", 1)),
+		]
 
 
 func _select_war(index: int) -> void:
@@ -337,9 +370,7 @@ func _show_war_map() -> void:
 		var occupation: Dictionary = war["occupied_provinces"][raw_key]
 		colors[int(raw_key)] = Color(0.68, 0.28, 0.78) if int(occupation.get("side", 0)) > 0 else Color(0.95, 0.46, 0.18)
 	var goal_id := int((war.get("war_goal", {}) as Dictionary).get("province_id", -1))
-	if goal_id >= 0:
-		colors[goal_id] = Color(1.0, 0.82, 0.12)
-	map_hud.set_strategy_map_overlay("war", "War: blue attackers, red defenders, purple/orange occupation, gold war goal.", colors)
+	map_hud.set_strategy_map_overlay("war", "War: blue attackers, red defenders, purple/orange occupation, gold double border is the war goal.", colors, goal_id)
 
 
 func _show_access_map() -> void:

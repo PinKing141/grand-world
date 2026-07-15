@@ -1,0 +1,520 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/country_selection_screen.gd" id="1_selection"]
+[ext_resource type="FontFile" path="res://assets/fonts/LibreBaskerville-Variable.ttf" id="2_font"]
+
+[sub_resource type="Theme" id="Theme_selection"]
+default_font = ExtResource("2_font")
+default_font_size = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_panel"]
+bg_color = Color(0.018, 0.028, 0.043, 0.965)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.54, 0.39, 0.18, 0.98)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+shadow_color = Color(0, 0, 0, 0.64)
+shadow_size = 9
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_button"]
+bg_color = Color(0.034, 0.052, 0.071, 0.98)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.48, 0.35, 0.17, 0.95)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_button_hover"]
+bg_color = Color(0.08, 0.105, 0.12, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.84, 0.64, 0.29, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_button_pressed"]
+bg_color = Color(0.075, 0.052, 0.022, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.95, 0.76, 0.38, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_shield"]
+bg_color = Color(0.025, 0.034, 0.045, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.69, 0.50, 0.22, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+
+[node name="CountrySelectionScreen" type="Control"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = SubResource("Theme_selection")
+script = ExtResource("1_selection")
+
+[node name="HeaderPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -250.0
+offset_top = 14.0
+offset_right = 250.0
+offset_bottom = 76.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBox_panel")
+
+[node name="HeaderContent" type="VBoxContainer" parent="HeaderPanel"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="Title" type="Label" parent="HeaderPanel/HeaderContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.74, 0.39, 1)
+theme_override_font_sizes/font_size = 22
+text = "THE WORLD  ·  1444 AD"
+horizontal_alignment = 1
+
+[node name="Instruction" type="Label" parent="HeaderPanel/HeaderContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.81, 0.79, 1)
+theme_override_font_sizes/font_size = 12
+text = "Click a coloured country on the map or choose a recommended realm"
+horizontal_alignment = 1
+
+[node name="LeftPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 14.0
+offset_top = 88.0
+offset_right = 316.0
+offset_bottom = -104.0
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBox_panel")
+
+[node name="Margin" type="MarginContainer" parent="LeftPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 13
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 13
+theme_override_constants/margin_bottom = 12
+
+[node name="Content" type="VBoxContainer" parent="LeftPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 9
+
+[node name="Tabs" type="HBoxContainer" parent="LeftPanel/Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="HistoryTab" type="Button" parent="LeftPanel/Margin/Content/Tabs"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+button_pressed = true
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+theme_override_styles/pressed = SubResource("StyleBox_button_pressed")
+text = "HISTORICAL START"
+
+[node name="SavedTab" type="Button" parent="LeftPanel/Margin/Content/Tabs"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+theme_override_styles/pressed = SubResource("StyleBox_button_pressed")
+text = "SAVED GAMES"
+
+[node name="HistoryContent" type="VBoxContainer" parent="LeftPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="StartHeading" type="Label" parent="LeftPanel/Margin/Content/HistoryContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.73, 0.4, 1)
+theme_override_font_sizes/font_size = 17
+text = "11 NOVEMBER 1444"
+
+[node name="Context" type="Label" parent="LeftPanel/Margin/Content/HistoryContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.75, 1)
+text = "The medieval order is giving way to stronger crowns, expanding empires, maritime competition, and new systems of war and finance."
+autowrap_mode = 2
+
+[node name="Rule" type="HSeparator" parent="LeftPanel/Margin/Content/HistoryContent"]
+layout_mode = 2
+
+[node name="BookmarksLabel" type="Label" parent="LeftPanel/Margin/Content/HistoryContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.82, 0.79, 0.68, 1)
+text = "Historical theatres"
+
+[node name="Bookmark1" type="Button" parent="LeftPanel/Margin/Content/HistoryContent"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+text = "The Hundred Years' War"
+
+[node name="Bookmark2" type="Button" parent="LeftPanel/Margin/Content/HistoryContent"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+text = "The Rise of the Ottomans"
+
+[node name="Bookmark3" type="Button" parent="LeftPanel/Margin/Content/HistoryContent"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+text = "Iberian Ambitions"
+
+[node name="Bookmark4" type="Button" parent="LeftPanel/Margin/Content/HistoryContent"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+text = "The Italian Balance"
+
+[node name="DateRule" type="HSeparator" parent="LeftPanel/Margin/Content/HistoryContent"]
+layout_mode = 2
+
+[node name="DateHeading" type="Label" parent="LeftPanel/Margin/Content/HistoryContent"]
+layout_mode = 2
+text = "Starting date"
+
+[node name="DateValue" type="Label" parent="LeftPanel/Margin/Content/HistoryContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.82, 0.53, 1)
+theme_override_font_sizes/font_size = 19
+text = "11 November 1444"
+horizontal_alignment = 1
+
+[node name="DateScope" type="Label" parent="LeftPanel/Margin/Content/HistoryContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.58, 0.62, 0.62, 1)
+theme_override_font_sizes/font_size = 11
+text = "Additional start dates unlock after the 1444–1700 production scope is complete."
+autowrap_mode = 2
+
+[node name="SavedContent" type="VBoxContainer" parent="LeftPanel/Margin/Content"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="SavedHeading" type="Label" parent="LeftPanel/Margin/Content/SavedContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.73, 0.4, 1)
+theme_override_font_sizes/font_size = 17
+text = "SAVED CAMPAIGN"
+
+[node name="SavedSummary" type="Label" parent="LeftPanel/Margin/Content/SavedContent"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+text = "No quick save exists yet."
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="LoadSavedButton" type="Button" parent="LeftPanel/Margin/Content/SavedContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+theme_override_styles/pressed = SubResource("StyleBox_button_pressed")
+text = "LOAD SAVED CAMPAIGN"
+
+[node name="LeftActions" type="HBoxContainer" parent="LeftPanel/Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="OptionsButton" type="Button" parent="LeftPanel/Margin/Content/LeftActions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+text = "OPTIONS"
+
+[node name="BackButton" type="Button" parent="LeftPanel/Margin/Content/LeftActions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+text = "BACK"
+
+[node name="RightPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -346.0
+offset_top = 88.0
+offset_right = -14.0
+offset_bottom = -104.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBox_panel")
+
+[node name="Margin" type="MarginContainer" parent="RightPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 13
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 13
+
+[node name="Content" type="VBoxContainer" parent="RightPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CountryTint" type="ColorRect" parent="RightPanel/Margin/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 5)
+layout_mode = 2
+color = Color(0.45, 0.3, 0.25, 1)
+
+[node name="ShieldRow" type="HBoxContainer" parent="RightPanel/Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ShieldFrame" type="PanelContainer" parent="RightPanel/Margin/Content/ShieldRow"]
+custom_minimum_size = Vector2(92, 108)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBox_shield")
+
+[node name="ShieldTexture" type="TextureRect" parent="RightPanel/Margin/Content/ShieldRow/ShieldFrame"]
+unique_name_in_owner = true
+layout_mode = 2
+texture_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="MissingShieldLabel" type="Label" parent="RightPanel/Margin/Content/ShieldRow/ShieldFrame"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.58, 0.58, 0.55, 1)
+theme_override_font_sizes/font_size = 10
+text = "Shield research pending"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="CountryHeading" type="VBoxContainer" parent="RightPanel/Margin/Content/ShieldRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 3
+
+[node name="CountryNameLabel" type="Label" parent="RightPanel/Margin/Content/ShieldRow/CountryHeading"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.81, 0.5, 1)
+theme_override_font_sizes/font_size = 24
+text = "Select a country"
+autowrap_mode = 2
+
+[node name="CountrySubtitleLabel" type="Label" parent="RightPanel/Margin/Content/ShieldRow/CountryHeading"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.75, 1)
+text = "Realm and government"
+autowrap_mode = 2
+
+[node name="InfoRule" type="HSeparator" parent="RightPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="RulerLabel" type="Label" parent="RightPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Ruler"
+autowrap_mode = 2
+
+[node name="RealmLabel" type="Label" parent="RightPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Realm"
+
+[node name="IdentityLabel" type="Label" parent="RightPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "People and faith"
+
+[node name="EconomyLabel" type="Label" parent="RightPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Starting resources"
+autowrap_mode = 2
+
+[node name="TechnologyLabel" type="Label" parent="RightPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Technology"
+autowrap_mode = 2
+
+[node name="DifficultyLabel" type="Label" parent="RightPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.87, 0.72, 0.4, 1)
+text = "Starting difficulty"
+vertical_alignment = 2
+
+[node name="PlayButton" type="Button" parent="RightPanel/Margin/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.84, 0.55, 1)
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+theme_override_styles/pressed = SubResource("StyleBox_button_pressed")
+text = "SELECT A COUNTRY"
+disabled = true
+
+[node name="RecommendedPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -470.0
+offset_top = -142.0
+offset_right = 470.0
+offset_bottom = -14.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBox_panel")
+
+[node name="Margin" type="MarginContainer" parent="RecommendedPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="Content" type="VBoxContainer" parent="RecommendedPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="RecommendedRow" type="HBoxContainer" parent="RecommendedPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="SynopsisLabel" type="Label" parent="RecommendedPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.78, 0.75, 1)
+theme_override_font_sizes/font_size = 11
+text = "Select a recommended realm or any playable country on the map."
+horizontal_alignment = 1
+text_overrun_behavior = 3
+
+[node name="SelectionStatus" type="Label" parent="RecommendedPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.73, 0.4, 1)
+theme_override_font_sizes/font_size = 11
+text = "Select a country"
+horizontal_alignment = 1
+text_overrun_behavior = 3
+
+[node name="SelectionOptionsPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -130.0
+offset_right = 220.0
+offset_bottom = 130.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBox_panel")
+
+[node name="Margin" type="MarginContainer" parent="SelectionOptionsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="Content" type="VBoxContainer" parent="SelectionOptionsPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 13
+
+[node name="Heading" type="Label" parent="SelectionOptionsPanel/Margin/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.74, 0.39, 1)
+theme_override_font_sizes/font_size = 24
+text = "OPTIONS"
+horizontal_alignment = 1
+
+[node name="VolumeLabel" type="Label" parent="SelectionOptionsPanel/Margin/Content"]
+layout_mode = 2
+text = "Master Volume"
+
+[node name="VolumeSlider" type="HSlider" parent="SelectionOptionsPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+max_value = 100.0
+step = 1.0
+value = 80.0
+
+[node name="FullscreenToggle" type="CheckButton" parent="SelectionOptionsPanel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Fullscreen"
+
+[node name="OptionsCloseButton" type="Button" parent="SelectionOptionsPanel/Margin/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBox_button")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+text = "DONE"

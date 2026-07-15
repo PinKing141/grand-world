@@ -153,6 +153,8 @@ Each material defines macro hue/value, normal strength, roughness, tiling scale,
 
 ### TW-3.1 Create authoritative river data — P1 / XL, split before production
 
+**Implementation status (15 July 2026):** Source-gated. The versioned `map_pixels` schema, provenance requirements, validator, template, and positive/negative contract tests are implemented under `tools/hydrography/`. No approved river source exists in the repository, so production river geometry is intentionally not invented or shipped. Source selection/licensing, populated data, downhill/network validation, and historical review remain.
+
 Required river classes:
 
 - Major navigational/geographic rivers.
@@ -177,6 +179,8 @@ Split into:
 
 ### TW-3.2 Render rivers by zoom and class — P1 / L
 
+**Implementation status (15 July 2026):** Blocked by TW-3.1 content approval. The schema already carries major/secondary/minor width classes and strategic/regional/close visibility bands, but runtime rendering must wait for validated production river definitions.
+
 - Strategic zoom: only the largest rivers, subtle.
 - Regional zoom: major and secondary rivers.
 - Close zoom: width/material detail and crossings as relevant.
@@ -188,6 +192,8 @@ Split into:
 - Rivers do not disappear under common country colours.
 
 ### TW-3.3 Define lake and inland-water policy — P1 / M
+
+**Implementation status (15 July 2026):** Engineering first pass live. A deterministic bake derives 50 named inland-lake provinces from the canonical province graph into `assets/lake_mask.png`; the final shader distinguishes lake surface and lake shore from ocean water and ocean coast. Automated checks cover exact raster area, water classification, shoreline contact, world-edge exclusion, and Maui/Oahu/Kauai tiny-island preservation. Historical naming/policy review, labels, and final art tuning remain.
 
 Differentiate true lakes from ocean, decorative water, and unplayable holes. Define province selection/ownership behaviour for lake polygons.
 
@@ -305,4 +311,3 @@ Each region uses the same review template:
 - Terrain and water motion are stable during camera movement.
 - The complete environment stack passes performance/memory budgets and quality settings.
 - Global assets are reproducible and legally cleared.
-

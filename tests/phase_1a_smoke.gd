@@ -50,7 +50,7 @@ func _run() -> void:
 	_require(hud.tooltip_title.text == "Stockholm", "tooltip must show the province name")
 	_require(map.final_material.get_shader_parameter("hover_enabled") == true, "hover shader state must be enabled")
 	_require(map.country_field.render_target_update_mode == country_field_mode, "hover must not redraw the country distance field")
-	_require(map.province_field.render_target_update_mode == province_field_mode, "hover must not redraw the province distance field")
+	_require(map.province_field.render_target_update_mode == province_field_mode, "hover must not redraw the canonical province edge lattice")
 	_require(map.output.render_target_update_mode == color_output_mode, "hover must not redraw the full-resolution political map")
 
 	selector.selected_province_id = 1
@@ -81,7 +81,7 @@ func _run() -> void:
 	await process_frame
 	_require(map.final_material.get_shader_parameter("map_mode") == 2, "debug mode must reach the shader")
 	_require(map.country_field.render_target_update_mode == country_field_mode, "map modes must not redraw the country distance field")
-	_require(map.province_field.render_target_update_mode == province_field_mode, "map modes must not redraw the province distance field")
+	_require(map.province_field.render_target_update_mode == province_field_mode, "map modes must not redraw the canonical province edge lattice")
 	_require(map.output.render_target_update_mode == color_output_mode, "map modes must not redraw the full-resolution political map")
 	hud.set_map_mode(0)
 

@@ -1,0 +1,268 @@
+{
+  "authority": "assets/province_graph.json water classification plus canonical standalone Lake/Lakes name",
+  "derived_asset": "assets/lake_mask.png",
+  "lake_count": 50,
+  "lake_pixel_count": 23637,
+  "lakes": [
+    {
+      "area": 39,
+      "name": "Lake Balaton",
+      "province_id": 1325
+    },
+    {
+      "area": 513,
+      "name": "Lake Chad",
+      "province_id": 1648
+    },
+    {
+      "area": 1326,
+      "name": "Lake Victoria",
+      "province_id": 1649
+    },
+    {
+      "area": 667,
+      "name": "Lake Tangayika",
+      "province_id": 1650
+    },
+    {
+      "area": 606,
+      "name": "Lake Malawi",
+      "province_id": 1651
+    },
+    {
+      "area": 588,
+      "name": "Lake Balchasj",
+      "province_id": 1653
+    },
+    {
+      "area": 1515,
+      "name": "Lake Bajkal",
+      "province_id": 1654
+    },
+    {
+      "area": 75,
+      "name": "Poyang Lake",
+      "province_id": 1655
+    },
+    {
+      "area": 161,
+      "name": "Lake Titicaca",
+      "province_id": 1656
+    },
+    {
+      "area": 195,
+      "name": "Lake Nicaragua",
+      "province_id": 1657
+    },
+    {
+      "area": 606,
+      "name": "Lake Ontario",
+      "province_id": 1659
+    },
+    {
+      "area": 802,
+      "name": "Lake Erie",
+      "province_id": 1660
+    },
+    {
+      "area": 1955,
+      "name": "Lake Huron",
+      "province_id": 1661
+    },
+    {
+      "area": 1816,
+      "name": "Lake Michigan",
+      "province_id": 1662
+    },
+    {
+      "area": 2973,
+      "name": "Lake Superior",
+      "province_id": 1663
+    },
+    {
+      "area": 155,
+      "name": "Lake Nipigon",
+      "province_id": 1664
+    },
+    {
+      "area": 1832,
+      "name": "Lake Winnipeg",
+      "province_id": 1665
+    },
+    {
+      "area": 160,
+      "name": "Western Finish lakes",
+      "province_id": 1883
+    },
+    {
+      "area": 405,
+      "name": "East Finish lakes",
+      "province_id": 1884
+    },
+    {
+      "area": 349,
+      "name": "Central finish lakes",
+      "province_id": 1885
+    },
+    {
+      "area": 30,
+      "name": "Lake geneva",
+      "province_id": 1889
+    },
+    {
+      "area": 96,
+      "name": "Lake Van",
+      "province_id": 1892
+    },
+    {
+      "area": 122,
+      "name": "Lake Daryacheh",
+      "province_id": 1893
+    },
+    {
+      "area": 64,
+      "name": "Sevan Lake",
+      "province_id": 1894
+    },
+    {
+      "area": 80,
+      "name": "Lake Taihu",
+      "province_id": 1895
+    },
+    {
+      "area": 63,
+      "name": "Lake Hongze",
+      "province_id": 1896
+    },
+    {
+      "area": 67,
+      "name": "Tonie Sap Lake",
+      "province_id": 1898
+    },
+    {
+      "area": 66,
+      "name": "Tana lake",
+      "province_id": 1899
+    },
+    {
+      "area": 151,
+      "name": "Lake Turkana",
+      "province_id": 1900
+    },
+    {
+      "area": 31,
+      "name": "Lake Poopo",
+      "province_id": 1902
+    },
+    {
+      "area": 54,
+      "name": "Lake Champlain",
+      "province_id": 1903
+    },
+    {
+      "area": 202,
+      "name": "Lake Island",
+      "province_id": 1911
+    },
+    {
+      "area": 490,
+      "name": "Lake Reindeer",
+      "province_id": 1912
+    },
+    {
+      "area": 286,
+      "name": "Wollaston Lake",
+      "province_id": 1913
+    },
+    {
+      "area": 1575,
+      "name": "Great Slave Lake",
+      "province_id": 1914
+    },
+    {
+      "area": 556,
+      "name": "Lake Athabasca",
+      "province_id": 1915
+    },
+    {
+      "area": 491,
+      "name": "Dubawni Lake",
+      "province_id": 1916
+    },
+    {
+      "area": 191,
+      "name": "Yathkyed Lake",
+      "province_id": 1917
+    },
+    {
+      "area": 258,
+      "name": "Kasba Lake",
+      "province_id": 1918
+    },
+    {
+      "area": 279,
+      "name": "Nueltin Lake",
+      "province_id": 1919
+    },
+    {
+      "area": 71,
+      "name": "Wholdaia Lake",
+      "province_id": 1920
+    },
+    {
+      "area": 339,
+      "name": "Peter Pond Lake",
+      "province_id": 1921
+    },
+    {
+      "area": 172,
+      "name": "Great salt lake",
+      "province_id": 1922
+    },
+    {
+      "area": 72,
+      "name": "Williston Lake",
+      "province_id": 1923
+    },
+    {
+      "area": 128,
+      "name": "Qinghai Lake",
+      "province_id": 2000
+    },
+    {
+      "area": 60,
+      "name": "Siling Lake",
+      "province_id": 2001
+    },
+    {
+      "area": 105,
+      "name": "Lake Albert",
+      "province_id": 4135
+    },
+    {
+      "area": 614,
+      "name": "Austalian Lakes",
+      "province_id": 4870
+    },
+    {
+      "area": 52,
+      "name": "Lake Tulare",
+      "province_id": 4940
+    },
+    {
+      "area": 134,
+      "name": "Lake Cahuilla",
+      "province_id": 4941
+    }
+  ],
+  "schema_version": 1,
+  "size": [
+    5632,
+    2048
+  ],
+  "sources": {
+    "color_lookup_map_sha256": "5d118353c398872c9e3e9b538841491dfd5d6e714248157179eae944794f1db7",
+    "province_graph_sha256": "ec65d10b6e1e8d0b5c187cefa0b6b5581c2865c1f2c6c05fe9144b0ecd8b50da",
+    "terrain_class_map_sha256": "953b2b070042819be6085da071bd35d295d18f6fdc51d9306a4fa0f6ef979bde"
+  }
+}

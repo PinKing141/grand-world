@@ -9,6 +9,7 @@ extends ComputeHelper
 @export var country_data: CountryData
 @export var province_selector: ProvinceSelector
 @export var province_map: Texture2D
+@export var camera_controller: Node
 
 @export_group("Texture & Shader Configuration")
 @export var color_map_size: Vector2i
@@ -23,6 +24,10 @@ extends ComputeHelper
 @export var use_prebaked_map_textures := true
 @export var debug_ownership_editing_enabled := false
 @export var debug_owner_tag := ""
+@export var normalize_political_palette := true
+@export_range(0.0, 0.5, 0.01) var appanage_realm_tint := 0.30
+@export_range(0.0, 0.4, 0.01) var vassal_realm_tint := 0.18
+@export_range(0.0, 0.3, 0.01) var personal_union_realm_tint := 0.10
 @export_file var lookup_save_path = "res://assets/color_lookup_map.png"
 @export_file var color_map_save_path = "res://assets/color_map.png"
 @export_file var mask_political_save_path = "res://assets/mask_political_map.png"
@@ -42,11 +47,25 @@ var color_texture: ImageTexture
 var political_map: Image
 var political_color_map: Image
 var display_uses_political_colors := true
+var realm_color_map: Image
+var subject_cue_map: Image
+var realm_color_texture: ImageTexture
+var subject_cue_texture: ImageTexture
+var control_state_map: Image
+var control_state_texture: ImageTexture
+var _subject_registry: Dictionary = {}
+var _subject_to_overlord: Dictionary = {}
+var _subject_presentations: Dictionary = {}
+var _realm_roots: Dictionary = {}
+var _presentation_country_colors: Dictionary = {}
+var _last_strategic_zoom := -1.0
 
 # Presentation-only interaction state. Authoritative state arrives in Phase 2.
 var hovered_province_id := -1
 var selected_province_id := -1
 var selected_country := ""
+var war_goal_province_id := -1
+var accessibility_profile := 0
 var is_political = true
 # Rudimentary profiling
 func time_function(function_name: String, callable: Callable):
@@ -62,6 +81,8 @@ func time_function(function_name: String, callable: Callable):
 func update_material_dynamic_parameters(parameter_name, parameter_variant):
 		output_material.set_shader_parameter(parameter_name, parameter_variant)
 		distance_material.set_shader_parameter(parameter_name, parameter_variant)
+		if parameter_name == "color_map" and final_material != null:
+			final_material.set_shader_parameter("owner_color_map", parameter_variant)
 func update_material_static_parameters(parameter_name, parameter_variant):
 		province_material.set_shader_parameter(parameter_name, parameter_variant)
 func update_viewports_dynamic():
@@ -86,11 +107,14 @@ func update_color_map(province_id, new_color):
 	update_viewports_dynamic()
 
 
-func apply_world_state_owners(province_owners: Dictionary) -> void:
+func apply_world_state_owners(province_owners: Dictionary, subject_registry: Dictionary = {}) -> void:
 	# WorldState is authoritative. Rebuild the presentation LUT in one batch so
 	# loading a campaign never triggers thousands of GPU updates.
 	if color_map == null or color_map.is_empty() or color_texture == null:
 		return
+	_subject_registry = subject_registry.duplicate(true)
+	_rebuild_subject_presentation_index()
+	_ensure_realm_presentation_maps()
 	var width := color_map.get_width()
 	var province_ids := province_owners.keys()
 	province_ids.sort()
@@ -99,20 +123,219 @@ func apply_world_state_owners(province_owners: Dictionary) -> void:
 		if province_id < 0 or province_id >= color_map.get_width() * color_map.get_height():
 			continue
 		var owner_tag := String(province_owners[raw_province_id])
-		var owner_color: Color = country_data.country_id_to_color.get(owner_tag, Color(0.0, 0.0, 0.0, 0.0))
+		var owner_color := _presentation_country_color(owner_tag)
+		var realm_color := _presentation_country_color(_realm_root(owner_tag))
 		if political_color_map != null:
 			political_color_map.set_pixel(province_id % width, floori(float(province_id) / width), owner_color)
 		if display_uses_political_colors:
 			color_map.set_pixel(province_id % width, floori(float(province_id) / width), owner_color)
+		realm_color_map.set_pixel(province_id % width, floori(float(province_id) / width), realm_color)
+		subject_cue_map.set_pixel(province_id % width, floori(float(province_id) / width), _subject_cue(owner_tag))
 	color_texture.update(color_map)
 	update_material_dynamic_parameters("color_map", color_texture)
+	_upload_realm_presentation_maps()
 	update_viewports_dynamic()
+
+
+func update_province_owner(province_id: int, owner_tag: String) -> void:
+	if color_map == null or color_map.is_empty() or color_texture == null:
+		return
+	var width := color_map.get_width()
+	if province_id < 0 or province_id >= width * color_map.get_height():
+		return
+	var coordinate := Vector2i(province_id % width, floori(float(province_id) / width))
+	var owner_color := _presentation_country_color(owner_tag)
+	if political_color_map != null:
+		political_color_map.set_pixelv(coordinate, owner_color)
+	if display_uses_political_colors:
+		color_map.set_pixelv(coordinate, owner_color)
+	_ensure_realm_presentation_maps()
+	realm_color_map.set_pixelv(coordinate, _presentation_country_color(_realm_root(owner_tag)))
+	subject_cue_map.set_pixelv(coordinate, _subject_cue(owner_tag))
+	color_texture.update(color_map)
+	update_material_dynamic_parameters("color_map", color_texture)
+	_upload_realm_presentation_maps()
+	update_viewports_dynamic()
+
+
+func _rebuild_subject_presentation_index() -> void:
+	_subject_to_overlord.clear()
+	_subject_presentations.clear()
+	_realm_roots.clear()
+	_presentation_country_colors.clear()
+	var ids := _subject_registry.keys()
+	ids.sort()
+	for raw_id in ids:
+		var record: Dictionary = _subject_registry[raw_id]
+		if String(record.get("status", "active")) != "active":
+			continue
+		var subject := String(record.get("subject", ""))
+		var overlord := String(record.get("overlord", ""))
+		if subject.is_empty() or overlord.is_empty() or subject == overlord:
+			continue
+		_subject_to_overlord[subject] = overlord
+		_subject_presentations[subject] = String(record.get("presentation", record.get("type", "vassal")))
+
+
+func _realm_root(tag: String) -> String:
+	if tag.is_empty():
+		return tag
+	if _realm_roots.has(tag):
+		return String(_realm_roots[tag])
+	var current := tag
+	var visited := {}
+	while _subject_to_overlord.has(current) and not visited.has(current):
+		visited[current] = true
+		current = String(_subject_to_overlord[current])
+	_realm_roots[tag] = current
+	return current
+
+
+func _normalized_country_color(tag: String) -> Color:
+	var source: Color = country_data.country_id_to_color.get(tag, Color(0.0, 0.0, 0.0, 0.0))
+	if source.a <= 0.001 or not normalize_political_palette:
+		return source
+	var saturation := source.s
+	if saturation >= 0.12:
+		saturation = clampf(lerpf(saturation, 0.56, 0.35), 0.34, 0.72)
+	var value := clampf(lerpf(source.v, 0.72, 0.42), 0.48, 0.82)
+	return Color.from_hsv(source.h, saturation, value, source.a)
+
+
+func _presentation_country_color(tag: String) -> Color:
+	if tag.is_empty():
+		return Color(0.0, 0.0, 0.0, 0.0)
+	if _presentation_country_colors.has(tag):
+		return _presentation_country_colors[tag]
+	var color := _normalized_country_color(tag)
+	if _subject_to_overlord.has(tag):
+		var overlord_color := _normalized_country_color(_realm_root(tag))
+		var presentation := String(_subject_presentations.get(tag, "vassal"))
+		var strength := vassal_realm_tint
+		match presentation:
+			"appanage": strength = appanage_realm_tint
+			"personal_union": strength = personal_union_realm_tint
+		color = color.lerp(overlord_color, strength)
+	_presentation_country_colors[tag] = color
+	return color
+
+
+func _subject_cue(tag: String) -> Color:
+	if not _subject_to_overlord.has(tag):
+		return Color(0.0, 0.0, 0.0, 1.0)
+	var presentation := String(_subject_presentations.get(tag, "vassal"))
+	var presentation_code := 0.5
+	match presentation:
+		"appanage": presentation_code = 0.25
+		"personal_union": presentation_code = 0.75
+	return Color(1.0, presentation_code, 0.0, 1.0)
+
+
+func _ensure_realm_presentation_maps() -> void:
+	if color_map == null or color_map.is_empty():
+		return
+	var required_size := color_map.get_size()
+	if realm_color_map == null or realm_color_map.get_size() != required_size:
+		realm_color_map = Image.create(required_size.x, required_size.y, false, Image.FORMAT_RGBA8)
+		realm_color_map.fill(Color(0.0, 0.0, 0.0, 0.0))
+	if subject_cue_map == null or subject_cue_map.get_size() != required_size:
+		subject_cue_map = Image.create(required_size.x, required_size.y, false, Image.FORMAT_RGBA8)
+		subject_cue_map.fill(Color(0.0, 0.0, 0.0, 1.0))
+
+
+func _upload_realm_presentation_maps() -> void:
+	if realm_color_map == null or subject_cue_map == null:
+		return
+	if realm_color_texture == null:
+		realm_color_texture = ImageTexture.create_from_image(realm_color_map)
+	else:
+		realm_color_texture.update(realm_color_map)
+	if subject_cue_texture == null:
+		subject_cue_texture = ImageTexture.create_from_image(subject_cue_map)
+	else:
+		subject_cue_texture.update(subject_cue_map)
+	output_material.set_shader_parameter("realm_color_map", realm_color_texture)
+	output_material.set_shader_parameter("subject_cue_map", subject_cue_texture)
+	final_material.set_shader_parameter("realm_color_map", realm_color_texture)
+	final_material.set_shader_parameter("subject_cue_map", subject_cue_texture)
+
+
+func apply_control_states(province_states: Dictionary, player_country: String = "") -> void:
+	_ensure_control_state_map()
+	control_state_map.fill(Color(0.0, 0.0, 0.0, 1.0))
+	var province_ids := province_states.keys()
+	province_ids.sort()
+	for raw_province_id in province_ids:
+		var province_id := int(raw_province_id)
+		var state: Dictionary = province_states[raw_province_id]
+		_write_control_state(
+			province_id,
+			String(state.get("owner", "")),
+			String(state.get("controller", state.get("owner", ""))),
+			player_country
+		)
+	_upload_control_state_map()
+
+
+func update_province_control(province_id: int, owner_tag: String, controller_tag: String, player_country: String = "") -> void:
+	_ensure_control_state_map()
+	_write_control_state(province_id, owner_tag, controller_tag, player_country)
+	_upload_control_state_map()
+
+
+func _ensure_control_state_map() -> void:
+	var required_size := Vector2i(256, 256)
+	if color_map != null and not color_map.is_empty():
+		required_size = color_map.get_size()
+	if control_state_map == null or control_state_map.get_size() != required_size:
+		control_state_map = Image.create(required_size.x, required_size.y, false, Image.FORMAT_RGBA8)
+		control_state_map.fill(Color(0.0, 0.0, 0.0, 1.0))
+
+
+func _write_control_state(province_id: int, owner_tag: String, controller_tag: String, player_country: String) -> void:
+	if control_state_map == null or control_state_map.is_empty():
+		return
+	var width := control_state_map.get_width()
+	if province_id < 0 or province_id >= width * control_state_map.get_height():
+		return
+	var occupied := not controller_tag.is_empty() and controller_tag != owner_tag
+	var player_controls := occupied and not player_country.is_empty() and controller_tag == player_country
+	var player_is_occupied := occupied and not player_country.is_empty() and owner_tag == player_country
+	control_state_map.set_pixel(
+		province_id % width,
+		floori(float(province_id) / width),
+		Color(1.0 if occupied else 0.0, 1.0 if player_controls else 0.0, 1.0 if player_is_occupied else 0.0, 1.0)
+	)
+
+
+func _upload_control_state_map() -> void:
+	if control_state_map == null or final_material == null:
+		return
+	if control_state_texture == null:
+		control_state_texture = ImageTexture.create_from_image(control_state_map)
+	else:
+		control_state_texture.update(control_state_map)
+	final_material.set_shader_parameter("control_state_map", control_state_texture)
+
+
+func _on_camera_zoom_changed(_camera_height: float, normalized_zoom: float) -> void:
+	_set_strategic_zoom(normalized_zoom)
+
+
+func _set_strategic_zoom(normalized_zoom: float) -> void:
+	var clamped_zoom := clampf(normalized_zoom, 0.0, 1.0)
+	if is_equal_approx(clamped_zoom, _last_strategic_zoom):
+		return
+	_last_strategic_zoom = clamped_zoom
+	if final_material != null:
+		final_material.set_shader_parameter("strategic_zoom", clamped_zoom)
 
 
 func apply_economy_heatmap(values: Dictionary) -> void:
 	if political_color_map == null or color_texture == null:
 		return
 	display_uses_political_colors = false
+	set_war_goal_province(-1)
 	color_map = _copy_image(political_color_map)
 	var maximum := 0.0
 	for raw_value in values.values():
@@ -134,10 +357,11 @@ func apply_economy_heatmap(values: Dictionary) -> void:
 	update_viewports_dynamic()
 
 
-func apply_strategy_overlay(colors: Dictionary) -> void:
+func apply_strategy_overlay(colors: Dictionary, semantic_war_goal_id := -1) -> void:
 	if political_color_map == null or color_texture == null:
 		return
 	display_uses_political_colors = false
+	set_war_goal_province(semantic_war_goal_id)
 	color_map = _copy_image(political_color_map)
 	var width := color_map.get_width()
 	var ids := colors.keys()
@@ -158,10 +382,68 @@ func restore_political_map() -> void:
 	if political_color_map == null or color_texture == null:
 		return
 	display_uses_political_colors = true
+	set_war_goal_province(-1)
 	color_map = _copy_image(political_color_map)
 	color_texture.update(color_map)
 	update_material_dynamic_parameters("color_map", color_texture)
 	update_viewports_dynamic()
+
+
+func set_war_goal_province(province_id: int) -> void:
+	war_goal_province_id = province_id
+	if final_material == null:
+		return
+	final_material.set_shader_parameter("war_goal_enabled", province_id >= 0)
+	final_material.set_shader_parameter("war_goal_province", _province_lookup_coordinate(province_id) if province_id >= 0 else Vector2(-1.0, -1.0))
+
+
+func debug_war_goal_province() -> int:
+	return war_goal_province_id
+
+
+func set_accessibility_profile(profile: int) -> void:
+	accessibility_profile = clampi(profile, 0, 3)
+	if final_material == null:
+		return
+	final_material.set_shader_parameter("accessibility_profile", accessibility_profile)
+	final_material.set_shader_parameter("accessibility_pattern_boost", 1.0 if accessibility_profile == 0 else (1.6 if accessibility_profile == 3 else 1.35))
+	match accessibility_profile:
+		1:
+			final_material.set_shader_parameter("hover_color", Color(1.0, 0.72, 0.10))
+			final_material.set_shader_parameter("selection_color", Color(0.20, 0.78, 1.0))
+			final_material.set_shader_parameter("occupation_color", Color(0.68, 0.30, 0.74))
+			final_material.set_shader_parameter("player_occupation_color", Color(0.16, 0.52, 0.92))
+			final_material.set_shader_parameter("enemy_occupation_color", Color(0.95, 0.46, 0.12))
+			final_material.set_shader_parameter("war_goal_color", Color(1.0, 0.88, 0.24))
+		2:
+			final_material.set_shader_parameter("hover_color", Color(1.0, 0.38, 0.24))
+			final_material.set_shader_parameter("selection_color", Color(0.95, 0.95, 0.95))
+			final_material.set_shader_parameter("occupation_color", Color(0.52, 0.70, 0.28))
+			final_material.set_shader_parameter("player_occupation_color", Color(0.10, 0.72, 0.66))
+			final_material.set_shader_parameter("enemy_occupation_color", Color(0.86, 0.20, 0.52))
+			final_material.set_shader_parameter("war_goal_color", Color(1.0, 0.46, 0.24))
+		3:
+			final_material.set_shader_parameter("hover_color", Color(1.0, 0.78, 0.0))
+			final_material.set_shader_parameter("selection_color", Color.WHITE)
+			final_material.set_shader_parameter("occupation_color", Color(0.72, 0.24, 0.82))
+			final_material.set_shader_parameter("player_occupation_color", Color(0.18, 0.62, 1.0))
+			final_material.set_shader_parameter("enemy_occupation_color", Color(1.0, 0.30, 0.08))
+			final_material.set_shader_parameter("war_goal_color", Color(1.0, 0.86, 0.0))
+		_:
+			final_material.set_shader_parameter("hover_color", Color(1.0, 0.83, 0.25))
+			final_material.set_shader_parameter("selection_color", Color(0.2, 0.85, 1.0))
+			final_material.set_shader_parameter("occupation_color", Color(0.48, 0.24, 0.58))
+			final_material.set_shader_parameter("player_occupation_color", Color(0.55, 0.28, 0.70))
+			final_material.set_shader_parameter("enemy_occupation_color", Color(0.84, 0.35, 0.16))
+			final_material.set_shader_parameter("war_goal_color", Color(1.0, 0.78, 0.12))
+
+
+func debug_accessibility_profile() -> int:
+	return accessibility_profile
+
+
+func debug_semantic_priority() -> Array[String]:
+	return ["passive_borders", "occupation", "war_goal", "hover", "selection"]
 
 
 func _copy_image(source: Image) -> Image:
@@ -203,7 +485,17 @@ func _ready():
 	final_material.set_shader_parameter("hover_enabled", false)
 	final_material.set_shader_parameter("selection_enabled", false)
 	final_material.set_shader_parameter("country_selection_enabled", false)
+	final_material.set_shader_parameter("war_goal_enabled", false)
+	final_material.set_shader_parameter("accessibility_profile", accessibility_profile)
 	final_material.set_shader_parameter("map_mode", 0)
+	_ensure_realm_presentation_maps()
+	_upload_realm_presentation_maps()
+	_ensure_control_state_map()
+	_upload_control_state_map()
+	if camera_controller != null and camera_controller.has_signal("zoom_changed"):
+		camera_controller.zoom_changed.connect(_on_camera_zoom_changed)
+	if camera_controller != null and camera_controller.has_method("normalized_zoom"):
+		_set_strategic_zoom(float(camera_controller.normalized_zoom()))
 
 	province_field.render_target_update_mode = SubViewport.UPDATE_ONCE
 	await RenderingServer.frame_post_draw
@@ -229,10 +521,10 @@ func load_prebaked_map_textures() -> bool:
 	color_texture = ImageTexture.create_from_image(color_map)
 	political_color_map = _copy_image(color_map)
 	final_material.set_shader_parameter("lookup_map", lookup_resource)
+	final_material.set_shader_parameter("owner_color_map", color_texture)
 	distance_material.set_shader_parameter("lookup_map", lookup_resource)
 	distance_material.set_shader_parameter("color_map", color_texture)
 	province_material.set_shader_parameter("lookup_map", lookup_resource)
-	province_material.set_shader_parameter("mask_map", mask_resource)
 	return true
 
 func _province_lookup_coordinate(province_id: int) -> Vector2:
@@ -281,13 +573,43 @@ func highlight_country(tag: String) -> void:
 	if not country_data.country_id_to_color.has(tag):
 		clear_country_highlight()
 		return
-	var color: Color = country_data.country_id_to_color[tag]
+	var color: Color = _presentation_country_color(tag)
 	final_material.set_shader_parameter("selected_country_color", Color(color.r, color.g, color.b, 1.0))
 	final_material.set_shader_parameter("country_selection_enabled", true)
 
 
 func clear_country_highlight() -> void:
 	final_material.set_shader_parameter("country_selection_enabled", false)
+
+
+func debug_presentation_color(tag: String) -> Color:
+	return _presentation_country_color(tag)
+
+
+func debug_realm_root(tag: String) -> String:
+	return _realm_root(tag)
+
+
+func debug_subject_cue(province_id: int) -> Color:
+	if subject_cue_map == null or subject_cue_map.is_empty():
+		return Color.TRANSPARENT
+	var coordinate := Vector2i(province_id % subject_cue_map.get_width(), floori(float(province_id) / subject_cue_map.get_width()))
+	if coordinate.x < 0 or coordinate.y < 0 or coordinate.y >= subject_cue_map.get_height():
+		return Color.TRANSPARENT
+	return subject_cue_map.get_pixelv(coordinate)
+
+
+func debug_control_cue(province_id: int) -> Color:
+	if control_state_map == null or control_state_map.is_empty():
+		return Color.TRANSPARENT
+	var coordinate := Vector2i(province_id % control_state_map.get_width(), floori(float(province_id) / control_state_map.get_width()))
+	if coordinate.x < 0 or coordinate.y < 0 or coordinate.y >= control_state_map.get_height():
+		return Color.TRANSPARENT
+	return control_state_map.get_pixelv(coordinate)
+
+
+func debug_strategic_zoom() -> float:
+	return _last_strategic_zoom
 
 
 func set_map_mode(mode: int) -> void:
@@ -380,8 +702,6 @@ func create_political_map_mask_texture():
 	var result_image = Image.create_from_data(color_lookup.get_width(), color_lookup.get_height(), false, Image.FORMAT_RGBA8, byte_data)
 	if save_images_to_file:
 		result_image.save_png(mask_political_save_path)
-	
-	update_material_static_parameters("mask_map", ImageTexture.create_from_image(result_image))
 	
 
 func create_color_map_texture():

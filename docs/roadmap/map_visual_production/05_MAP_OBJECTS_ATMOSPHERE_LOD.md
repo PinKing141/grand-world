@@ -135,7 +135,11 @@ The approved unit marker needs:
 - Occupation remains a province-level semantic overlay with accessible pattern support.
 - War goal and command target remain distinguishable from generic occupation.
 
+**Implementation status (15 July 2026):** Historical placeholder art and engineering pass live. Occupation uses outline plus hatch. War goals preserve that occupation/side fill and add a gold double-ring province border; direct hover and selection render above it. Active wars feed a dedicated batched conflict layer: project-original painted-atlas battle and siege icons remain screen-stable and cull at world zoom. Exact cluster counts up to 99 are drawn inside each marker's existing shader pass, with no `Label3D` nodes or additional draw batch. Marker hit testing receives the camera's post-threshold click signal, so map drags cannot trigger conflict selection. Clicking focuses the war inspector; repeated clicks cycle deterministic members of a dense cluster. Battle and siege families cluster independently so their established priority remains visible. The overlap fixture verifies hierarchy, cluster cycling, atlas instances, and two draw batches; the 720-marker fixture verifies deterministic compression to 42 clusters on the reference camera, clickability, two draws, and an event-rebuild P95 ceiling. The [placeholder art specification](MARKER_PLACEHOLDER_ART_SPEC.md), complete shield atlas, source provenance, and replacement workflow are live. Bespoke final art, broader country-source research, allegiance refinements, and broad live-war capture coverage remain.
+
 ### MO-3.3 Bound route and movement lines — P1 / M
+
+**Implementation status (15 July 2026):** Engineering first pass live. Army command paths are emitted as two batched triangle surfaces: a `5.5 px` dark contrast outline and `3 px` state-coloured core. Preview paths use a long dash, active movement is solid, retreat uses a shorter urgent dash, destination feedback remains explicit, and world widths are recalculated from the orthographic camera so screen weight survives zoom. Unreachable hover targets use a red geometric X instead of a valid-route cone, providing shape as well as colour/text feedback. Wrapped routes take the shortest horizontal path, split at the antimeridian, resume from the opposite edge, and remain inside the canonical map bounds and existing batch. Automated semantic tests verify style, batching, valid/invalid destination state, pixel-width stability, and a Fiji-to-Hawaii seam route. Dense multi-route stress fixtures remain.
 
 Movement paths need stable screen width, direction, destination, valid/invalid feedback, and map-seam behaviour.
 
@@ -173,6 +177,8 @@ Budgets are measured per reference view and quality tier rather than guessed glo
 ### MO-4.3 Implement screen-space clustering — P1 / L
 
 Dense markers should merge, offset, or prioritise predictably.
+
+**Implementation status (15 July 2026):** Battle/siege clustering and placeholder-art pass live. Exact co-location folds before projection; nearby projected anchors use deterministic fixed-anchor spatial buckets. Logical records remain addressable, repeated clicks cycle cluster members, and the war inspector reports the member index and exact cluster count. The marker itself now includes an atlas-compatible shader-drawn count badge, retaining two total conflict batches. Rebuilds occur only on authoritative conflict events or material zoom changes. The large-war test creates 120 simultaneous wars and 720 logical markers, checks deterministic results across 12 rebuilds, preserves two renderer batches, and enforces a provisional `66.67 ms` event-rebuild P95 ceiling. Bespoke count typography and richer allegiance context remain for the final art pass.
 
 **Done when**
 
@@ -247,4 +253,3 @@ Map presentation cannot be the only way to locate urgent battles, armies, capita
 - Selection and command feedback are never ambiguous.
 - Colour-blind, high-contrast, clutter, and reduced-motion alternatives pass.
 - Decorative atmosphere can be disabled without losing gameplay information.
-

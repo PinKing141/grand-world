@@ -54,6 +54,10 @@ GODOT_TESTS = (
     ("Country label projected visual layouts", "tests/country_label_visual_regression_test.gd", "Country label visual regression passed."),
     ("Phase 1 map interaction", "tests/phase_1a_smoke.gd", "Phase 1A smoke test passed."),
     ("Camera controls", "tests/camera_controls_smoke.gd", "Camera controls smoke test passed."),
+    ("Map semantic lakes, routes, and screen-space hierarchy", "tests/map_semantic_visual_smoke.gd", "Map semantic visual smoke passed."),
+    ("Battle and siege marker hierarchy", "tests/conflict_marker_layer_smoke.gd", "Conflict marker layer smoke passed."),
+    ("Large-war marker clustering and performance", "tests/conflict_marker_stress_smoke.gd", "Conflict marker stress smoke passed."),
+	("Unified campaign interface shell and minimap", "tests/campaign_interface_shell_smoke.gd", "Campaign interface shell smoke passed."),
     ("Responsive UI layout", "tests/ui_layout_smoke.gd", "UI layout smoke test passed"),
     ("Simulation core and save corruption", "tests/simulation_core_test.gd", "Simulation core test passed."),
     ("Frame-rate determinism", "tests/simulation_frame_rate_determinism_test.gd", "Frame-rate determinism test passed."),
@@ -73,8 +77,15 @@ GODOT_TESTS = (
 
 PYTHON_TESTS = (
     ("Canonical country registry", "tools/country_registry/build_country_registry.py", "Country registry is valid and current."),
+    ("1444 neighbour-colour contrast analysis", "tools/country_registry/analyse_neighbour_colours.py", "Neighbour-colour analysis is valid and current."),
+	("Generated historical placeholder marker assets", "tools/marker_art/build_marker_assets.py", "Marker assets are valid and current."),
+	("Historical placeholder shields and marker asset contract", "tests/marker_asset_contract_smoke.py", "Marker asset contract smoke passed."),
     ("Conservative country-label territory map", "tools/map_labels/build_label_territory_map.py", "Label territory map is valid and current."),
-    ("MV-0 map visual asset and render audit", "tools/map_visual_audit/build_map_visual_audit.py", "MV-0 map visual asset and render audit is valid and current."),
+	("MV-0 map visual asset and render audit", "tools/map_visual_audit/build_map_visual_audit.py", "MV-0 map visual asset and render audit is valid and current."),
+	("Canonical province edge lattice", "tests/province_edge_lattice_contract_smoke.py", "Province edge lattice contract passed."),
+	("Canonical generated lake mask", "tools/map_visual_audit/build_lake_mask.py", "Lake mask is valid and current."),
+    ("Lake, island, and shoreline topology", "tests/map_hydrography_topology_smoke.py", "Map hydrography topology smoke passed."),
+    ("River source ingestion contract", "tests/river_data_contract_smoke.py", "River data contract smoke passed."),
     ("Terrain classification", "tests/terrain_classification_smoke.py", "Terrain classification smoke test passed."),
     ("Biome classification", "tests/biome_classification_smoke.py", "Biome classification smoke test passed."),
     ("Baked economy definitions", "tools/economy/build_economy_data.py", "Economy definitions are current."),
@@ -184,6 +195,9 @@ def export_and_start(godot: Path) -> list[TestResult]:
                 "res://assets/ai_definitions.json",
                 "res://assets/character_definitions.json",
                 "res://assets/country_depth_definitions.json",
+				"res://assets/marker_art/generated/country_shield_atlas.png",
+				"res://assets/marker_art/generated/marker_icon_atlas.png",
+				"res://assets/marker_art/generated/marker_asset_manifest.json",
                 "res://assets/province_graph.json",
                 "res://scenes/ui/economy_hud.tscn",
                 "res://scenes/ui/war_hud.tscn",
@@ -197,6 +211,9 @@ def export_and_start(godot: Path) -> list[TestResult]:
                 "res://scripts/simulation/country_depth_ai_system.gd",
                 "res://scripts/simulation/country_registry.gd",
                 "res://scripts/ui/country_label_layer.gd",
+				"res://scripts/ui/conflict_marker_layer.gd",
+				"res://shaders/army_flag_marker.gdshader",
+				"res://shaders/cartographic_marker_icon.gdshader",
             )
             missing = [item for item in required_export_log if item not in export_result.output]
             if missing:
@@ -209,18 +226,21 @@ def export_and_start(godot: Path) -> list[TestResult]:
         if not export_result.passed:
             return results
 
-        console_exe = export_dir / "Grand World.console.exe"
-        startup_exe = console_exe if console_exe.exists() else export_exe
+        # Launch the actual packaged binary. The small console wrapper can hide
+        # an early Windows/engine crash by returning success with only the
+        # engine banner, which made the startup gate report an unhelpful set of
+        # missing data markers.
+        startup_exe = export_exe
         startup_log = export_dir / "startup.log"
         startup_spec = TestSpec(
             "Exported build startup",
-            (str(startup_exe), "--headless", "--quit-after", "10", "--log-file", str(startup_log)),
-            "Parsed Countries:1009",
+            (str(startup_exe), "--headless", "--script", "res://tests/export_startup_smoke.gd", "--log-file", str(startup_log)),
+            "Export startup smoke passed.",
             timeout=60,
             category="Packaging",
         )
         startup_result = execute(startup_spec)
-        if not startup_result.passed and "error 4551" in startup_result.output.lower():
+        if not startup_result.passed:
             pack_path = export_dir / "Grand World.pck"
             pack_spec = TestSpec(
                 "Windows PCK export for policy-safe startup",
@@ -233,15 +253,15 @@ def export_and_start(godot: Path) -> list[TestResult]:
             if pack_result.passed and pack_path.exists():
                 fallback_spec = TestSpec(
                     "Exported build startup (trusted-host PCK fallback)",
-                    (str(godot), "--headless", "--main-pack", str(pack_path), "--quit-after", "10", "--log-file", str(startup_log)),
-                    "Parsed Countries:1009",
+                    (str(godot), "--headless", "--main-pack", str(pack_path), "--script", "res://tests/export_startup_smoke.gd", "--log-file", str(startup_log)),
+                    "Export startup smoke passed.",
                     timeout=60,
                     category="Packaging",
                 )
                 fallback_result = execute(fallback_spec)
                 fallback_result.output = "\n".join(
                     value for value in (
-                        "Unsigned exported executable launch was blocked by Windows Application Control (error 4551).",
+                        "Direct exported executable startup failed on this host; validating the same exported resources through the trusted Godot host and PCK fallback.",
                         pack_result.output,
                         fallback_result.output,
                     ) if value
@@ -251,10 +271,15 @@ def export_and_start(godot: Path) -> list[TestResult]:
                 startup_result.output = "\n".join(
                     value for value in (startup_result.output, pack_result.output) if value
                 )
-                startup_result.reason = "Application Control blocked the executable and PCK fallback export failed"
+                startup_result.reason = "direct executable startup failed and PCK fallback export failed"
         log_text = startup_log.read_text(encoding="utf-8", errors="replace") if startup_log.exists() else ""
         startup_result.output = "\n".join(value for value in (startup_result.output, log_text) if value)
-        required_startup = ("Parsed Provinces:3924", "Parsed Country Colors:1023", "Parsed Countries:1009")
+        required_startup = (
+            "Parsed Provinces:3924",
+            "Parsed Country Colors:1009",
+            "Parsed Countries:1009",
+            "Marker Assets:shield=true icons=true",
+        )
         missing = [item for item in required_startup if item not in startup_result.output]
         fatal = any(marker in startup_result.output for marker in ("SCRIPT ERROR:", "Failed to open directory", "requires valid Phase 4 economy definitions", "requires valid Phase 6 AI definitions", "requires valid Phase 7 character definitions", "requires valid Phase 8 country-depth definitions"))
         if missing or fatal:
@@ -305,11 +330,12 @@ def write_report(results: list[TestResult], godot: Path, started_at: dt.datetime
         "",
         "## Automated scope",
         "",
-        "This report covers the canonical country registry and ownership integrity, territory-safe country labels, projected overlap/layout baselines, label lifecycle and performance budgets, map selection/search, camera controls, responsive UI containment, deterministic calendar/commands/RNG, save corruption and migrations, graph/pathfinding/movement, economy, construction, recruitment, diplomacy, warfare and peace, utility AI, campaign objectives, characters/dynasties/titles/claims, marriages, commanders, opinions, ruler modifiers, health, birth, death and succession, government, stability, unrest, rebels, control, culture, religion, conversion, technology, ideas, cores, claims, subjects, events, decisions, country formation/release, country-depth AI and UI, deterministic replay through 1700, the hundred-year multi-generation soak, the twenty-year Iberian AI soak, the ten-year global soak, and Windows export startup.",
+        "This report covers the canonical country registry and ownership integrity, 1444 neighbour-colour contrast analysis, provenance-aware historical placeholder shield coverage, the complete marker-icon family, territory-safe country labels, projected overlap/layout baselines, label lifecycle and performance budgets, map selection/search, camera controls, clickable deterministic conflict-marker clustering, the 720-marker large-war stress budget, responsive UI containment, deterministic calendar/commands/RNG, save corruption and migrations, graph/pathfinding/movement, economy, construction, recruitment, diplomacy, warfare and peace, utility AI, campaign objectives, characters/dynasties/titles/claims, marriages, commanders, opinions, ruler modifiers, health, birth, death and succession, government, stability, unrest, rebels, control, culture, religion, conversion, technology, ideas, cores, claims, subjects, events, decisions, country formation/release, country-depth AI and UI, deterministic replay through 1700, the hundred-year multi-generation soak, the twenty-year Iberian AI soak, the ten-year global soak, and Windows export startup.",
         "",
         "## Human-only checks still required",
         "",
         "- Visual polish and readability on the actual display/GPU.",
+		"- Hands-on political-palette and semantic-state review with colour-vision-deficient players.",
         "- Mouse feel, tooltip timing, and panel ergonomics.",
         "- Iberian economy scarcity and comparative country balance.",
         "- Whether construction, recruitment, and maintenance choices are enjoyable.",
@@ -338,7 +364,7 @@ def main() -> int:
 
     specs: list[TestSpec] = []
     for name, path, marker in PYTHON_TESTS:
-        extra = ("--check",) if path.endswith(("build_economy_data.py", "build_country_registry.py", "build_label_territory_map.py", "build_map_visual_audit.py")) else ()
+        extra = ("--check",) if path.endswith(("build_economy_data.py", "build_country_registry.py", "analyse_neighbour_colours.py", "build_marker_assets.py", "build_label_territory_map.py", "build_map_visual_audit.py", "build_lake_mask.py")) else ()
         specs.append(TestSpec(name, (sys.executable, str(ROOT / path), *extra), marker, timeout=60, category="Data"))
     for name, path, marker in GODOT_TESTS:
         specs.append(TestSpec(name, (str(godot), "--headless", "--path", str(ROOT), "--script", f"res://{path}"), marker))

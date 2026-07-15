@@ -124,6 +124,7 @@ theme_override_font_sizes/font_size = 12
 text = "Technology"
 
 [node name="Tabs" type="TabContainer" parent="CountryStatePanel/Margin/Column"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 420)
 layout_mode = 2
 size_flags_vertical = 3

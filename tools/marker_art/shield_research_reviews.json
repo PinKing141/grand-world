@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "purpose": "Durable manual progress and approval records for country visual-identity research. The generated Markdown reads this file; it never overwrites it.",
+  "allowed_statuses": [
+    "NOT_STARTED",
+    "RESEARCH_IN_PROGRESS",
+    "CANDIDATE_SELECTED",
+    "CANDIDATE_IMPORTED",
+    "EVIDENCE_REVIEWED",
+    "CULTURAL_REVIEW_REQUIRED",
+    "ART_APPROVED",
+    "RUNTIME_VERIFIED",
+    "COMPLETE",
+    "APPROVED_NO_MARKER",
+    "DEPRECATED_TAG"
+  ],
+  "entry_schema": {
+    "status": "One value from allowed_statuses.",
+    "researcher": "Person responsible for the research decision.",
+    "last_reviewed": "ISO date YYYY-MM-DD.",
+    "represented_object": "Flag, banner, arms, seal, coin, tamga, standard, civic emblem, non-shield identity, no marker, or deprecated tag.",
+    "historical_bearer": "Ruler, dynasty, polity, city, institution, order, clan, confederation, or community represented.",
+    "date_range": "Evidence date or defensible range and relationship to the game's relevant date.",
+    "candidate_urls": ["One or more working research links."],
+    "outcome": "Proposed or approved presentation decision.",
+    "notes": "Uncertainty, conflicts, cultural concerns, next action, and reviewer comments."
+  },
+  "entries": {}
+}

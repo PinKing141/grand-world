@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "scenario_id": "grand_world_1444",
+  "initial_subjects": [
+    {
+      "overlord": "FRA",
+      "subject": "AUV",
+      "type": "vassal",
+      "presentation": "appanage"
+    },
+    {
+      "overlord": "FRA",
+      "subject": "BOU",
+      "type": "vassal",
+      "presentation": "appanage"
+    },
+    {
+      "overlord": "FRA",
+      "subject": "FOI",
+      "type": "vassal",
+      "presentation": "appanage"
+    },
+    {
+      "overlord": "FRA",
+      "subject": "ORL",
+      "type": "vassal",
+      "presentation": "appanage"
+    }
+  ],
+  "content_notes": {
+    "ownership_rule": "Appanages retain legal province ownership and their own political colour.",
+    "excluded_from_french_subject_realm": ["BRI", "PRO"],
+    "historical_review": "provisional_1444_setup_requires_final_content_signoff"
+  }
+}

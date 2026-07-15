@@ -26,6 +26,7 @@ func _run() -> void:
 	await process_frame
 	var simulation := scene.get_node("SimulationController") as ControllerScript
 	var hud := scene.get_node("WarHUD") as WarHUDScript
+	var country_hud := scene.get_node("EconomyHUD") as EconomyHUD
 	var map_render := scene.get_node("Map")
 	var map_hud := scene.get_node("MapHUD") as MapHUD
 	_require(simulation.initialized, "campaign must initialize")
@@ -35,7 +36,11 @@ func _run() -> void:
 	simulation.choose_player_country(player)
 	simulation.scheduler.process_commands()
 	await process_frame
-	_require(hud.diplomacy_button.visible, "choosing a country must expose diplomacy")
+	_require(not hud.diplomacy_button.visible, "the legacy floating diplomacy button must remain hidden")
+	_require(country_hud.diplomacy_button.visible and country_hud.diplomacy_button.text == "Dip", "choosing a country must expose diplomacy through the unified top-left HUD")
+	country_hud.diplomacy_button.pressed.emit()
+	await process_frame
+	_require(hud.diplomacy_panel.visible, "the unified Dip button must open the diplomacy and war panel")
 
 	var target_id := -1
 	var target_tag := ""
@@ -66,10 +71,15 @@ func _run() -> void:
 	hud._show_war_map()
 	await process_frame
 	_require(not map_render.display_uses_political_colors, "war map must use the strategy overlay")
-	_require(map_hud.mode_legend.text.begins_with("War:"), "war overlay must explain its colours")
+	_require(map_hud.mode_legend.text.begins_with("War:") and map_hud.mode_legend.text.contains("double border"), "war overlay must explain the war-goal shape as well as its colours")
+	_require(map_render.debug_war_goal_province() == target_id, "war map must bind its authoritative goal as a semantic target")
+	_require(bool(map_render.final_material.get_shader_parameter("war_goal_enabled")), "war-goal border rendering must be enabled in the final shader")
+	var goal_overlay_color: Color = map_render.color_map.get_pixel(target_id % map_render.color_map.get_width(), floori(float(target_id) / map_render.color_map.get_width()))
+	_require(Vector3(goal_overlay_color.r, goal_overlay_color.g, goal_overlay_color.b).distance_to(Vector3(1.0, 0.82, 0.12)) > 0.1, "war goals must preserve side/occupation fill instead of replacing the province with solid gold")
 	hud._show_relations_map()
 	await process_frame
 	_require(map_hud.mode_legend.text.begins_with("Relations:"), "relations overlay must explain its colours")
+	_require(map_render.debug_war_goal_province() == -1, "leaving the war map must clear its semantic goal border")
 	hud._show_access_map()
 	await process_frame
 	_require(map_hud.mode_legend.text.begins_with("Military access:"), "military-access overlay must explain its permissions")

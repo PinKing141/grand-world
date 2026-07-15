@@ -43,11 +43,13 @@ Never filter, compress, or mip categorical province/class data as normal colour 
 
 ## TD-004 — Political Country/Subject Semantics
 
-**Status:** Proposed; Design/Historical approval required.
+**Status:** Engineering accepted and scenario data implemented; final Design/Historical presentation approval required.
 
 Default political mode shows the country that legally owns each province. Subjects/appanages such as Orléans keep their own colour and border. Relationship is expressed through a subject border/cue or dedicated realm/diplomatic presentation. Overlord realm grouping never rewrites authoritative ownership.
 
 Country labels fit approved owned/integrated components, not every subject province.
+
+The 1444 scenario initializes Auvergne, Bourbonnais, Foix, and Orléans as French appanages while retaining their legal province ownership. Brittany and Provence are not included. See [MV-0 Scale, Projection, and Realm Audit](MV0_SCALE_PROJECTION_REALM_AUDIT.md).
 
 ## TD-005 — Render-Layer Contract
 
@@ -70,52 +72,43 @@ Every layer declares data source, blend, zoom/mode policy, invalidation, quality
 
 ## TD-006 — Anti-Aliasing and Sampling
 
-**Status:** Spike required.
+**Status:** Accepted and initially implemented.
 
-Compare at minimum:
-
-- Current engine defaults.
-- MSAA options appropriate to the 3D plane.
-- TAA and/or screen-space AA.
-- Signed-distance/analytic edge refinement.
-- Texture sampling, mip, and pixel-alignment changes.
-
-Judge still sharpness, camera shimmer, coast/border steps, label blur, terrain detail, GPU time, and minimum hardware. A global blur that hides stairs but softens labels is not acceptable.
+Use analytic derivative-aware smoothing for political distance-field borders, MSDF for labels, exact nearest sampling for ID/categorical textures, and linear mip sampling for continuous height/presentation textures. Disable default FXAA, TAA, and 3D MSAA on the low-end tier. A future measured 2× MSAA option may target geometry/map objects; it does not replace analytic shader-edge AA. See [MV-0 Rendering Architecture and Budgets](MV0_RENDERING_ARCHITECTURE_AND_BUDGET_DECISIONS.md).
 
 ## TD-007 — Label Rendering Architecture
 
-**Status:** Spike required.
+**Status:** Architecture accepted; production migration is MV-1/MV-4 P1.
 
-Compare improved `Label3D`/MSDF, projected screen-space labels, world/decal labels, and a hybrid. Preserve the existing full-name, safe-fit, collision, lifecycle, performance, and export gates.
+Use batched screen-space MSDF atlas text, anchored by the existing deterministic world-space territory layouts. Preserve full-name, safe-fit, collision, lifecycle, performance, and export gates. The current per-country Label3D implementation is an MSDF fallback only and is rejected as the final path because dense regional views produce hundreds of draw submissions.
 
 ## TD-008 — Height and Categorical Texture Imports
 
-**Status:** Spike required; do not ship current settings without proof.
+**Status:** Accepted and implemented for the vertical slice.
 
-The generated audit found:
-
-- `terrain_class_map.png` uses compressed import and mipmaps despite categorical class semantics.
-- `heightmap.png` uses compressed import and mipmaps while driving geometry.
-- `biome_map.png` is also categorical source data but imported as ordinary compressed/mipmapped art.
-
-Compare output error, VRAM, load, filtering, and distant sampling before changing settings. Generated source data may remain full-fidelity on disk even if a separately validated runtime derivative is introduced.
+`terrain_class_map.png` and `biome_map.png` now use lossless unmipped categorical imports. `heightmap.png` uses lossless import with mipmaps because it is continuous displacement data. Province IDs and every derived semantic lookup remain exact and nearest sampled.
 
 ## TD-009 — Terrain/Water Resolution Tier
 
-**Status:** Spike required.
+**Status:** Accepted for MV-1/MV-3 vertical slices; revisit only on measured quality/budget evidence.
 
 Province authority is `5632×2048`; current terrain, height, and water art is `2816×1024`. Compare:
 
-- Current half-resolution art with improved material/detail layers.
-- Full-resolution macro assets.
-- Half-resolution macro plus tiled micro materials/normal detail.
-- Tiled/streamed regional approach only if budgets demand it.
+Keep full-resolution semantic authority, half-resolution continuous macro height/terrain/water, and add tiled micro materials/normal detail. Tiling/streaming or full-resolution macro variants require measured MV-3 evidence and memory/load approval.
+
+## TD-014 — Strategic Camera Projection
+
+**Status:** Accepted for MV-1 implementation.
+
+Use orthographic projection at strategic and regional zoom. A gentle perspective close-detail tier is optional only if its transition passes selection, label, scale, and motion tests. The inherited 75° perspective default is rejected for the final strategic-map presentation. After tiny-label culling, the matched France capture measured `29.647 ms` P95 orthographic versus `30.995 ms` perspective on the current low-end machine. See [MV-0 Scale, Projection, and Realm Audit](MV0_SCALE_PROJECTION_REALM_AUDIT.md).
 
 ## TD-010 — Rivers
 
-**Status:** Proposed.
+**Status:** Architecture accepted; content source unresolved.
 
 Use authoritative vector/graph-like river data with stable IDs, width class, flow/source/mouth, and lake/coast connections. Generate render geometry/textures from the data. Do not paint rivers permanently into the political or terrain base.
+
+The schema, ingestion validator, template, and contract tests are implemented under `tools/hydrography/`. Runtime river rendering remains blocked until a reviewed, licensable source produces an approved non-empty definition file.
 
 ## TD-011 — Water Scope
 
@@ -161,13 +154,14 @@ The MV-0 layer-isolation probe has already established two facts for that captur
 |---|---|
 | TD-002 world mesh | Rendering/Technical Art after memory projection |
 | TD-003 data/presentation edge | Rendering + QA selection agreement fixture |
-| TD-004 country/subject semantics | Design + Historical Content + UX |
+| TD-004 country/subject semantics | Engineering rule/data accepted; Design + Historical Content + UX presentation sign-off open |
 | TD-005 layer contract | Rendering + Technical Art + UX |
-| TD-006 AA | Side-by-side still/motion/GPU spike |
-| TD-007 labels | Typography still/motion/performance spike |
-| TD-008 imports | Pixel/error/memory comparison |
-| TD-009 resolution tier | Regional captures + memory/load comparison |
+| TD-006 AA | Accepted; monitor still/motion regressions and confirm with external GPU trace |
+| TD-007 labels | Architecture accepted; batched renderer implementation and Typography Gate open |
+| TD-008 imports | Accepted and reimported; deterministic audit passes |
+| TD-009 resolution tier | Accepted for vertical slices; MV-3 may reopen with measured evidence |
 | TD-010 rivers | Tools/Map Content/Rendering design |
 | TD-011 water | Art + Rendering quality-tier spike |
 | TD-012 mock-ups | Art/Product Visual Greenlight |
 | TD-013 GPU capture | QA/Rendering evidence |
+| TD-014 camera projection | Engineering accepted; Art/UX motion approval open |

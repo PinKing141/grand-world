@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-The audit tracks **13** required map assets, **4** active map shaders, and **21** findings. Finding distribution: P0=0, P1=12, P2=9.
+The audit tracks **20** required map assets, **6** active map shaders, and **20** findings. Finding distribution: P0=0, P1=11, P2=9.
 
 This is a technical and provenance baseline, not an approval. It deliberately records risky import settings and missing presentation layers without changing runtime output before the MV-0 comparison spikes.
 
@@ -16,28 +16,39 @@ This is a technical and provenance baseline, not an approval. It deliberately re
 |---|---|---|---|---|
 | `assets/provinces.bmp` | Authoritative province-colour topology and land/water source | 5632×2048 BMP/RGB | compression=0; mipmaps=False | `unverified` |
 | `assets/definition.csv` | Province colour and stable province definition source | n/a | n/a | `unverified` |
-| `assets/biome_map.png` | Authoritative province-aligned biome class colour source | 5632×2048 PNG/RGBA | compression=2; mipmaps=True | `needs_review` |
-| `assets/terrain_class_map.png` | Categorical water/owned/unowned/impassable lookup | 5632×2048 PNG/RGBA | compression=2; mipmaps=True | `inherits_unverified` |
+| `assets/biome_map.png` | Authoritative province-aligned biome class colour source | 5632×2048 PNG/RGBA | compression=0; mipmaps=False | `needs_review` |
+| `assets/terrain_class_map.png` | Categorical water/owned/unowned/impassable lookup | 5632×2048 PNG/RGBA | compression=0; mipmaps=False | `inherits_unverified` |
 | `assets/terrain_base_map.png` | Generated macro terrain colour presentation texture | 2816×1024 PNG/RGB | compression=2; mipmaps=True | `inherits_review` |
-| `assets/heightmap.png` | Generated terrain elevation and displacement texture | 2816×1024 PNG/L | compression=2; mipmaps=True | `partially_documented` |
+| `assets/heightmap.png` | Generated terrain elevation and displacement texture | 2816×1024 PNG/L | compression=0; mipmaps=True | `partially_documented` |
 | `assets/colormap_water.png` | Ocean colour and bathymetric-looking presentation texture | 2816×1024 PNG/RGBA | compression=2; mipmaps=True | `unverified` |
 | `assets/color_lookup_map.png` | Generated province colour to compact province-ID lookup | 5632×2048 PNG/RGB | compression=0; mipmaps=False | `inherits_unverified` |
 | `assets/color_map.png` | Generated compact province-to-political-colour lookup | 256×256 PNG/RGBA | compression=0; mipmaps=False | `project_authored_review_needed` |
 | `assets/mask_political_map.png` | Generated political land mask | 5632×2048 PNG/RGBA | compression=0; mipmaps=False | `inherits_unverified` |
 | `assets/label_territory_map.png` | Generated conservative province-ID raster for label fitting | 1408×512 PNG/RGB | compression=0; mipmaps=False | `inherits_unverified` |
+| `assets/lake_mask.png` | Generated categorical inland-lake mask for water and shoreline presentation | 5632×2048 PNG/L | compression=0; mipmaps=False | `inherits_unverified` |
+| `assets/lake_mask_metadata.json` | Deterministic lake-mask provenance, source hashes, IDs, names, and pixel counts | n/a | n/a | `inherits_unverified` |
 | `assets/noise.tres` | Procedural noise configuration used by the final map material | n/a | n/a | `project_authored` |
-| `assets/fonts/LibreBaskerville-Variable.ttf` | Bundled country-label font | n/a | n/a | `verified_ofl_1_1` |
+| `assets/fonts/LibreBaskerville-Variable.ttf` | Bundled country-label font | n/a | compression=?; mipmaps=? | `verified_ofl_1_1` |
+| `assets/marker_art/source_flags/source_manifest.json` | Per-country historical placeholder source, licence, evidence, attribution, and checksum registry | n/a | n/a | `per_asset_verified_open_licence` |
+| `assets/marker_art/generated/country_shield_atlas.png` | Runtime country shield atlas covering every canonical country tag | 4096×4096 PNG/RGBA | compression=0; mipmaps=False | `mixed_open_and_project_authored` |
+| `assets/marker_art/generated/marker_icon_atlas.png` | Runtime army, navy, battle, siege, settlement, clustering, destination, and invalid-action marker icons | 512×384 PNG/RGBA | compression=0; mipmaps=False | `project_authored` |
+| `assets/marker_art/generated/marker_asset_manifest.json` | Stable atlas-slot mapping, dimensions, source status, and replacement metadata | n/a | n/a | `project_authored_metadata` |
+| `assets/marker_art/THIRD_PARTY_NOTICES.md` | Redistribution notices and attribution for vendored historical placeholder sources | n/a | n/a | `required_redistribution_documentation` |
 
 ## Provenance Summary
 
 | Status | Count |
 |---|---:|
 | `inherits_review` | 1 |
-| `inherits_unverified` | 4 |
+| `inherits_unverified` | 6 |
+| `mixed_open_and_project_authored` | 1 |
 | `needs_review` | 1 |
 | `partially_documented` | 1 |
-| `project_authored` | 1 |
+| `per_asset_verified_open_licence` | 1 |
+| `project_authored` | 2 |
+| `project_authored_metadata` | 1 |
 | `project_authored_review_needed` | 1 |
+| `required_redistribution_documentation` | 1 |
 | `unverified` | 3 |
 | `verified_ofl_1_1` | 1 |
 
@@ -71,19 +82,21 @@ The imported province topology, definition data, and water texture have no compl
 | `plane_subdivide_depth` | `127` |
 | `camera_controller_transform` | `Transform3D(1, 0, 0, 0, 0.258819, 0.965926, 0, -0.965926, 0.258819, 1.75674, 3.5915, -3.4793)` |
 | `political_edge_size` | `0.106` |
-| `province_edge_size` | `0.0341` |
-| `province_border_color` | `Color(0, 0, 0, 0.0588235)` |
+| `province_edge_size` | `<not found>` |
+| `province_border_color` | `<not found>` |
 | `subviewport_count` | `3` |
-| `shader_parameter_count` | `29` |
+| `shader_parameter_count` | `31` |
 
 ### Shader inventory
 
 | Shader | Type/mode | Lines | Uniforms | Samplers |
 |---|---|---:|---:|---:|
-| `shaders/final_output_political_map.gdshader` | `spatial` / `unshaded` | 159 | 33 | 8 |
-| `shaders/political_map.gdshader` | `canvas_item` / `unshaded` | 60 | 12 | 4 |
-| `shaders/province_sdf.gdshader` | `canvas_item` / `<not declared>` | 61 | 3 | 2 |
+| `shaders/final_output_political_map.gdshader` | `spatial` / `unshaded` | 458 | 57 | 14 |
+| `shaders/political_map.gdshader` | `canvas_item` / `unshaded` | 91 | 16 | 5 |
+| `shaders/province_edge_lattice.gdshader` | `canvas_item` / `<not declared>` | 32 | 1 | 1 |
 | `shaders/country_sdf.gdshader` | `canvas_item` / `<not declared>` | 54 | 3 | 2 |
+| `shaders/army_flag_marker.gdshader` | `spatial` / `unshaded, cull_disabled, depth_test_disabled` | 26 | 2 | 1 |
+| `shaders/cartographic_marker_icon.gdshader` | `spatial` / `unshaded, cull_disabled, depth_test_disabled` | 78 | 3 | 1 |
 
 ## Planned Presentation-Layer Gaps
 
@@ -101,14 +114,13 @@ The imported province topology, definition data, and water texture have no compl
 | Priority | Finding |
 |---|---|
 | **P1** | No explicit project anti-aliasing policy is recorded; MV-0 must capture and lock the chosen border/terrain/text strategy. |
-| **P1** | assets/terrain_class_map.png is categorical/ID data but uses compress/mode=2; validate a lossless import path. |
-| **P1** | assets/terrain_class_map.png is categorical/ID data but generates mipmaps; validate that distant sampling cannot blend semantic classes. |
 | **P1** | The 56.32x20.48 map extent is duplicated in scene/camera/label code; RP-1.2 and CL-6.1 require one map transform authority. |
-| **P1** | assets/heightmap.png drives geometry but uses a compressed import path; compare displacement error and memory before locking settings. |
 | **P1** | assets/color_lookup_map.png has licence status inherits_unverified: Reproducible, but commercial rights depend on the original province map. |
 | **P1** | assets/colormap_water.png has licence status unverified: Must be sourced, licensed, or replaced with an internally generated water asset. |
 | **P1** | assets/definition.csv has licence status unverified: Critical dependency of province identity and every derived map bake. |
 | **P1** | assets/label_territory_map.png has licence status inherits_unverified: Output is deterministic; original province-map rights remain unresolved. |
+| **P1** | assets/lake_mask.png has licence status inherits_unverified: Treat as lossless nearest-sampled data. It does not resolve the missing approved river source. |
+| **P1** | assets/lake_mask_metadata.json has licence status inherits_unverified: Regenerate and validate whenever province topology or water classification changes. |
 | **P1** | assets/mask_political_map.png has licence status inherits_unverified: Generated output must stay synchronized with its source hashes. |
 | **P1** | assets/provinces.bmp has licence status unverified: Release blocker until ownership or a replacement path is documented. |
 | **P1** | assets/terrain_class_map.png has licence status inherits_unverified: Treat as lossless data rather than colour artwork. |

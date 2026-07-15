@@ -2,7 +2,7 @@
 
 **Milestone state:** In progress  
 **Gate:** Visual Greenlight  
-**Runtime visual changes authorised by this package:** None until the relevant comparison decision is approved
+**Runtime visual changes authorised by this package:** MV-0 engineering decisions are approved for the readability slice; global art production remains gated
 
 ## Purpose
 
@@ -18,8 +18,11 @@ This folder contains the evidence and decisions required before MV-1 changes the
 | [Reference Board](MV0_REFERENCE_BOARD.md) | Legally safe external references and functional lessons | Seeded; approval pending |
 | [Zoom and Layer Matrix](MV0_ZOOM_LAYER_MATRIX.md) | Strategic/regional/close visibility and hierarchy contract | Proposed |
 | [Technical Decisions](MV0_TECHNICAL_DECISIONS.md) | Accepted constraints, proposed ADRs, and required spikes | Active |
+| [Scale, Projection, and Realm Audit](MV0_SCALE_PROJECTION_REALM_AUDIT.md) | France measurements, matched camera comparison, and appanage rules | Engineering decision accepted; art review pending |
+| [Rendering Architecture and Budgets](MV0_RENDERING_ARCHITECTURE_AND_BUDGET_DECISIONS.md) | AA, imports, labels, resolution tiers, hardware, and external-profile gate | Engineering decision accepted; performance/provenance blockers explicit |
 | `mv0_asset_render_audit.json` | Machine-readable audit evidence | Generated |
 | `tests/baselines/map_visual_mv0/current/` | Ten map-only GPU captures and runtime metrics | Captured on current development hardware |
+| `tests/baselines/map_visual_mv0/camera_comparison/` | Matched perspective and orthographic France captures | Captured and automatically validated |
 | `mv0_performance_probe.json` | Layer-isolation results for labels, armies, base map, simulation, and every HUD | Captured post-fix |
 
 ## Reproduce
@@ -28,6 +31,9 @@ This folder contains the evidence and decisions required before MV-1 changes the
 python tools/map_visual_audit/build_map_visual_audit.py --check
 
 python tools/map_visual_audit/capture_mv0_baselines.py `
+  --godot C:\path\to\Godot_v4.7-stable_mono_win64_console.exe
+
+python tools/map_visual_audit/capture_mv0_camera_comparison.py `
   --godot C:\path\to\Godot_v4.7-stable_mono_win64_console.exe
 ~~~
 
@@ -41,7 +47,7 @@ MV-0 is not complete because documents exist. Visual Greenlight requires:
 - [Target mock-up production brief](MV0_TARGET_MOCKUPS.md) and [concept-frame folder](targets/README.md).
 - Art/Product approval of the visual thesis and reference board.
 - A valid external GPU frame/pass capture or an explicitly approved alternative profiler.
-- Decisions for AA/sampling, label render method, source texture rights, terrain/height tiers, river data, and water scope.
+- Approved source texture rights, river data, and final water scope. AA/sampling, label architecture, camera projection, and terrain/height tiers now have accepted engineering decisions.
 - A credible projection that the approved stack can meet the 60 FPS target.
 
-Until then, import/shader findings are risks to test, not permission for unreviewed visual changes.
+Until then, the accepted engineering corrections may continue through MV-1, but target mock-ups and global visual-content production remain subject to Art/Product and provenance gates.

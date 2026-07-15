@@ -21,7 +21,7 @@ Performance numbers without build ID, scene, camera bookmark, settings, hardware
 
 ## Provisional Map Budgets
 
-These budgets are starting targets and must be revised from MV-0 captures. Tightening requires evidence; loosening requires an approved trade-off.
+MV-0 approved two production tiers. The development-minimum target is 1280×720 low at 30 FPS on the Radeon 610M/Ryzen 3 7320U-class machine; the recommended validation target is 1920×1080 medium at 60 FPS on a Forward+-capable GPU with at least 4 GiB graphics memory. Phase 9 must validate real machines before publishing commercial specifications. Full tier details are in [MV-0 Rendering Architecture and Budgets](mv0/MV0_RENDERING_ARCHITECTURE_AND_BUDGET_DECISIONS.md).
 
 ### Steady presentation at 1920×1080 / 60 FPS
 
@@ -33,8 +33,23 @@ These budgets are starting targets and must be revised from MV-0 captures. Tight
 | UI contribution during map interaction | ≤ 2.0 ms at P95 |
 | Simulation + AI | Uses its own phase budgets and cannot be hidden by paused-only captures |
 | Normal-play hitch | No recurring frame > 50 ms |
+| Country label render cost | ≤ 2.0 ms at P95; ≤ 4 steady draw submissions |
 
 The total sub-budgets intentionally leave headroom for simulation, UI, OS/driver variance, audio, and future effects.
+
+### Current measured implementation — 14 July 2026
+
+On the Radeon 610M development machine at 1920×1080, the batched-label orthographic pass measured `13.270 ms` P50 and `14.716 ms` P95 during all-layer camera motion, with `25.106 ms` maximum and no frame above 50 ms. The no-label comparison measured `14.623 ms` P95. Country labels used three MSDF atlas-page batches and no `Label3D` nodes in the focused regression test. This passes the provisional ordinary-motion P95 gate on this machine; it does not replace external GPU pass analysis or multi-machine release validation.
+
+After moving the full border hierarchy to the final screen shader on 15 July 2026, the same 1920×1080 all-layer motion probe measured `13.408 ms` P50, `15.358 ms` P95, `27.993 ms` maximum, and zero frames above 50 ms. The dynamic border/control pass therefore remains inside the provisional `16.67 ms` P95 gate, with approximately `1.31 ms` of measured P95 headroom on this machine. External GPU attribution and broader hardware validation are still required.
+
+After adding canonical lake classification/shore treatment, semantic command paths, invalid-destination shape feedback, corrected transparent MSDF labels, subject pattern classes, and the war-goal double border on 15 July 2026, the final all-layer rerun measured `13.352 ms` P50, `15.391 ms` P95, `23.770 ms` maximum, and zero frames above 50 ms. The implementation remains inside the provisional gate with approximately `1.28 ms` P95 headroom. That margin is still narrow: external GPU attribution and lower/higher-spec hardware coverage remain mandatory before approval.
+
+After adding the four accessibility profiles, deterministic dense-overlay fixture, world-seam route splitting, batched battle/siege marker layer, and canonical shared province-edge lattice on 15 July 2026, the optimized isolated 1920×1080 all-layer motion probe measured `13.266 ms` P50, `15.748 ms` P95, `26.185 ms` maximum, and zero frames above 50 ms. Ordinary movement remains inside the `16.67 ms` P95 gate with approximately `0.92 ms` headroom on the Radeon 610M development machine. Exact regional classification skips the redundant strategic SDF path at full weight. A separate deterministic extreme-war gate now creates 120 active wars and 720 logical battle/siege records, validates compression to 42 visible clusters on the reference camera, holds conflict rendering to two draw batches, and applies a provisional `66.67 ms` P95 ceiling to the event/zoom-driven full rebuild path. The ordinary movement margin remains narrow; external GPU attribution, real save-derived war captures, incremental conflict updates, and broader hardware validation remain open.
+
+After replacing the temporary army bars with atlas-backed country shields and the battle/siege bars with the project-original cartographic icon atlas on 15 July 2026, the same 1920×1080 all-layer motion probe measured `13.307 ms` P50, `15.796 ms` P95, `26.258 ms` maximum, six draw calls at P95, and zero frames above 33.3 ms. This is only `0.048 ms` above the preceding P95 capture and remains inside the `16.67 ms` gate with approximately `0.87 ms` headroom. The no-army comparison measured `15.702 ms` P95, but the difference is too small relative to run-to-run timing noise to attribute as a precise marker cost. The result validates the batched atlas architecture on the Radeon 610M reference machine; it does not replace external GPU profiling or broader hardware certification.
+
+After upgrading every country shield from a 64×64 cell to a supersampled 128×128 cell, increasing its readable screen footprint, and adding half-texel atlas clamping on 15 July 2026, the 1920×1080 all-layer motion probe measured `13.221 ms` P50, `14.999 ms` P95, `23.657 ms` maximum, six draw calls at P95, and zero frames above 33.3 ms. The 4096×4096 RGBA atlas has an approximately 64 MiB uncompressed GPU footprint, versus approximately 16 MiB for the earlier 2048×2048 atlas. The timing improvement relative to the preceding capture is treated as run-to-run variance, not as an optimization claim; the meaningful result is that higher-resolution markers remain within the `16.67 ms` P95 gate on the Radeon 610M reference machine.
 
 ### Dynamic update budgets
 
@@ -49,7 +64,7 @@ The total sub-budgets intentionally leave headroom for simulation, UI, OS/driver
 
 ### Memory/load budgets
 
-Set exact limits after asset-tier decisions. Until then:
+MV-0 sets a total graphics-allocation ceiling of 1.25 GiB for the development-minimum tier and 3 GiB for the recommended tier. Map textures are limited to 512 MiB and 1 GiB respectively. In addition:
 
 - Track dedicated texture memory by semantic layer and quality tier.
 - No unbounded node, glyph, material, render-target, or generated-texture growth during a 100-year soak.
@@ -164,6 +179,8 @@ Capture slow/fast pan and continuous zoom. Review for:
 - frame-time spikes correlated with layer changes.
 
 ## Accessibility Matrix
+
+**Engineering status (15 July 2026):** The runtime map settings expose four persisted presentation profiles: Normal, Red-green safe, Blue-yellow safe, and High contrast. Automated tests verify settings-to-shader propagation, and the map uses hatch, line rhythm, double borders, and marker silhouettes so key states are not hue-only. This is implementation evidence, not final accessibility certification; simulation review and hands-on testing with affected players remain required.
 
 Test at minimum:
 
@@ -303,4 +320,3 @@ Do not treat Godot's dummy headless renderer as proof of shipping visual output.
 - Asset provenance/legal review passes.
 - Release capture and performance archive is complete.
 - Known visual issues and fallbacks are documented.
-

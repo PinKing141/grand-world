@@ -264,11 +264,11 @@ static func suppress_rebels(world: CampaignWorldState, events: SimulationEventBu
 	events.rebels_suppressed.emit(country_tag, faction_id)
 
 
-static func create_subject(world: CampaignWorldState, events: SimulationEventBus, overlord: String, subject_tag: String, subject_type: String) -> String:
+static func create_subject(world: CampaignWorldState, events: SimulationEventBus, overlord: String, subject_tag: String, subject_type: String, presentation := "") -> String:
 	var subject_id := "subject_%06d" % world.take_counter("next_subject_id")
-	world.subject_registry[subject_id] = {"subject_id": subject_id, "type": subject_type, "overlord": overlord, "subject": subject_tag, "liberty_desire_bp": 2500, "income_bp": 1000 if subject_type == "vassal" else 0, "integration_progress_bp": 0, "integration_active": false, "created_day": world.current_day, "status": "active", "war_participation": true}
+	world.subject_registry[subject_id] = {"subject_id": subject_id, "type": subject_type, "presentation": presentation, "overlord": overlord, "subject": subject_tag, "liberty_desire_bp": 2500, "income_bp": 1000 if subject_type == "vassal" else 0, "integration_progress_bp": 0, "integration_active": false, "created_day": world.current_day, "status": "active", "war_participation": true}
 	var relation := DiplomacySystemScript.relation(world, overlord, subject_tag)
-	relation["subject"] = {"overlord": overlord, "subject": subject_tag, "type": subject_type}
+	relation["subject"] = {"overlord": overlord, "subject": subject_tag, "type": subject_type, "presentation": presentation}
 	DiplomacySystemScript.set_relation(world, overlord, subject_tag, relation)
 	events.subject_created.emit(subject_id, overlord, subject_tag, subject_type)
 	return subject_id
