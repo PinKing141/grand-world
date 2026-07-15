@@ -1,9 +1,9 @@
 # Latest Headless Test Report
 
 - Overall: **PASS**
-- Completed: **42/42 checks passed**
-- Started: `2026-07-15T12:55:14+01:00`
-- Duration: **528.75 seconds**
+- Completed: **38/38 checks passed**
+- Started: `2026-07-15T21:24:29+01:00`
+- Duration: **370.60 seconds**
 - Platform: `Windows-11-10.0.26200-SP0`
 - Python: `3.14.3`
 - Godot: `C:\Users\Favour\Documents\Godot_v4.7-stable_mono_win64\Godot_v4.7-stable_mono_win64_console.exe`
@@ -12,48 +12,44 @@
 
 | Check | Category | Result | Seconds |
 |---|---|---:|---:|
-| Canonical country registry | Data | **PASS** | 2.92 |
-| 1444 neighbour-colour contrast analysis | Data | **PASS** | 7.71 |
-| Generated historical placeholder marker assets | Data | **PASS** | 2.30 |
-| Historical placeholder shields and marker asset contract | Data | **PASS** | 1.32 |
-| Conservative country-label territory map | Data | **PASS** | 1.11 |
-| MV-0 map visual asset and render audit | Data | **PASS** | 1.62 |
-| Canonical province edge lattice | Data | **PASS** | 1.24 |
-| Canonical generated lake mask | Data | **PASS** | 1.91 |
-| Lake, island, and shoreline topology | Data | **PASS** | 1.23 |
-| River source ingestion contract | Data | **PASS** | 1.12 |
-| Terrain classification | Data | **PASS** | 0.28 |
-| Biome classification | Data | **PASS** | 1.14 |
-| Baked economy definitions | Data | **PASS** | 3.23 |
-| Country registry runtime and ownership integrity | Regression | **PASS** | 11.48 |
-| Country label territory, lifecycle, map modes, and performance | Regression | **PASS** | 20.55 |
-| Country label projected visual layouts | Regression | **PASS** | 13.68 |
-| Phase 1 map interaction | Regression | **PASS** | 9.92 |
-| Camera controls | Regression | **PASS** | 9.77 |
-| Map semantic lakes, routes, and screen-space hierarchy | Regression | **PASS** | 9.61 |
-| Battle and siege marker hierarchy | Regression | **PASS** | 9.42 |
-| Large-war marker clustering and performance | Regression | **PASS** | 10.10 |
-| Responsive UI layout | Regression | **PASS** | 9.76 |
-| Simulation core and save corruption | Regression | **PASS** | 1.03 |
-| Frame-rate determinism | Regression | **PASS** | 3.14 |
-| Phase 2 scene integration | Regression | **PASS** | 17.84 |
-| Phase 3 graph, route, movement, and save | Regression | **PASS** | 0.84 |
-| Phase 4 economy rules and edge cases | Regression | **PASS** | 0.90 |
-| Phase 4 UI, heatmap, and save integration | Regression | **PASS** | 16.43 |
-| Phase 5 diplomacy, war, battle, siege, peace, and save | Regression | **PASS** | 1.20 |
-| Phase 5 UI, overlays, declaration, and active-war save | Regression | **PASS** | 16.75 |
-| Phase 6 deterministic economic, diplomatic, and military AI | Regression | **PASS** | 3.41 |
-| Phase 6 campaign UI, objectives, overlay, and AI-state save | Regression | **PASS** | 18.05 |
-| Phase 7 characters, dynasties, titles, succession, claims, and save | Regression | **PASS** | 1.39 |
-| Phase 7 court UI, character AI, claim-war UI, and succession integration | Regression | **PASS** | 18.04 |
-| Phase 8 country depth, subjects, events, formation, AI, and save | Regression | **PASS** | 1.48 |
-| Phase 8 Country & State UI, map modes, commands, and save | Regression | **PASS** | 17.49 |
-| Phase 8 deterministic 1444-1700 Alpha campaign | Performance | **PASS** | 49.38 |
-| Hundred-year multi-generation character soak | Performance | **PASS** | 21.08 |
-| Twenty-year Iberian AI soak | Performance | **PASS** | 9.89 |
-| Ten-year full-world soak | Performance | **PASS** | 69.45 |
-| Windows debug export | Packaging | **PASS** | 34.44 |
-| Exported build startup (trusted-host PCK fallback) | Packaging | **PASS** | 11.24 |
+| Canonical country registry | Data | **PASS** | 6.84 |
+| Runtime history profile cache | Data | **PASS** | 3.51 |
+| 1444 neighbour-colour contrast analysis | Data | **PASS** | 7.76 |
+| Generated historical placeholder marker assets | Data | **PASS** | 3.92 |
+| Historical placeholder shields and marker asset contract | Data | **PASS** | 0.61 |
+| Conservative country-label territory map | Data | **PASS** | 2.30 |
+| MV-0 map visual asset and render audit | Data | **PASS** | 0.66 |
+| Canonical province edge lattice | Data | **PASS** | 2.58 |
+| Canonical generated lake mask | Data | **PASS** | 1.93 |
+| Lake, island, and shoreline topology | Data | **PASS** | 2.56 |
+| River source ingestion contract | Data | **PASS** | 0.30 |
+| Terrain classification | Data | **PASS** | 1.39 |
+| Biome classification | Data | **PASS** | 0.26 |
+| Baked economy definitions | Data | **PASS** | 3.15 |
+| Country registry runtime and ownership integrity | Regression | **PASS** | 19.45 |
+| Country label territory, lifecycle, map modes, and performance | Regression | **PASS** | 32.74 |
+| Country label projected visual layouts | Regression | **PASS** | 22.14 |
+| Phase 1 map interaction | Regression | **PASS** | 14.47 |
+| Camera controls | Regression | **PASS** | 12.55 |
+| Map semantic lakes, routes, and screen-space hierarchy | Regression | **PASS** | 11.37 |
+| Battle and siege marker hierarchy | Regression | **PASS** | 13.76 |
+| Large-war marker clustering and performance | Regression | **PASS** | 12.86 |
+| Unified campaign interface shell and minimap | Regression | **PASS** | 13.39 |
+| Responsive UI layout | Regression | **PASS** | 12.08 |
+| Simulation core and save corruption | Regression | **PASS** | 1.17 |
+| Frame-rate determinism | Regression | **PASS** | 3.88 |
+| Phase 2 scene integration | Regression | **PASS** | 28.02 |
+| Phase 3 graph, route, movement, and save | Regression | **PASS** | 1.24 |
+| Phase 4 economy rules and edge cases | Regression | **PASS** | 0.95 |
+| Phase 4 UI, heatmap, and save integration | Regression | **PASS** | 22.83 |
+| Phase 5 diplomacy, war, battle, siege, peace, and save | Regression | **PASS** | 1.41 |
+| Phase 5 UI, overlays, declaration, and active-war save | Regression | **PASS** | 23.96 |
+| Phase 6 deterministic economic, diplomatic, and military AI | Regression | **PASS** | 4.02 |
+| Phase 6 campaign UI, objectives, overlay, and AI-state save | Regression | **PASS** | 24.96 |
+| Phase 7 characters, dynasties, titles, succession, claims, and save | Regression | **PASS** | 1.72 |
+| Phase 7 court UI, character AI, claim-war UI, and succession integration | Regression | **PASS** | 26.08 |
+| Phase 8 country depth, subjects, events, formation, AI, and save | Regression | **PASS** | 1.71 |
+| Phase 8 Country & State UI, map modes, commands, and save | Regression | **PASS** | 26.04 |
 
 ## Automated scope
 

@@ -77,6 +77,7 @@ GODOT_TESTS = (
 
 PYTHON_TESTS = (
     ("Canonical country registry", "tools/country_registry/build_country_registry.py", "Country registry is valid and current."),
+	("Runtime history profile cache", "tests/runtime_history_profile_cache_smoke.py", "Runtime history profile cache smoke test passed."),
     ("1444 neighbour-colour contrast analysis", "tools/country_registry/analyse_neighbour_colours.py", "Neighbour-colour analysis is valid and current."),
 	("Generated historical placeholder marker assets", "tools/marker_art/build_marker_assets.py", "Marker assets are valid and current."),
 	("Historical placeholder shields and marker asset contract", "tests/marker_asset_contract_smoke.py", "Marker asset contract smoke passed."),
@@ -188,6 +189,7 @@ def export_and_start(godot: Path) -> list[TestResult]:
         if export_result.passed:
             required_export_log = (
                 "res://assets/country_registry.json",
+                "res://assets/generated/history_profiles.json",
                 "res://assets/label_territory_map.json",
                 "res://assets/label_territory_map.png",
                 "res://assets/fonts/LibreBaskerville-Variable.ttf",

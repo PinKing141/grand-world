@@ -80,8 +80,8 @@ func _validate() -> String:
 				return "country %s has an out-of-range colour component" % tag
 		for field in ["country_history_path", "colour_path"]:
 			var source_path := String(definition.get(field, ""))
-			if not source_path.begins_with("res://") or not FileAccess.file_exists(source_path):
-				return "country %s source is missing: %s" % [tag, source_path]
+			if not _is_canonical_resource_path(source_path):
+				return "country %s source path is not canonical: %s" % [tag, source_path]
 		if not names_to_tags.has(display_name):
 			names_to_tags[display_name] = []
 		(names_to_tags[display_name] as Array).append(tag)
@@ -115,6 +115,21 @@ func _validate() -> String:
 			if key.is_empty() or not localisation.has(key):
 				return "pseudo-country %s has unresolved localisation field %s" % [pseudo_id, field]
 	return ""
+
+
+func _is_canonical_resource_path(path: String) -> bool:
+	if path.is_empty() or path != path.strip_edges() or not path.begins_with("res://"):
+		return false
+	var relative := path.trim_prefix("res://")
+	return (
+		not relative.is_empty()
+		and not relative.begins_with("/")
+		and not relative.ends_with("/")
+		and not relative.contains("\\")
+		and not relative.contains("//")
+		and not relative.split("/").has(".")
+		and not relative.split("/").has("..")
+	)
 
 
 func is_valid() -> bool:

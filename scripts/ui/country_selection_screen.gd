@@ -5,6 +5,8 @@ const MAIN_MENU_SCENE := "res://scenes/main_menu.tscn"
 const CAMPAIGN_SCENE := "res://scenes/main.tscn"
 const QUICK_SAVE_PATH := "user://saves/quick_save.json"
 const FLAG_DIRECTORY := "res://assets/marker_art/source_flags"
+const HISTORY_PROFILES_PATH := "res://assets/generated/history_profiles.json"
+const HISTORY_PROFILES_SCHEMA_VERSION := 1
 const ProvinceGraphScript = preload("res://scripts/simulation/province_graph.gd")
 const SimulationDateScript = preload("res://scripts/simulation/simulation_date.gd")
 
@@ -60,7 +62,6 @@ const CAMPAIGN_PRESENTATION_NODES := [
 var _selected_country := ""
 var _graph: ProvinceGraph
 var _recommended_buttons: Dictionary = {}
-var _country_history_paths: Dictionary = {}
 var _country_history_profiles: Dictionary = {}
 
 
@@ -78,7 +79,7 @@ func _ready() -> void:
 	province_selector.province_selected.connect(_on_province_selected)
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_graph = ProvinceGraphScript.load_default()
-	_index_country_history_paths()
+	_load_history_profiles()
 	_build_recommended_countries()
 	_configure_saved_campaign()
 	_configure_options()
@@ -300,43 +301,30 @@ func _configure_saved_campaign() -> void:
 	saved_summary.text = "No quick save exists yet. Start a country and use Save in the campaign." if not exists else "A quick save is available. Loading it will replace the historical-start selection."
 
 
-func _index_country_history_paths() -> void:
-	_country_history_paths.clear()
-	var directory := DirAccess.open("res://assets/countries")
-	if directory == null:
+func _load_history_profiles() -> void:
+	_country_history_profiles.clear()
+	var file := FileAccess.open(HISTORY_PROFILES_PATH, FileAccess.READ)
+	if file == null:
+		push_warning("Generated history profiles are missing; country identity fallback will show placeholders.")
 		return
-	for filename in directory.get_files():
-		if not filename.ends_with(".txt") or filename.length() < 7:
-			continue
-		var tag := filename.substr(0, 3).to_upper()
-		if filename.begins_with("%s - " % tag):
-			_country_history_paths[tag] = "res://assets/countries/%s" % filename
+	var json := JSON.new()
+	if json.parse(file.get_as_text()) != OK or not json.data is Dictionary:
+		push_warning("Generated history profiles are invalid; country identity fallback will show placeholders.")
+		return
+	var data: Dictionary = json.data
+	if int(data.get("schema_version", 0)) != HISTORY_PROFILES_SCHEMA_VERSION:
+		push_warning("Generated history profiles use an unsupported schema; country identity fallback will show placeholders.")
+		return
+	var countries = data.get("countries", {})
+	if not countries is Dictionary:
+		push_warning("Generated history profiles have no country table; country identity fallback will show placeholders.")
+		return
+	_country_history_profiles = (countries as Dictionary).duplicate(true)
 
 
 func _country_history_profile(tag: String) -> Dictionary:
-	if _country_history_profiles.has(tag):
-		return (_country_history_profiles[tag] as Dictionary).duplicate()
-	var profile := {}
-	var path := String(_country_history_paths.get(tag, ""))
-	var file := FileAccess.open(path, FileAccess.READ) if not path.is_empty() else null
-	if file != null:
-		# The inherited research corpus contains a mixture of legacy encodings.
-		# The profile keys are ASCII and live near the header, so read only that
-		# bounded prefix without attempting to decode the whole historical file.
-		var header := file.get_buffer(mini(file.get_length(), 4096)).get_string_from_ascii()
-		for raw_line in header.split("\n"):
-			var line := String(raw_line).strip_edges()
-			if line.is_empty() or line.begins_with("#"):
-				continue
-			var first := line.unicode_at(0)
-			if first >= 48 and first <= 57:
-				break
-			for field in ["government", "primary_culture", "religion"]:
-				var prefix := "%s =" % field
-				if line.begins_with(prefix):
-					profile[field] = line.trim_prefix(prefix).strip_edges().trim_prefix("\"").trim_suffix("\"")
-	_country_history_profiles[tag] = profile
-	return profile.duplicate()
+	var profile = _country_history_profiles.get(tag, {})
+	return (profile as Dictionary).duplicate() if profile is Dictionary else {}
 
 
 func _load_saved_campaign() -> void:

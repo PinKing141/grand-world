@@ -1,0 +1,2 @@
+# Raw country-colour source data is baked into assets/generated/country_data_runtime_cache.json.
+# Keep it out of the editor filesystem scan and production package.

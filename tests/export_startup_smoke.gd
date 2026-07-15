@@ -42,6 +42,25 @@ func _run() -> void:
 	if marker_manifest == null:
 		_fail("marker asset manifest is missing")
 		return
+	var history_file := FileAccess.open("res://assets/generated/history_profiles.json", FileAccess.READ)
+	if history_file == null:
+		_fail("generated runtime history profiles are missing")
+		return
+	var history_profiles = JSON.parse_string(history_file.get_as_text())
+	if not history_profiles is Dictionary or int(history_profiles.get("schema_version", 0)) != 1:
+		_fail("generated runtime history profiles are invalid")
+		return
+	var country_profiles: Dictionary = history_profiles.get("countries", {})
+	var province_profiles: Dictionary = history_profiles.get("provinces", {})
+	if country_profiles.size() != 1007 or province_profiles.size() != 3925:
+		_fail("generated runtime history profile counts are incomplete")
+		return
+	if String((country_profiles.get("ENG", {}) as Dictionary).get("government", "")) != "monarchy":
+		_fail("packaged country history profiles are not readable")
+		return
+	if String((province_profiles.get("1", {}) as Dictionary).get("capital", "")) != "Stockholm":
+		_fail("packaged province history profiles are not readable")
+		return
 	print("Parsed Provinces:%d" % simulation.world.province_states.size())
 	print("Parsed Country Colors:%d" % simulation.country_data.country_id_to_color.size())
 	print("Parsed Countries:%d" % simulation.country_data.country_id_to_country_name.size())

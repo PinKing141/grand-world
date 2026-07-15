@@ -2,6 +2,7 @@ extends SceneTree
 
 const ControllerScript = preload("res://scripts/simulation/simulation_controller.gd")
 const EconomyHUDScript = preload("res://scripts/ui/economy_hud.gd")
+const CampaignShellScript = preload("res://scripts/ui/campaign_interface_shell.gd")
 
 
 func _initialize() -> void:
@@ -24,6 +25,7 @@ func _run() -> void:
 	await process_frame
 	var simulation := scene.get_node("SimulationController") as ControllerScript
 	var hud := scene.get_node("EconomyHUD") as EconomyHUDScript
+	var campaign_shell := scene.get_node("CampaignInterfaceShell") as CampaignShellScript
 	var map_render := scene.get_node("Map")
 	var map_hud := scene.get_node("MapHUD") as MapHUD
 	_require(simulation.initialized, "campaign must initialize with economy definitions")
@@ -32,9 +34,11 @@ func _run() -> void:
 	simulation.choose_player_country("SWE")
 	simulation.scheduler.process_commands()
 	await process_frame
-	_require(hud.resource_bar.visible, "choosing a country must show treasury and manpower")
-	_require(hud.treasury_label.text.contains("Treasury"), "resource bar must show treasury")
-	_require(hud.manpower_label.text.contains("Manpower"), "resource bar must show manpower")
+	_require(campaign_shell.visible, "choosing a country must show the campaign interface")
+	_require(campaign_shell.country_name_label.text == "Sweden", "campaign interface must show the full country name")
+	_require(not campaign_shell.treasury_label.text.is_empty(), "campaign interface must show treasury")
+	_require(campaign_shell.manpower_label.text.contains("/"), "campaign interface must show manpower")
+	_require(not hud.resource_bar.visible, "the superseded economy resource bar must remain hidden")
 	hud.economy_panel.show()
 	hud._refresh_all()
 	_require(hud.economy_title.text == "Sweden economy" and not hud.economy_title.text.contains("SWE"), "economy window must show only the full country name")

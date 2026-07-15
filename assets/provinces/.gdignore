@@ -1,0 +1,2 @@
+# Raw province-history source data is baked into assets/generated/history_profiles.json.
+# Keep it out of the editor filesystem scan and production package.

@@ -1,0 +1,2 @@
+# Raw country-history source data is baked into assets/generated runtime caches.
+# Keep it out of the editor filesystem scan and production package.

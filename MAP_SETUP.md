@@ -4,7 +4,7 @@ This project now contains the map demo assets and the installed `map_editor` add
 
 ## 1. Verify plugin installation
 
-1. Open Godot.
+1. Open the project with the standard (non-.NET) Godot 4.7 editor. The project uses GDScript and a native GDExtension, and does not require the Mono/.NET editor.
 2. Go to `Project -> Project Settings -> Plugins`.
 3. Confirm `Grand Strategy Map Editor` is enabled.
 4. In the General settings, confirm the rendering method is `Forward+`. The map's compute shaders do not work with the Compatibility renderer.
@@ -65,6 +65,15 @@ The Phase 2 `Test transfer` control is different from the old direct editor muta
 6. Open the Godot Output panel and look for load errors.
 
 The project disables parallel asset imports because Godot 4.7 can crash when these compute shaders are imported concurrently.
+
+The raw province, country, and country-colour history folders contain almost 7,000 text files. Each folder has a `.gdignore` marker so the editor does not waste memory generating filesystem previews for source data. Runtime and exported builds use the compact generated caches in `assets/generated/`; the raw research/source files stay in the repository but are not shipped in the game package.
+
+After changing raw country or province history, rebuild both runtime caches before testing or exporting:
+
+```powershell
+Godot_v4.7-stable_win64_console.exe --headless --path . --script res://tools/runtime_data/build_country_data_cache.gd
+python tools/runtime_data/build_history_profile_cache.py
+```
 
 If the Output panel reports `progress_dialog.cpp` errors about flushing the message queue, another Godot editor or headless import is usually touching the same `.godot` import cache. Keep only one editor/import process open for this project. When the editor is already open, let its FileSystem dock import changed assets automatically; do not launch a separate `Godot --import` process at the same time. Restart the editor once after stopping any orphaned headless Godot process to clear stale progress tasks.
 

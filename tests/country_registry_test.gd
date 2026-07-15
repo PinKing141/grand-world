@@ -24,6 +24,28 @@ func _require(condition: bool, message: String) -> void:
 func _run() -> void:
 	var registry = CountryRegistryScript.new().load_registry()
 	_require(registry.is_valid(), "generated registry must load: %s" % registry.error())
+	var source_file := FileAccess.open("res://assets/country_registry.json", FileAccess.READ)
+	_require(source_file != null, "registry fixture must be readable")
+	var packaged_data = JSON.parse_string(source_file.get_as_text())
+	_require(packaged_data is Dictionary, "registry fixture must parse")
+	var packaged_countries: Dictionary = (packaged_data as Dictionary).get("countries", {})
+	var packaged_tag := String(packaged_countries.keys()[0])
+	(packaged_countries[packaged_tag] as Dictionary)["country_history_path"] = "res://source-not-shipped/country.txt"
+	(packaged_countries[packaged_tag] as Dictionary)["colour_path"] = "res://source-not-shipped/colour.txt"
+	var packaged_path := "user://country_registry_packaged_test.json"
+	var packaged_file := FileAccess.open(packaged_path, FileAccess.WRITE)
+	_require(packaged_file != null, "packaged registry fixture must be writable")
+	packaged_file.store_string(JSON.stringify(packaged_data))
+	packaged_file.close()
+	var packaged_registry = CountryRegistryScript.new().load_registry(packaged_path)
+	_require(packaged_registry.is_valid(), "runtime validation must not require raw source files: %s" % packaged_registry.error())
+	(packaged_countries[packaged_tag] as Dictionary)["country_history_path"] = "res://assets/../countries/bad.txt"
+	packaged_file = FileAccess.open(packaged_path, FileAccess.WRITE)
+	packaged_file.store_string(JSON.stringify(packaged_data))
+	packaged_file.close()
+	var malformed_registry = CountryRegistryScript.new().load_registry(packaged_path)
+	_require(not malformed_registry.is_valid() and "not canonical" in malformed_registry.error(), "runtime validation must reject non-canonical source path strings")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(packaged_path))
 	_require(registry.country_count() == 1007, "registry must contain 1,007 unique scenario countries")
 	_require(registry.has_country("KER"), "KER must resolve to one canonical country")
 	_require(registry.display_name("KER") == "Keres", "KER must use the canonical Keres display name")

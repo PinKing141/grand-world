@@ -126,6 +126,10 @@ func _run() -> void:
 	}
 	simulation_hud._on_province_selected(info)
 	map_hud._on_province_selected(info)
+	_require(map_hud.capital_value.text == "Stockholm", "province capital must come from the generated runtime history profile")
+	_require(map_hud.culture_value.text == "Swedish", "province culture must come from the generated runtime history profile")
+	_require(map_hud.religion_value.text == "Catholic", "province religion must come from the generated runtime history profile")
+	_require(map_hud.trade_goods_value.text == "Grain", "province trade goods must come from the generated runtime history profile")
 	_require(simulation_hud.selection_actions.visible, "selecting a playable province must show country-selection actions")
 	_require(simulation_hud.play_as_button.visible, "selecting a playable province must show the Play as button")
 	_require(simulation_hud.play_as_button.text == "Play as Sweden", "Play as button must name the selected country")

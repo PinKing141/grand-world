@@ -8,6 +8,8 @@ const MAP_HALF_WIDTH := 28.16
 const MAP_HALF_HEIGHT := 10.24
 const MAX_SEARCH_RESULTS := 12
 const ACCESSIBILITY_CONFIG_PATH := "user://map_accessibility.cfg"
+const HISTORY_PROFILES_PATH := "res://assets/generated/history_profiles.json"
+const HISTORY_PROFILES_SCHEMA_VERSION := 1
 const COLOUR_VISION_PROFILES: Array[String] = ["Normal", "Red-green safe", "Blue-yellow safe", "High contrast"]
 
 const MODE_POLITICAL := 0
@@ -63,7 +65,6 @@ const MODE_LEGENDS: Array[String] = [
 
 var _tooltip_screen_position := Vector2.ZERO
 var _tooltip_province_id := -1
-var _province_history_paths: Dictionary[int, String] = {}
 var _province_detail_cache: Dictionary[int, Dictionary] = {}
 var _province_metadata: Dictionary[int, Dictionary] = {}
 var _province_names: Dictionary[int, String] = {}
@@ -80,7 +81,7 @@ func _ready() -> void:
 	country_panel.hide()
 	search_results.hide()
 	_set_mouse_filter_recursive(tooltip, Control.MOUSE_FILTER_IGNORE)
-	_index_province_history_files()
+	_load_history_profiles()
 	_load_province_metadata()
 
 	province_selector.province_hovered.connect(_on_province_hovered)
@@ -504,53 +505,40 @@ func _load_province_metadata() -> void:
 		}
 
 
-func _index_province_history_files() -> void:
-	var directory := DirAccess.open("res://assets/provinces")
-	if directory == null:
-		push_warning("Province history folder is unavailable; the panel will show placeholders.")
+func _load_history_profiles() -> void:
+	_province_detail_cache.clear()
+	var file := FileAccess.open(HISTORY_PROFILES_PATH, FileAccess.READ)
+	if file == null:
+		push_warning("Generated history profiles are missing; the province panel will show placeholders.")
 		return
-	for filename in directory.get_files():
-		if not filename.to_lower().ends_with(".txt"):
-			continue
-		var province_id := filename.to_int()
-		if province_id > 0:
-			_province_history_paths[province_id] = "res://assets/provinces/%s" % filename
+	var json := JSON.new()
+	if json.parse(file.get_as_text()) != OK or not json.data is Dictionary:
+		push_warning("Generated history profiles are invalid; the province panel will show placeholders.")
+		return
+	var data: Dictionary = json.data
+	if int(data.get("schema_version", 0)) != HISTORY_PROFILES_SCHEMA_VERSION:
+		push_warning("Generated history profiles use an unsupported schema; the province panel will show placeholders.")
+		return
+	var provinces = data.get("provinces", {})
+	if not provinces is Dictionary:
+		push_warning("Generated history profiles have no province table; the province panel will show placeholders.")
+		return
+	for raw_province_id in (provinces as Dictionary):
+		var province_id := String(raw_province_id).to_int()
+		var profile = (provinces as Dictionary)[raw_province_id]
+		if province_id > 0 and profile is Dictionary:
+			_province_detail_cache[province_id] = (profile as Dictionary).duplicate(true)
 
 
 func _get_province_details(province_id: int) -> Dictionary:
 	if _province_detail_cache.has(province_id):
-		return _province_detail_cache[province_id]
-	var details := {
+		return _province_detail_cache[province_id].duplicate()
+	return {
 		"capital": "",
 		"culture": "",
 		"religion": "",
 		"trade_goods": "",
 	}
-	var path: String = _province_history_paths.get(province_id, "")
-	if path.is_empty():
-		_province_detail_cache[province_id] = details
-		return details
-
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		_province_detail_cache[province_id] = details
-		return details
-	var content := file.get_buffer(file.get_length()).get_string_from_ascii()
-	for raw_line in content.split("\n"):
-		var line := raw_line.strip_edges()
-		if line.is_empty() or line.begins_with("#") or not line.contains("="):
-			continue
-		if line[0].is_valid_int() and line.contains("."):
-			break
-		var key := line.get_slice("=", 0).strip_edges()
-		if not details.has(key) or not String(details[key]).is_empty():
-			continue
-		var value := line.get_slice("=", 1).get_slice("#", 0).strip_edges()
-		value = value.trim_prefix("\"").trim_suffix("\"").strip_edges()
-		details[key] = value
-
-	_province_detail_cache[province_id] = details
-	return details
 
 
 func _display_value(value: String) -> String:
