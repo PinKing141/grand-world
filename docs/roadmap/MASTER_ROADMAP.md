@@ -12,7 +12,7 @@
 
 ## Current Production Status
 
-Phase 8's complete thin-loop 1.0 system set is implemented in `0.8.0-phase8` and is undergoing Alpha validation. Phase 9 is the next production roadmap: reviewed global content, global-scale scheduling/performance, UI completion, onboarding/accessibility, Beta hardening, packaging, and release-candidate work. The [Strategic Map Visual Production Roadmap](map_visual_production/README.md) is the cross-cutting art/rendering/content track required to bring the world map and remaining country-label work to Phase 9 release quality.
+Phase 8's complete thin-loop country-system set is implemented in `0.8.0-phase8` and is undergoing validation. The project is not yet a conventional global Alpha because naval warfare, colonisation, a global trade network, HRE mechanics and the Reformation remain absent or incomplete. The [Completion Audit and Revised Delivery Roadmap](completion_audit/README.md) inserts measurable global-pillar and content-pilot gates before unrestricted Phase 9 worldwide content production. The [Strategic Map Visual Production Roadmap](map_visual_production/README.md) remains the cross-cutting art/rendering/content track required to bring the world map and remaining country-label work to release quality.
 
 ## Roadmap Summary
 
