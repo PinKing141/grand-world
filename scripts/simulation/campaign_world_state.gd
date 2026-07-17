@@ -3,7 +3,7 @@ extends RefCounted
 
 const DeterministicRng = preload("res://scripts/simulation/deterministic_rng.gd")
 
-const SAVE_SCHEMA_VERSION := 5
+const SAVE_SCHEMA_VERSION := 9
 const DEFAULT_SCENARIO_ID := "grand_world_1444"
 
 const ARMY_STATUS_IDLE := "idle"
@@ -12,6 +12,29 @@ const ARMY_STATUS_BLOCKED := "blocked"
 const ARMY_STATUS_BATTLE := "battle"
 const ARMY_STATUS_RETREATING := "retreating"
 const ARMY_STATUS_RECOVERING := "recovering"
+# Embarking: still land-present (counted by armies_in_province) but locked,
+# waiting out the embark-timing formula. Embarked: aboard, absent from land-
+# presence queries, following the carrier. See
+# docs/roadmap/naval/03_N3_MARITIME_TRANSPORT.md "State Machine".
+const ARMY_STATUS_EMBARKING := "embarking"
+const ARMY_STATUS_EMBARKED := "embarked"
+
+# N3.1/N3.2 reach four of the full state machine's states - embarking,
+# sailing, disembarking, and (implicitly, by record deletion) completed.
+# battle_paused is N3.3's job, once combat/interception concepts exist to
+# pause for. Cancelling an operation deletes its record rather than
+# transitioning it to a terminal state, mirroring CancelShipConstructionCommand.
+const TRANSPORT_STATE_EMBARKING := "embarking"
+const TRANSPORT_STATE_SAILING := "sailing"
+const TRANSPORT_STATE_DISEMBARKING := "disembarking"
+
+# The one authoritative fleet location state, per
+# docs/roadmap/naval/00_SCOPE_AND_ARCHITECTURE_LOCK.md "Location".
+const FLEET_LOCATION_DOCKED := "docked"
+const FLEET_LOCATION_AT_SEA := "at_sea"
+const FLEET_LOCATION_MOVING := "moving"
+const FLEET_LOCATION_BATTLE := "battle"
+const FLEET_LOCATION_RETREATING := "retreating"
 
 var scenario_id := DEFAULT_SCENARIO_ID
 var current_day := 0
@@ -36,6 +59,12 @@ var claim_registry: Dictionary = {}
 var subject_registry: Dictionary = {}
 var country_event_registry: Dictionary = {}
 var rebel_faction_registry: Dictionary = {}
+var fleet_registry: Dictionary = {}
+var ship_registry: Dictionary = {}
+var naval_construction_registry: Dictionary = {}
+var transport_operation_registry: Dictionary = {}
+var naval_battle_registry: Dictionary = {}
+var blockaded_provinces: Dictionary = {}
 var global_flags: Dictionary = {}
 var global_counters: Dictionary = {}
 var rng_stream_states: Dictionary = {}
@@ -68,6 +97,12 @@ func initialize(
 	subject_registry.clear()
 	country_event_registry.clear()
 	rebel_faction_registry.clear()
+	fleet_registry.clear()
+	ship_registry.clear()
+	naval_construction_registry.clear()
+	transport_operation_registry.clear()
+	naval_battle_registry.clear()
+	blockaded_provinces.clear()
 	global_flags.clear()
 	global_counters.clear()
 	rng_stream_states.clear()
@@ -135,7 +170,193 @@ static func make_army_record(army_id: String, owner_tag: String, province_id: in
 		"retreating": false,
 		"recovery_until_day": -1,
 		"base_monthly_maintenance": 500,
+		"transport_operation_id": "",
 	}
+
+
+## N2.1 fleet/ship/construction record shapes. No command yet creates these
+## (that is N2.2/N2.3) - this establishes the stable record shape and
+## save/checksum/migration wiring per docs/roadmap/naval/02_N2_FLEET_LOGISTICS.md
+## "Fleet and Ship Model", matching the existing make_army_record convention.
+static func make_fleet_record(fleet_id: String, owner_tag: String, home_port_id: int) -> Dictionary:
+	return {
+		"fleet_id": fleet_id,
+		"owner_country_id": owner_tag,
+		"display_name": "",
+		"home_port_id": home_port_id,
+		"location_status": FLEET_LOCATION_DOCKED,
+		"location_id": home_port_id,
+		"destination_id": -1,
+		"remaining_path": [],
+		"path_index": 0,
+		"movement_start_day": -1,
+		"next_arrival_day": -1,
+		"movement_progress": 0.0,
+		"movement_locked": false,
+		"mission": "idle",
+		"maintenance_posture_bp": 10000,
+		"morale_bp": 10000,
+		"supplied": true,
+		"supply_reason": "",
+		"admiral_id": "",
+		"battle_id": "",
+		"retreat_destination_id": -1,
+		"transport_operation_ids": [],
+		"ship_ids": [],
+		"aggregate": {
+			"ship_count": 0,
+			"total_hull": 0,
+			"total_maximum_hull": 0,
+			"total_attack": 0,
+			"total_defence": 0,
+			"total_blockade_power": 0,
+			"total_transport_capacity": 0,
+			"speed": 1,
+		},
+	}
+
+
+static func make_ship_record(ship_id: String, owner_tag: String, fleet_id: String, definition_id: String, construction_day: int) -> Dictionary:
+	return {
+		"ship_id": ship_id,
+		"owner_country_id": owner_tag,
+		"fleet_id": fleet_id,
+		"definition_id": definition_id,
+		"name": "",
+		"construction_day": construction_day,
+		"hull_bp": 10000,
+		"crew_bp": 10000,
+		"morale_contribution_bp": 10000,
+		"captured_from": "",
+		"repairing": false,
+		"disabled": false,
+	}
+
+
+static func make_naval_construction_record(
+	construction_id: String, country_tag: String, port_id: int, definition_id: String,
+	start_day: int, completion_day: int, amount_paid: int
+) -> Dictionary:
+	return {
+		"construction_id": construction_id,
+		"country_tag": country_tag,
+		"port_id": port_id,
+		"definition_id": definition_id,
+		"start_day": start_day,
+		"completion_day": completion_day,
+		"amount_paid": amount_paid,
+		"reserved_sailors": 0,
+		"status": "in_progress",
+	}
+
+
+## N3A transport operation shape, per
+## docs/roadmap/naval/03_N3_MARITIME_TRANSPORT.md "Transport Operation
+## Record". Fields belonging to states this slice's commands never reach yet
+## (planned_path, battle_pause_reference, accumulated_losses) are still
+## present with inert defaults, so N3B/C/D can populate them without another
+## schema migration - the same forward-design precedent N2.1's fleet
+## "aggregate" sub-dict already established.
+static func make_transport_operation_record(
+	operation_id: String, country_tag: String, army_id: String, fleet_id: String,
+	origin_port_id: int, destination_province_id: int, reserved_capacity: int,
+	start_day: int, completion_day: int
+) -> Dictionary:
+	return {
+		"operation_id": operation_id,
+		"country_tag": country_tag,
+		"army_id": army_id,
+		"fleet_id": fleet_id,
+		"origin_port_id": origin_port_id,
+		"destination_province_id": destination_province_id,
+		"reserved_capacity": reserved_capacity,
+		"transport_ship_ids": [],
+		"state": TRANSPORT_STATE_EMBARKING,
+		"state_start_day": start_day,
+		"completion_day": completion_day,
+		"planned_path": [],
+		"current_location_id": origin_port_id,
+		"battle_pause_reference": "",
+		"accumulated_losses": 0,
+		"cancellation_target": origin_port_id,
+		"failure_reason": "",
+	}
+
+
+func get_transport_operation(operation_id: String) -> Dictionary:
+	return (transport_operation_registry.get(operation_id, {}) as Dictionary).duplicate(true)
+
+
+## N4A battle record shape, per docs/roadmap/naval/04_N4_NAVAL_COMBAT.md
+## "Battle Record". This first slice reaches "active" and "completed" only -
+## capture/pursuit/reinforcement fields are deliberately absent rather than
+## present-but-unused, since nothing populates or reads them yet (unlike
+## N3.1's transport record, which pre-declared fields for a state machine
+## that already existed on paper). They will be added when N4C/D build the
+## systems that need them, not speculatively now.
+static func make_naval_battle_record(battle_id: String, war_id: String, zone_id: int, start_day: int) -> Dictionary:
+	return {
+		"battle_id": battle_id,
+		"war_id": war_id,
+		"zone_id": zone_id,
+		"start_day": start_day,
+		"last_round_day": -1,
+		"round": 0,
+		"status": "active",
+		"attacker_fleets": [],
+		"defender_fleets": [],
+		"attacker_hull_lost": 0,
+		"defender_hull_lost": 0,
+		"attacker_ships_sunk": 0,
+		"defender_ships_sunk": 0,
+		"winner_side": "",
+		"end_day": -1,
+	}
+
+
+func get_naval_battle(battle_id: String) -> Dictionary:
+	return (naval_battle_registry.get(battle_id, {}) as Dictionary).duplicate(true)
+
+
+func get_fleet(fleet_id: String) -> Dictionary:
+	return (fleet_registry.get(fleet_id, {}) as Dictionary).duplicate(true)
+
+
+func get_ship(ship_id: String) -> Dictionary:
+	return (ship_registry.get(ship_id, {}) as Dictionary).duplicate(true)
+
+
+func country_fleets(country_tag: String) -> Array[String]:
+	var found: Array[String] = []
+	var fleet_ids := fleet_registry.keys()
+	fleet_ids.sort()
+	for raw_fleet_id in fleet_ids:
+		var fleet: Dictionary = fleet_registry[raw_fleet_id]
+		if String(fleet.get("owner_country_id", "")) == country_tag:
+			found.append(String(raw_fleet_id))
+	return found
+
+
+func country_ships(country_tag: String) -> Array[String]:
+	var found: Array[String] = []
+	var ship_ids := ship_registry.keys()
+	ship_ids.sort()
+	for raw_ship_id in ship_ids:
+		var ship: Dictionary = ship_registry[raw_ship_id]
+		if String(ship.get("owner_country_id", "")) == country_tag:
+			found.append(String(raw_ship_id))
+	return found
+
+
+func fleet_ships(fleet_id: String) -> Array[String]:
+	var found: Array[String] = []
+	var ship_ids := ship_registry.keys()
+	ship_ids.sort()
+	for raw_ship_id in ship_ids:
+		var ship: Dictionary = ship_registry[raw_ship_id]
+		if String(ship.get("fleet_id", "")) == fleet_id:
+			found.append(String(raw_ship_id))
+	return found
 
 
 func get_army(army_id: String) -> Dictionary:
@@ -148,6 +369,8 @@ func armies_in_province(province_id: int) -> Array[String]:
 	army_ids.sort()
 	for raw_army_id in army_ids:
 		var army: Dictionary = army_registry[raw_army_id]
+		if String(army.get("status", "")) == ARMY_STATUS_EMBARKED:
+			continue
 		if int(army.get("current_province_id", -1)) == province_id:
 			found.append(String(raw_army_id))
 	return found
@@ -211,6 +434,36 @@ static func migrate_save_data(save_data: Dictionary) -> Dictionary:
 		migrated["country_event_registry"] = {}
 		migrated["rebel_faction_registry"] = {}
 		migrated["migrated_from_schema"] = int(save_data.get("schema_version", 4))
+		schema = 5
+	if schema == 5:
+		# N2.1 naval registries. Pre-naval campaigns simply start with no
+		# fleets, no ships, and no naval construction in progress.
+		migrated["fleet_registry"] = {}
+		migrated["ship_registry"] = {}
+		migrated["naval_construction_registry"] = {}
+		migrated["migrated_from_schema"] = int(save_data.get("schema_version", 5))
+		schema = 6
+	if schema == 6:
+		# N3A transport registry. Pre-transport campaigns start with no
+		# operations in progress - no army can be mid-embarkation in a save
+		# that predates the feature.
+		migrated["transport_operation_registry"] = {}
+		migrated["migrated_from_schema"] = int(save_data.get("schema_version", 6))
+		schema = 7
+	if schema == 7:
+		# N4A naval battle registry. Pre-combat campaigns start with no
+		# battles in progress.
+		migrated["naval_battle_registry"] = {}
+		migrated["migrated_from_schema"] = int(save_data.get("schema_version", 7))
+		schema = 8
+	if schema == 8:
+		# N5 blockade-transition tracking. Pre-blockade campaigns start with
+		# no province recorded as currently blockaded - the first post-load
+		# BlockadeSystem.process_day() tick establishes the real state and
+		# emits blockade_started for anything genuinely blockaded already.
+		migrated["blockaded_provinces"] = {}
+		migrated["migrated_from_schema"] = int(save_data.get("schema_version", 8))
+		schema = 9
 	if schema < 1 or schema > SAVE_SCHEMA_VERSION:
 		return save_data
 	migrated["schema_version"] = SAVE_SCHEMA_VERSION
@@ -336,6 +589,12 @@ func checksum() -> String:
 		"subjects=%s" % _canonical_variant(subject_registry),
 		"country_events=%s" % _canonical_variant(country_event_registry),
 		"rebel_factions=%s" % _canonical_variant(rebel_faction_registry),
+		"fleets=%s" % _canonical_variant(fleet_registry),
+		"ships=%s" % _canonical_variant(ship_registry),
+		"naval_construction=%s" % _canonical_variant(naval_construction_registry),
+		"transport_operations=%s" % _canonical_variant(transport_operation_registry),
+		"naval_battles=%s" % _canonical_variant(naval_battle_registry),
+		"blockaded_provinces=%s" % _canonical_variant(blockaded_provinces),
 	]
 	var stream_names := rng_stream_states.keys()
 	stream_names.sort()
@@ -408,6 +667,12 @@ func to_save_dict(game_version: String) -> Dictionary:
 		"subject_registry": subject_registry.duplicate(true),
 		"country_event_registry": country_event_registry.duplicate(true),
 		"rebel_faction_registry": rebel_faction_registry.duplicate(true),
+		"fleet_registry": fleet_registry.duplicate(true),
+		"ship_registry": ship_registry.duplicate(true),
+		"naval_construction_registry": naval_construction_registry.duplicate(true),
+		"transport_operation_registry": transport_operation_registry.duplicate(true),
+		"naval_battle_registry": naval_battle_registry.duplicate(true),
+		"blockaded_provinces": blockaded_provinces.duplicate(true),
 		"checksum": checksum(),
 	}
 
@@ -570,6 +835,45 @@ func apply_save_dict(save_data: Dictionary) -> String:
 	if not depth_error.is_empty():
 		return depth_error
 
+	var loaded_fleets_variant = save_data.get("fleet_registry", {})
+	var loaded_ships_variant = save_data.get("ship_registry", {})
+	var loaded_naval_construction_variant = save_data.get("naval_construction_registry", {})
+	if not loaded_fleets_variant is Dictionary or not loaded_ships_variant is Dictionary or not loaded_naval_construction_variant is Dictionary:
+		return "The save contains invalid naval registries."
+	var loaded_fleets: Dictionary = loaded_fleets_variant
+	var loaded_ships: Dictionary = loaded_ships_variant
+	var loaded_naval_construction: Dictionary = loaded_naval_construction_variant
+	var naval_error := _validate_naval_data(loaded_fleets, loaded_ships, loaded_naval_construction, loaded_country_states, loaded_provinces, loaded_characters)
+	if not naval_error.is_empty():
+		return naval_error
+
+	var loaded_transport_operations_variant = save_data.get("transport_operation_registry", {})
+	if not loaded_transport_operations_variant is Dictionary:
+		return "The save contains an invalid transport operation registry."
+	var loaded_transport_operations: Dictionary = loaded_transport_operations_variant
+	var transport_error := _validate_transport_data(loaded_transport_operations, loaded_fleets, loaded_armies, loaded_country_states, loaded_provinces)
+	if not transport_error.is_empty():
+		return transport_error
+
+	var loaded_naval_battles_variant = save_data.get("naval_battle_registry", {})
+	if not loaded_naval_battles_variant is Dictionary:
+		return "The save contains an invalid naval battle registry."
+	var loaded_naval_battles: Dictionary = loaded_naval_battles_variant
+	var naval_battle_error := _validate_naval_battle_data(loaded_naval_battles, loaded_fleets, loaded_country_states, loaded_provinces)
+	if not naval_battle_error.is_empty():
+		return naval_battle_error
+
+	var loaded_blockaded_provinces_variant = save_data.get("blockaded_provinces", {})
+	if not loaded_blockaded_provinces_variant is Dictionary:
+		return "The save contains an invalid blockaded-provinces record."
+	var loaded_blockaded_provinces: Dictionary = loaded_blockaded_provinces_variant
+	for raw_province_id in loaded_blockaded_provinces:
+		if not loaded_provinces.has(int(raw_province_id)):
+			return "The save records an unknown province as blockaded."
+		var recorded_bp := int(loaded_blockaded_provinces[raw_province_id])
+		if recorded_bp <= 0 or recorded_bp > 10000:
+			return "Province %d has an out-of-range recorded blockade level." % int(raw_province_id)
+
 	province_states = loaded_provinces
 	country_states = loaded_country_states
 	current_day = loaded_day
@@ -593,7 +897,155 @@ func apply_save_dict(save_data: Dictionary) -> String:
 	subject_registry = loaded_subjects.duplicate(true)
 	country_event_registry = loaded_country_events.duplicate(true)
 	rebel_faction_registry = loaded_rebels.duplicate(true)
+	fleet_registry = loaded_fleets.duplicate(true)
+	ship_registry = loaded_ships.duplicate(true)
+	naval_construction_registry = loaded_naval_construction.duplicate(true)
+	transport_operation_registry = loaded_transport_operations.duplicate(true)
+	naval_battle_registry = loaded_naval_battles.duplicate(true)
+	blockaded_provinces = loaded_blockaded_provinces.duplicate(true)
 	_rebuild_country_index()
+	return ""
+
+
+func _validate_naval_data(fleets: Dictionary, ships: Dictionary, naval_construction: Dictionary, loaded_countries: Dictionary, loaded_provinces: Dictionary, characters: Dictionary) -> String:
+	for raw_id in fleets:
+		var fleet_id := String(raw_id)
+		if not fleets[raw_id] is Dictionary:
+			return "Fleet %s has invalid state." % fleet_id
+		var fleet: Dictionary = fleets[raw_id]
+		if not loaded_countries.has(String(fleet.get("owner_country_id", ""))):
+			return "Fleet %s belongs to an unknown country." % fleet_id
+		if not loaded_provinces.has(int(fleet.get("home_port_id", -1))):
+			return "Fleet %s has an unknown home port." % fleet_id
+		if not loaded_provinces.has(int(fleet.get("location_id", -1))):
+			return "Fleet %s has an unknown location." % fleet_id
+		var admiral := String(fleet.get("admiral_id", ""))
+		if not admiral.is_empty():
+			if not characters.has(admiral) or not bool((characters[admiral] as Dictionary).get("alive", false)):
+				return "Fleet %s has an invalid admiral." % fleet_id
+			if String((characters[admiral] as Dictionary).get("admiral_fleet_id", "")) != fleet_id:
+				return "Fleet %s and its admiral do not agree on assignment." % fleet_id
+		var member_ids := (fleet.get("ship_ids", []) as Array)
+		var seen_members := {}
+		for raw_ship_id in member_ids:
+			var member_id := String(raw_ship_id)
+			if seen_members.has(member_id):
+				return "Fleet %s lists ship %s more than once." % [fleet_id, member_id]
+			seen_members[member_id] = true
+			if not ships.has(member_id):
+				return "Fleet %s references unknown ship %s." % [fleet_id, member_id]
+			if String((ships[member_id] as Dictionary).get("fleet_id", "")) != fleet_id:
+				return "Fleet %s and ship %s do not agree on membership." % [fleet_id, member_id]
+	for raw_id in ships:
+		var ship_id := String(raw_id)
+		if not ships[raw_id] is Dictionary:
+			return "Ship %s has invalid state." % ship_id
+		var ship: Dictionary = ships[raw_id]
+		if not loaded_countries.has(String(ship.get("owner_country_id", ""))):
+			return "Ship %s belongs to an unknown country." % ship_id
+		var owning_fleet := String(ship.get("fleet_id", ""))
+		if not fleets.has(owning_fleet):
+			return "Ship %s references unknown fleet %s." % [ship_id, owning_fleet]
+		if not (fleets[owning_fleet] as Dictionary).get("ship_ids", []).has(ship_id):
+			return "Ship %s is not listed by its own fleet %s." % [ship_id, owning_fleet]
+	for raw_id in naval_construction:
+		var construction_id := String(raw_id)
+		if not naval_construction[raw_id] is Dictionary:
+			return "Naval construction %s has invalid state." % construction_id
+		var construction: Dictionary = naval_construction[raw_id]
+		if not loaded_countries.has(String(construction.get("country_tag", ""))):
+			return "Naval construction %s belongs to an unknown country." % construction_id
+		if not loaded_provinces.has(int(construction.get("port_id", -1))):
+			return "Naval construction %s references an unknown port." % construction_id
+	return ""
+
+
+## N3A structural/referential checks only, mirroring _validate_naval_data's
+## scope - operation<->army<->fleet reverse references must agree, and every
+## reference must resolve. Reserved-capacity-vs-live-transports (03_N3
+## "Reserved capacity against live transports") needs ShipDefinitions to
+## compute, which is a data-layer concern this structural validator
+## deliberately does not depend on; that check belongs to TransportSystem.
+func _validate_transport_data(operations: Dictionary, fleets: Dictionary, armies: Dictionary, loaded_countries: Dictionary, loaded_provinces: Dictionary) -> String:
+	for raw_id in operations:
+		var operation_id := String(raw_id)
+		if not operations[raw_id] is Dictionary:
+			return "Transport operation %s has invalid state." % operation_id
+		var operation: Dictionary = operations[raw_id]
+		var country_tag := String(operation.get("country_tag", ""))
+		if not loaded_countries.has(country_tag):
+			return "Transport operation %s belongs to an unknown country." % operation_id
+		if not loaded_provinces.has(int(operation.get("origin_port_id", -1))):
+			return "Transport operation %s has an unknown origin port." % operation_id
+		if not loaded_provinces.has(int(operation.get("destination_province_id", -1))):
+			return "Transport operation %s has an unknown destination." % operation_id
+		var army_id := String(operation.get("army_id", ""))
+		if not armies.has(army_id):
+			return "Transport operation %s references an unknown army." % operation_id
+		var army: Dictionary = armies[army_id]
+		if String(army.get("transport_operation_id", "")) != operation_id:
+			return "Transport operation %s and army %s do not agree on assignment." % [operation_id, army_id]
+		if String(army.get("owner_country_id", "")) != country_tag:
+			return "Transport operation %s and its army disagree on owning country." % operation_id
+		var fleet_id := String(operation.get("fleet_id", ""))
+		if not fleets.has(fleet_id):
+			return "Transport operation %s references an unknown fleet." % operation_id
+		var fleet: Dictionary = fleets[fleet_id]
+		if not (fleet.get("transport_operation_ids", []) as Array).has(operation_id):
+			return "Transport operation %s and fleet %s do not agree on assignment." % [operation_id, fleet_id]
+		if String(fleet.get("owner_country_id", "")) != country_tag:
+			return "Transport operation %s and its fleet disagree on owning country." % operation_id
+	for raw_army_id in armies:
+		var army: Dictionary = armies[raw_army_id]
+		var operation_id := String(army.get("transport_operation_id", ""))
+		if not operation_id.is_empty() and not operations.has(operation_id):
+			return "Army %s references an unknown transport operation." % String(raw_army_id)
+	for raw_fleet_id in fleets:
+		var fleet: Dictionary = fleets[raw_fleet_id]
+		for raw_operation_id in (fleet.get("transport_operation_ids", []) as Array):
+			if not operations.has(String(raw_operation_id)):
+				return "Fleet %s references an unknown transport operation." % String(raw_fleet_id)
+	return ""
+
+
+## N4A structural/referential checks, mirroring _validate_naval_data and
+## _validate_transport_data's scope: battle<->fleet reverse references must
+## agree, every reference must resolve, and no fleet may belong to more than
+## one active battle - "One fleet cannot enter two battles"
+## (04_N4_NAVAL_COMBAT.md "Engagement Start"). Completed battles are kept in
+## the registry as history (the "final report" 04_N4 asks for), so their
+## fleet lists are a snapshot, not a live index - a fleet a completed battle
+## names may have since left battle status, retreated, or been destroyed and
+## erased entirely; only *active* battles require live reciprocity.
+func _validate_naval_battle_data(battles: Dictionary, fleets: Dictionary, loaded_countries: Dictionary, loaded_provinces: Dictionary) -> String:
+	var fleet_claimed_by := {}
+	for raw_id in battles:
+		var battle_id := String(raw_id)
+		if not battles[raw_id] is Dictionary:
+			return "Naval battle %s has invalid state." % battle_id
+		var battle: Dictionary = battles[raw_id]
+		if not loaded_provinces.has(int(battle.get("zone_id", -1))):
+			return "Naval battle %s has an unknown sea zone." % battle_id
+		var attacker_fleets := (battle.get("attacker_fleets", []) as Array)
+		var defender_fleets := (battle.get("defender_fleets", []) as Array)
+		if attacker_fleets.is_empty() or defender_fleets.is_empty():
+			return "Naval battle %s must have at least one fleet on each side." % battle_id
+		if String(battle.get("status", "")) != "active":
+			continue
+		for raw_fleet_id in attacker_fleets + defender_fleets:
+			var fleet_id := String(raw_fleet_id)
+			if not fleets.has(fleet_id):
+				return "Naval battle %s references unknown fleet %s." % [battle_id, fleet_id]
+			if String((fleets[fleet_id] as Dictionary).get("battle_id", "")) != battle_id:
+				return "Naval battle %s and fleet %s do not agree on membership." % [battle_id, fleet_id]
+			if fleet_claimed_by.has(fleet_id):
+				return "Fleet %s belongs to more than one active naval battle." % fleet_id
+			fleet_claimed_by[fleet_id] = battle_id
+	for raw_fleet_id in fleets:
+		var fleet: Dictionary = fleets[raw_fleet_id]
+		var battle_id := String(fleet.get("battle_id", ""))
+		if not battle_id.is_empty() and not battles.has(battle_id):
+			return "Fleet %s references an unknown naval battle." % String(raw_fleet_id)
 	return ""
 
 

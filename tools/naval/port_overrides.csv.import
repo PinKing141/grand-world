@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://4yk1nm842oa4"
+
+[deps]
+
+files=["res://tools/naval/port_overrides.enabled.translation", "res://tools/naval/port_overrides.primary.translation", "res://tools/naval/port_overrides.harbour.translation", "res://tools/naval/port_overrides.shipyard.translation", "res://tools/naval/port_overrides.repair.translation", "res://tools/naval/port_overrides.basing.translation", "res://tools/naval/port_overrides.supply.translation", "res://tools/naval/port_overrides.note.translation", "res://tools/naval/port_overrides.source.translation", "res://tools/naval/port_overrides.reviewer.translation", "res://tools/naval/port_overrides.review.translation", "res://tools/naval/port_overrides.confidence.translation"]
+
+source_file="res://tools/naval/port_overrides.csv"
+dest_files=["res://tools/naval/port_overrides.enabled.translation", "res://tools/naval/port_overrides.primary.translation", "res://tools/naval/port_overrides.harbour.translation", "res://tools/naval/port_overrides.shipyard.translation", "res://tools/naval/port_overrides.repair.translation", "res://tools/naval/port_overrides.basing.translation", "res://tools/naval/port_overrides.supply.translation", "res://tools/naval/port_overrides.note.translation", "res://tools/naval/port_overrides.source.translation", "res://tools/naval/port_overrides.reviewer.translation", "res://tools/naval/port_overrides.review.translation", "res://tools/naval/port_overrides.confidence.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

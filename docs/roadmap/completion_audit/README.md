@@ -43,6 +43,8 @@ The next critical-path work is not simply “add more countries.” The project 
 | P2 | Presentation, audio and onboarding | Final UI art, portraits, rivers, map polish, alerts, tutorial and sound make the game understandable and marketable. |
 | P2 | Global Alpha/Beta/RC | Balance, world-scale AI, compatibility, performance, legal clearance and release hardening. |
 
+The P0 naval workstream is expanded into detailed, independently reviewable slices in the [Naval and Maritime Implementation Roadmap](../naval/README.md).
+
 ## Split Roadmap
 
 Read the files in this order:
@@ -76,4 +78,3 @@ Therefore, Phase 9 should not begin as unrestricted worldwide content entry. It 
 The same audit and roadmap are also maintained as a formatted Word report:
 
 - [Grand World Completion Audit and Revised Roadmap.docx](GRAND_WORLD_COMPLETION_AUDIT_AND_REVISED_ROADMAP.docx)
-

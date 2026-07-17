@@ -73,6 +73,24 @@ GODOT_TESTS = (
     ("Phase 7 court UI, character AI, claim-war UI, and succession integration", "tests/phase_7_integration_smoke.gd", "Phase 7 integration smoke passed."),
     ("Phase 8 country depth, subjects, events, formation, AI, and save", "tests/phase_8_country_depth_test.gd", "Phase 8 country-depth test passed."),
     ("Phase 8 Country & State UI, map modes, commands, and save", "tests/phase_8_integration_smoke.gd", "Phase 8 integration smoke passed."),
+    ("N1.1 naval maritime graph definitions", "tests/naval_definitions_test.gd", "Naval definitions test passed."),
+    ("N1.2 maritime graph topology, costs, and route finding", "tests/maritime_graph_test.gd", "Maritime graph test passed."),
+    ("N1.3 naval access, basing rights, and supply range", "tests/naval_access_policy_test.gd", "Naval access policy test passed."),
+    ("N1.4 maritime graph long-haul, reciprocity, and stress smoke", "tests/maritime_graph_stress_smoke.gd", "Maritime graph stress smoke passed."),
+    ("N2.1 ship definitions", "tests/ship_definitions_test.gd", "Ship definitions test passed."),
+    ("N2.1 fleet/ship save state, checksum, and migration", "tests/naval_fleet_state_test.gd", "Naval fleet state test passed."),
+    ("N2.2 naval economy, sailors, and ship construction", "tests/naval_economy_test.gd", "Naval economy test passed."),
+    ("N2.3 fleet organisation commands and aggregates", "tests/naval_fleet_organisation_test.gd", "Naval fleet organisation test passed."),
+    ("N2.3 fleet movement, blocking, and cancellation", "tests/naval_fleet_movement_test.gd", "Naval fleet movement test passed."),
+    ("N2.4 fleet supply, attrition, and repair", "tests/naval_fleet_logistics_test.gd", "Naval fleet logistics test passed."),
+    ("N2.4 admiral assignment, exclusivity, and lifecycle", "tests/naval_admiral_test.gd", "Naval admiral test passed."),
+    ("N2.5 naval HUD construction, fleet panel, and save integration", "tests/naval_hud_integration_smoke.gd", "Naval HUD integration smoke passed."),
+    ("N2.5 naval fleet-scale stress and performance smoke", "tests/naval_fleet_stress_smoke.gd", "Naval fleet stress smoke passed."),
+    ("N3.1/N3.2 transport operation record, reservation, and state machine", "tests/naval_transport_operation_test.gd", "Naval transport operation test passed."),
+    ("N3.3 transport capacity shortfall and blocked-fleet recovery", "tests/naval_transport_recovery_test.gd", "Naval transport recovery test passed."),
+    ("N3.4 transport save boundaries and Channel repetition gate", "tests/naval_transport_gate_test.gd", "Naval transport gate test passed."),
+    ("N4 naval battle engagement, damage, sinking, retreat", "tests/naval_combat_test.gd", "Naval combat test passed."),
+    ("N5A blockade eligibility and power query", "tests/naval_blockade_test.gd", "Naval blockade test passed."),
 )
 
 PYTHON_TESTS = (
@@ -90,6 +108,8 @@ PYTHON_TESTS = (
     ("Terrain classification", "tests/terrain_classification_smoke.py", "Terrain classification smoke test passed."),
     ("Biome classification", "tests/biome_classification_smoke.py", "Biome classification smoke test passed."),
     ("Baked economy definitions", "tools/economy/build_economy_data.py", "Economy definitions are current."),
+    ("Baked N1.1 naval maritime graph definitions", "tools/naval/build_naval_graph_data.py", "Naval graph definitions are current."),
+    ("N1.4 naval graph malformed-data rejection", "tests/naval_graph_malformed_data_smoke.py", "Naval graph malformed data smoke passed."),
 )
 
 FAILURE_MARKERS = (
@@ -206,6 +226,11 @@ def export_and_start(godot: Path) -> list[TestResult]:
                 "res://scenes/ui/ai_debug_hud.tscn",
                 "res://scenes/ui/character_hud.tscn",
                 "res://scenes/ui/country_depth_hud.tscn",
+                "res://scenes/ui/naval_hud.tscn",
+                "res://assets/ship_definitions.json",
+                "res://assets/naval_definitions.json",
+                "res://scripts/simulation/fleet_movement_system.gd",
+                "res://scripts/simulation/fleet_logistics_system.gd",
                 "res://scripts/simulation/warfare_system.gd",
                 "res://scripts/simulation/strategic_ai_system.gd",
                 "res://scripts/simulation/character_system.gd",
@@ -366,7 +391,7 @@ def main() -> int:
 
     specs: list[TestSpec] = []
     for name, path, marker in PYTHON_TESTS:
-        extra = ("--check",) if path.endswith(("build_economy_data.py", "build_country_registry.py", "analyse_neighbour_colours.py", "build_marker_assets.py", "build_label_territory_map.py", "build_map_visual_audit.py", "build_lake_mask.py")) else ()
+        extra = ("--check",) if path.endswith(("build_economy_data.py", "build_country_registry.py", "analyse_neighbour_colours.py", "build_marker_assets.py", "build_label_territory_map.py", "build_map_visual_audit.py", "build_lake_mask.py", "build_naval_graph_data.py")) else ()
         specs.append(TestSpec(name, (sys.executable, str(ROOT / path), *extra), marker, timeout=60, category="Data"))
     for name, path, marker in GODOT_TESTS:
         specs.append(TestSpec(name, (str(godot), "--headless", "--path", str(ROOT), "--script", f"res://{path}"), marker))

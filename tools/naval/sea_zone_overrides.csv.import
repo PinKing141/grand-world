@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://r2oljt74jque"
+
+[deps]
+
+files=["res://tools/naval/sea_zone_overrides.classification.translation", "res://tools/naval/sea_zone_overrides.note.translation", "res://tools/naval/sea_zone_overrides.source.translation", "res://tools/naval/sea_zone_overrides.reviewer.translation", "res://tools/naval/sea_zone_overrides.review.translation", "res://tools/naval/sea_zone_overrides.confidence.translation"]
+
+source_file="res://tools/naval/sea_zone_overrides.csv"
+dest_files=["res://tools/naval/sea_zone_overrides.classification.translation", "res://tools/naval/sea_zone_overrides.note.translation", "res://tools/naval/sea_zone_overrides.source.translation", "res://tools/naval/sea_zone_overrides.reviewer.translation", "res://tools/naval/sea_zone_overrides.review.translation", "res://tools/naval/sea_zone_overrides.confidence.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

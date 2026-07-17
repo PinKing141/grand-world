@@ -50,6 +50,8 @@ Turn the five missing pillars from broad ideas into bounded 1.0 specifications b
 
 ## Milestone G1 — Maritime First Playable
 
+Detailed implementation and acceptance plan: [Naval and Maritime Implementation Roadmap](../naval/README.md).
+
 ### Objective
 
 Make coastlines and sea zones strategically functional.
@@ -241,4 +243,3 @@ Replace prototype presentation and missing player guidance with a coherent shipp
 - Do not globally assign HRE/religious content before those schemas and event contracts are locked.
 - Do not approve thousands of flags/portraits without a written provenance and review workflow.
 - Do not label Phase 9 “Alpha” while mandatory 1.0 pillars are still absent.
-

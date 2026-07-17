@@ -30,6 +30,7 @@
 [ext_resource type="Script" path="res://scripts/ui/conflict_marker_layer.gd" id="29_conflict_markers"]
 [ext_resource type="PackedScene" path="res://scenes/ui/country_selection_screen.tscn" id="30_country_selection"]
 [ext_resource type="PackedScene" path="res://scenes/ui/campaign_interface_shell.tscn" id="31_campaign_shell"]
+[ext_resource type="PackedScene" path="res://scenes/ui/naval_hud.tscn" id="32_naval_hud"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_eb6dy"]
 viewport_path = NodePath("Map/Subviewports/CountryDistanceField")
@@ -20900,6 +20901,11 @@ province_selector = NodePath("../Map/ProvinceSelector")
 map_hud = NodePath("../MapHUD")
 notification_hud = NodePath("../SimulationHUD")
 
+[node name="NavalHUD" parent="." node_paths=PackedStringArray("simulation_controller", "province_selector", "notification_hud") instance=ExtResource("32_naval_hud")]
+simulation_controller = NodePath("../SimulationController")
+province_selector = NodePath("../Map/ProvinceSelector")
+notification_hud = NodePath("../SimulationHUD")
+
 [node name="AIDebugHUD" parent="." node_paths=PackedStringArray("simulation_controller", "map_hud", "notification_hud") instance=ExtResource("23_ai_hud")]
 simulation_controller = NodePath("../SimulationController")
 map_hud = NodePath("../MapHUD")
@@ -20922,7 +20928,7 @@ country_data = NodePath("../Map/ProvinceSelector/CountryData")
 camera_controller = NodePath("../CameraController")
 map_render = NodePath("../Map")
 
-[node name="CampaignInterfaceShell" parent="." node_paths=PackedStringArray("simulation_controller", "province_selector", "country_data", "camera_controller", "map_hud", "economy_hud", "simulation_hud", "war_hud", "ai_debug_hud", "country_depth_hud", "character_hud", "army_layer", "country_selection_screen") instance=ExtResource("31_campaign_shell")]
+[node name="CampaignInterfaceShell" parent="." node_paths=PackedStringArray("simulation_controller", "province_selector", "country_data", "camera_controller", "map_hud", "economy_hud", "simulation_hud", "war_hud", "ai_debug_hud", "country_depth_hud", "character_hud", "army_layer", "naval_hud", "country_selection_screen") instance=ExtResource("31_campaign_shell")]
 simulation_controller = NodePath("../SimulationController")
 province_selector = NodePath("../Map/ProvinceSelector")
 country_data = NodePath("../Map/ProvinceSelector/CountryData")
@@ -20935,4 +20941,5 @@ ai_debug_hud = NodePath("../AIDebugHUD")
 country_depth_hud = NodePath("../CountryDepthHUD")
 character_hud = NodePath("../CharacterHUD")
 army_layer = NodePath("../ArmyLayer")
+naval_hud = NodePath("../NavalHUD")
 country_selection_screen = NodePath("../CountrySelectionScreen")

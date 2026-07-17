@@ -4,6 +4,8 @@ These are P0 systems. A player will immediately notice their absence in a global
 
 ## Pillar A — Naval Warfare and Maritime Transport
 
+Detailed implementation plan: [Naval and Maritime Implementation Roadmap](../naval/README.md).
+
 ### Current state
 
 The project recognises coasts, sea connections, straits and the `naval_supplies` trade good, but armies that require transport cannot cross water. There are no usable fleets, transport capacity, naval battles, blockades, repairs or naval AI.
@@ -173,4 +175,3 @@ All five pillars must:
 - define monthly and daily CPU budgets before global enablement;
 - ship with integration, replay and soak tests;
 - include content validators before worldwide data entry begins.
-

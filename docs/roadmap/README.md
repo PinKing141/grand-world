@@ -30,6 +30,7 @@ The roadmap converts the long-term grand-strategy vision into smaller production
 
 - [Content pipeline](CONTENT_PIPELINE.md)
 - [Completion audit and revised delivery roadmap](completion_audit/README.md)
+- [Naval and maritime implementation roadmap](naval/README.md)
 - [Country names and map labels priority audit](COUNTRY_NAMES_MAP_LABELS_AUDIT.md)
 - [Strategic map visual production roadmap](map_visual_production/README.md)
 - [Quality, performance, and release gates](QA_PERFORMANCE_RELEASE_GATES.md)

@@ -67,7 +67,7 @@ func apply(world: CampaignWorldState, events: SimulationEventBus) -> void:
 		"attackers": attackers, "defenders": defenders,
 		"war_goal": {"type": "press_claim", "province_id": target_province, "target_country": defender_tag, "claim_id": claim_id, "title_id": title_id, "claimant_id": String(claim["claimant_id"])},
 		"battles": {}, "sieges": {}, "occupied_provinces": {}, "peace_offers": {},
-		"battle_score_attacker": 0, "occupation_score_attacker": 0, "ticking_score_attacker": 0,
+		"battle_score_attacker": 0, "occupation_score_attacker": 0, "ticking_score_attacker": 0, "blockade_score_attacker": 0,
 		"total_war_score": 0, "history": [{"day": world.current_day, "type": "claim_war_declared", "actor": attacker_tag, "claim_id": claim_id}],
 	}
 	events.war_declared.emit(war_id, attacker_tag, defender_tag, target_province)

@@ -1,0 +1,11 @@
+province_id,classification,note,source,reviewer,review_date,confidence
+1271,coastal_sea,"Straits of Dover - primary England/Burgundy Channel fixture crossing",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,reviewed
+1272,coastal_sea,"The Channel - wider England/Normandy Channel fixture crossing",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,reviewed
+1270,coastal_sea,"Dogger Bank - North Sea approach used by Kent/London/Essex/Hull",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,reviewed
+1276,coastal_sea,"Cote D'Argent - Gascon/Cantabrian approach shared by England and Castile fixture ports",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,reviewed
+1293,coastal_sea,"Straits of Gibraltar - primary Portugal/Castile Iberian fixture crossing",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,reviewed
+1291,coastal_sea,"Lusitanian Sea - Portuguese Atlantic coast shared by Castilian Galicia",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,reviewed
+1292,coastal_sea,"Gulf of Cadiz - Portuguese Algarve/Lisboa approach",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,reviewed
+1295,coastal_sea,"Gulf of Valencia - Aragonese Mediterranean fixture base",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,reviewed
+1296,coastal_sea,"Gulf of Lion - Aragonese/Burgundian Mediterranean fixture approach",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,reviewed
+1278,coastal_sea,"Cantabrian Sea - Castilian Galicia/Asturias fixture approach",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,reviewed

@@ -28,7 +28,7 @@ static func initialize_world(world: CampaignWorldState, definitions: CharacterDe
 			"death_cause": "", "father_id": "", "mother_id": "", "spouse_id": "",
 			"former_spouses": [], "children": [], "titles": [], "claims": [],
 			"health_bp": 8000, "fertility_bp": 5000, "stress_bp": 0,
-			"event_cooldowns": {}, "last_birth_day": -9999, "commander_army_id": "",
+			"event_cooldowns": {}, "last_birth_day": -9999, "commander_army_id": "", "admiral_fleet_id": "",
 			"illness": "", "illness_until_day": -1, "opinion_modifiers": [],
 		}, false)
 		var traits: Array = record.get("traits", [])
@@ -198,6 +198,25 @@ static func assign_commander(world: CampaignWorldState, events: SimulationEventB
 	events.commander_assigned.emit(army_id, character_id)
 
 
+## Mirrors assign_commander exactly, for fleets instead of armies. A
+## character cannot command an army and a fleet at once (00_SCOPE /
+## 02_N2_FLEET_LOGISTICS "Admirals"); AssignAdmiralCommand.validate() is what
+## enforces that exclusivity, this function only performs the atomic swap.
+static func assign_admiral(world: CampaignWorldState, events: SimulationEventBus, fleet_id: String, character_id: String) -> void:
+	var fleet: Dictionary = world.fleet_registry[fleet_id]
+	var previous := String(fleet.get("admiral_id", ""))
+	if not previous.is_empty() and world.character_registry.has(previous):
+		var old_character: Dictionary = world.character_registry[previous]
+		old_character["admiral_fleet_id"] = ""
+		world.character_registry[previous] = old_character
+	fleet["admiral_id"] = character_id
+	world.fleet_registry[fleet_id] = fleet
+	var character: Dictionary = world.character_registry[character_id]
+	character["admiral_fleet_id"] = fleet_id
+	world.character_registry[character_id] = character
+	events.admiral_assigned.emit(fleet_id, character_id)
+
+
 static func grant_title(world: CampaignWorldState, events: SimulationEventBus, title_id: String, new_holder_id: String) -> void:
 	var title: Dictionary = world.title_registry[title_id]
 	var old_holder := String(title.get("holder_id", ""))
@@ -274,6 +293,12 @@ static func kill_character(world: CampaignWorldState, events: SimulationEventBus
 		army["commander_id"] = ""
 		world.army_registry[commander_army] = army
 	character["commander_army_id"] = ""
+	var admiral_fleet := String(character.get("admiral_fleet_id", ""))
+	if world.fleet_registry.has(admiral_fleet):
+		var fleet: Dictionary = world.fleet_registry[admiral_fleet]
+		fleet["admiral_id"] = ""
+		world.fleet_registry[admiral_fleet] = fleet
+	character["admiral_fleet_id"] = ""
 	world.character_registry[character_id] = character
 	_remove_living_dynasty_member(world, character_id, String(character.get("dynasty_id", "")))
 	events.character_died.emit(character_id, cause, world.current_day)
@@ -537,7 +562,7 @@ static func _create_child(world: CampaignWorldState, events: SimulationEventBus,
 		"skills": {"diplomacy": 1, "martial": 1, "stewardship": 1, "intrigue": 1, "learning": 1},
 		"traits": [], "health_bp": 7500 + int(world.next_random_u32("character_birth_health:%s" % child_id) % 2001),
 		"fertility_bp": 0, "stress_bp": 0, "titles": [], "claims": [], "event_cooldowns": {},
-		"last_birth_day": -9999, "commander_army_id": "", "came_of_age": false,
+		"last_birth_day": -9999, "commander_army_id": "", "admiral_fleet_id": "", "came_of_age": false,
 		"illness": "", "illness_until_day": -1, "opinion_modifiers": [],
 	}
 	world.character_registry[child_id] = record
@@ -590,7 +615,7 @@ static func _create_courtier(world: CampaignWorldState, events: SimulationEventB
 		"employer_country": country_tag,
 		"skills": {"diplomacy": 3 + int(world.next_random_u32("courtier_dip:%s" % character_id) % 6), "martial": 3 + int(world.next_random_u32("courtier_mar:%s" % character_id) % 6), "stewardship": 3 + int(world.next_random_u32("courtier_ste:%s" % character_id) % 6), "intrigue": 3 + int(world.next_random_u32("courtier_int:%s" % character_id) % 6), "learning": 3 + int(world.next_random_u32("courtier_lea:%s" % character_id) % 6)},
 		"traits": [selected_trait], "health_bp": 8200, "fertility_bp": 7000, "stress_bp": 0,
-		"titles": [], "claims": [], "event_cooldowns": {}, "last_birth_day": -9999, "commander_army_id": "", "came_of_age": true,
+		"titles": [], "claims": [], "event_cooldowns": {}, "last_birth_day": -9999, "commander_army_id": "", "admiral_fleet_id": "", "came_of_age": true,
 		"illness": "", "illness_until_day": -1, "opinion_modifiers": [],
 	}
 	events.character_arrived_at_court.emit(character_id, country_tag)
@@ -635,7 +660,7 @@ static func _create_emergency_successor(world: CampaignWorldState, old_ruler_id:
 		"dynasty_id": dynasty_id, "father_id": "", "mother_id": "", "spouse_id": "", "former_spouses": [], "children": [],
 		"employer_country": country_tag, "skills": {"diplomacy": 5, "martial": 5, "stewardship": 5, "intrigue": 5, "learning": 5},
 		"traits": ["patient"], "health_bp": 8500, "fertility_bp": 6500, "stress_bp": 0, "titles": [], "claims": [],
-		"event_cooldowns": {}, "last_birth_day": -9999, "commander_army_id": "", "came_of_age": true,
+		"event_cooldowns": {}, "last_birth_day": -9999, "commander_army_id": "", "admiral_fleet_id": "", "came_of_age": true,
 		"illness": "", "illness_until_day": -1, "opinion_modifiers": [],
 	}
 	return character_id
