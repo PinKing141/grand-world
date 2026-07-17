@@ -86,6 +86,7 @@ func apply(world: CampaignWorldState, events: SimulationEventBus) -> void:
 		"battle_score_attacker": 0,
 		"occupation_score_attacker": 0,
 		"ticking_score_attacker": 0,
+		"blockade_score_attacker": 0,
 		"total_war_score": 0,
 		"history": [{"day": world.current_day, "type": "war_declared", "actor": attacker_tag}],
 	}

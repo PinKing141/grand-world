@@ -46,7 +46,10 @@ const MAX_INCREMENTAL_TAGS_PER_FRAME := 4
 # one-frame hitch; the final batched renderer removes this node queue entirely.
 const MAX_NODE_CREATIONS_PER_FRAME := 6
 const DEBUG_MAP_MODE := 2
-
+const UNSUPPORTED_LABEL_ADAPTER_PATTERNS := [
+	"intel(r) uhd graphics 600",
+	"intel uhd graphics 600",
+]
 @export var use_batched_msdf_renderer := true
 
 @export var simulation_controller: GrandWorldSimulationController
@@ -61,6 +64,7 @@ var _label_font: FontVariation
 var _base_font: FontFile
 var _font_ascii_ready := false
 var _font_atlas_ready := false
+var _hardware_compatibility_mode := false
 
 var _batch_canvas: CanvasLayer
 var _batch_root: Node2D
@@ -130,6 +134,17 @@ func _ready() -> void:
 
 
 func _initialize_label_resources() -> void:
+	if _requires_hardware_compatibility_mode():
+		# This legacy adapter loses its D3D12 device as soon as the custom MSDF
+		# atlas is uploaded. Keep the strategic map and campaign fully usable;
+		# only the optional country-name overlay is suppressed.
+		_hardware_compatibility_mode = true
+		_metrics["renderer"] = "disabled_hardware_compatibility"
+		_font_ascii_ready = true
+		_font_atlas_ready = true
+		hide()
+		set_process(false)
+		return
 	_graph = ProvinceGraph.load_default()
 	_create_batch_canvas()
 	_load_bundled_font()
@@ -139,6 +154,14 @@ func _initialize_label_resources() -> void:
 		var scale_param = map_render.final_material.get_shader_parameter("terrain_height_scale")
 		if scale_param != null:
 			_height_scale = float(scale_param)
+
+
+func _requires_hardware_compatibility_mode() -> bool:
+	var adapter_name := RenderingServer.get_video_adapter_name().to_lower()
+	for pattern in UNSUPPORTED_LABEL_ADAPTER_PATTERNS:
+		if String(pattern) in adapter_name:
+			return true
+	return false
 
 
 func _load_bundled_font() -> void:
@@ -186,6 +209,8 @@ func _warm_label_font_incrementally() -> void:
 
 
 func _create_batch_canvas() -> void:
+	if not use_batched_msdf_renderer:
+		return
 	_batch_shader = load(BATCH_SHADER_PATH) as Shader
 	if _batch_shader == null:
 		push_error("Country label batch shader is missing: %s" % BATCH_SHADER_PATH)
@@ -1124,6 +1149,13 @@ func _finish_visibility_metrics(started_usec: int) -> void:
 
 
 func _update_render_metrics() -> void:
+	if _hardware_compatibility_mode:
+		_metrics["node_count"] = 0
+		_metrics["batch_draw_count"] = 0
+		_metrics["batch_glyph_count"] = 0
+		_metrics["label3d_node_count"] = 0
+		_metrics["renderer"] = "disabled_hardware_compatibility"
+		return
 	if use_batched_msdf_renderer:
 		var active_pages := 0
 		for record in _batch_pages.values():

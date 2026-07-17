@@ -1,0 +1,47 @@
+# N3.4 - Transport UX and Gate
+
+**Status:** Recorded  
+**Satisfies:** [10 - Delivery sequence and checklist](../10_DELIVERY_SEQUENCE_AND_CHECKLIST.md) N3.4, and the N3E/N3F work packets in [03 - N3 Maritime Transport](../03_N3_MARITIME_TRANSPORT.md)  
+**Scope:** a debug-functional transport UI extension to `NavalHUD`, outliner/alert visibility for active operations, save/load coverage at every reachable state boundary, and repeated-Channel-crossing invariant checks. This closes out N3 as far as this environment can take it without N4 combat - see the "Deliberately blocked" sections in N3.2/N3.3's evidence docs for what remains genuinely out of reach.
+
+## Architectural choices
+
+**The transport panel reuses `NavalHUD`'s existing selected-fleet/selected-province model rather than inventing a new selection concept.** Embark destination is "whatever province is currently selected on the map" - the exact same `_selected_province_id` the fleet-move and port-construction sections already use. This means a player, land army panel, and transport panel all agree on "what am I pointing at" without a parallel selection state to keep in sync.
+
+**The eligible-army list is a subset of "would validate," matching the same discipline the fleet/admiral/construction sections already established in N2.5.** `_populate_army_options()` filters to armies co-located with the selected fleet and not already embarking/embarked - the exact same co-location and status checks `CreateTransportOperationCommand.validate()` performs - so the dropdown can never offer a choice the backend would then reject for a reason the player never saw.
+
+**Active-operation display reads the fleet's own `transport_operation_ids` reverse index, not a parallel UI-side list.** `_active_operations_for_fleet()` is a two-line wrapper around the same reference the backend already maintains and validates (`_validate_transport_data()`'s reciprocity checks) - there is exactly one source of truth for "which operations does this fleet carry," and the UI reads it rather than tracking its own copy.
+
+**Every failure-adjacent event became a toast notification, and only genuinely persistent state became a polled alert.** `transport_operation_failed`, `transport_capacity_shortfall`, `transport_operation_rerouted`, and `transport_operation_army_lost` are all one-time occurrences - there is nothing to "poll" for them after the fact, so they surface through `NavalHUD._notify()` at the moment they happen, the same pattern every other naval event already uses. The persistent, poll-able alert (`campaign_interface_shell.gd`'s "Transport operations (N)") only tracks the one thing that genuinely IS a standing condition: how many operations are currently in flight for the player. This split - event for the moment something goes wrong, alert for standing state - avoids inventing a redundant "recent problems" flag that the operation record itself doesn't carry.
+
+**Save-boundary tests target exactly the states N3.1 hadn't already covered.** N3.1's own test already round-trips an `embarking` operation. Rather than duplicate that, `naval_transport_gate_test.gd` walks the *same* fixture journey once, saving and reloading at `sailing`, `disembarking`, and immediately after `completed` (an empty `transport_operation_registry`, verifying a terminal state doesn't leave the checksum sensitive to a fact that's no longer there) - each boundary's coverage is additive, not redundant, with what already existed.
+
+**Frame-rate determinism for the full transport reused `simulation_frame_rate_determinism_test.gd` rather than a new harness.** That test already proved a bare fleet crossing the Channel resolves identically at 30 FPS and 120 FPS (added in N3.2). Extending the same fixture with a full embark→sail→disembark operation (a second, independent fleet/army pair, so it doesn't interact with the existing bare-fleet check) directly satisfies 03_N3's own "England-France Channel operation repeats deterministically across seeds/frame rates/game speeds" required test, using infrastructure already proven correct rather than building a parallel one. Seed-determinism needed no dedicated test: embark timing (`TransportSystem.embark_days()`) and capacity math are pure bounded-integer formulas with no RNG stream involved, so there is nothing seed-dependent to vary.
+
+## What was built
+
+- `scenes/ui/naval_hud.tscn` + `scripts/ui/naval_hud.gd`: a Transport section (active-operation display, eligible-army dropdown, Embark/Cancel buttons), wired through the existing `create_transport_operation`/`cancel_transport_operation` controller methods (added in N3.1) and validated the same way every other action in the panel already is.
+- `scripts/ui/campaign_interface_shell.gd`: FLEETS outliner entries now note "carrying N" when a fleet has active operations; a new "Transport operations (N)" alert routes to the naval panel.
+- `tests/naval_hud_integration_smoke.gd`: extended with a real embark → save/load → cancel flow driven through the UI's own handler methods, against the real 1444 scenario.
+- `tests/simulation_frame_rate_determinism_test.gd`: extended with a full second-fleet transport operation, verified identical at 30 FPS and 120 FPS.
+- `tests/naval_transport_gate_test.gd` (new): save/load at the sailing, disembarking, and post-completion boundaries; five repeated fresh-world Channel crossings checked for zero orphan/duplicate/stranded state each time.
+
+## Results (verified via all four touched/new tests, exit 0, no errors)
+
+- **UI flow**, against the real 1444 scenario (England genuinely owns Calais): building a `transport_cog` (explicitly selected, not whichever ship the option list defaults to - see "Bugs found" below), embarking a real army through the panel reaches `WorldState` exactly as a direct command call would; the panel reflects the active operation and offers cancellation; a save/load round trip preserves the operation; cancelling through the UI after reload correctly reaches `WorldState` and clears the operation.
+- **Save boundaries**: sailing, disembarking, and post-completion each reproduce an identical checksum across a save/load round trip.
+- **Channel repetition**: five independent fresh-world crossings each land the army at Kent exactly once, idle, unlocked, with no dangling operation or fleet reference and no leftover reserved capacity - `armies_in_province` reports the army at its new location exactly once and never at the old one.
+- **Frame-rate determinism**: the full embark/sail/disembark operation completes well within the existing 100-day run and produces an identical outcome and checksum at 30 FPS and 120 FPS, alongside the pre-existing bare-fleet check.
+- No regression: re-ran all 40 Godot phase/core/naval tests after this round of `naval_hud.tscn`/`naval_hud.gd`/`campaign_interface_shell.gd` changes - 39/40 pass, the one failure being the same pre-existing `country_label_layer_test.gd` frame-timing flake recorded in every N2/N3 evidence doc so far.
+
+## Bugs found and fixed before shipping (test fixtures, not implementation)
+
+- **`naval_hud_integration_smoke.gd`'s original construction step let the ship-type `OptionButton` default to its first (alphabetically-sorted) entry, `heavy_galleon` - a combat ship with zero transport capacity.** The transport section then correctly rejected embarkation for lack of capacity. Fixed by having the fixture explicitly select `transport_cog` before building, the same explicit-selection discipline now applied to army selection too (see below) rather than relying on whatever an `OptionButton` happens to default to.
+- **The same test's embark step relied on default `OptionButton` selection for the army, and the real 1444 scenario already seeds England with a default starting army (`a_ENG`) that happened to be co-located and sorted earlier alphabetically than the fixture's own `army_test`.** The UI correctly embarked the real `a_ENG` instead - proof the UI wiring genuinely works against real scenario data, not evidence of a bug, but it broke the test's own assumption about which army it was tracking. Fixed by explicitly selecting `army_test` by metadata before pressing Embark, rather than assuming index 0.
+
+## Deliberately simple / deferred
+
+- **No fleet-organisation-style multi-select embark** - one army embarks per action, matching `CreateTransportOperationCommand`'s own one-army-per-operation shape. Multiple armies onto one fleet means multiple embark actions, each a distinct reservation, exactly as 03_N3's capacity model describes.
+- **No route/danger preview beyond validate()'s pass/fail and tooltip reason.** 03_N3's "Origin, destination, route, total days, supply, and interception danger are visible before confirmation" is only partially met - there is no interception concept yet to show danger for (N4), and no dedicated route-preview visualization (map route segments distinguishing embark/sailing/disembark) - the panel shows state and destination as text, not a drawn path.
+- **No multi-select fleet-organisation-style UI** for the fleet-organisation commands that already exist from N2.3 (create/split/merge/transfer/set-home-port) - still true from N2.5, unchanged here.
+- Everything N3.2/N3.3 already recorded as blocked (battle pause, fleet retreat, combat-driven loss, peace/extinction cleanup) remains blocked for the same reasons; this slice's UI/gate work does not change what the backend can or cannot do.

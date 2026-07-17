@@ -5,6 +5,7 @@ extends RefCounted
 ## stable sorted IDs, campaign days, and named RNG streams.
 
 const DiplomacySystemScript = preload("res://scripts/simulation/diplomacy_system.gd")
+const BlockadeSystemScript = preload("res://scripts/simulation/blockade_system.gd")
 
 const BASIS_POINTS := 10000
 const RETREAT_MORALE_BP := 2000
@@ -340,11 +341,19 @@ static func _advance_sieges_and_occupations(world: CampaignWorldState, events: S
 				"fort_level": _fort_level(world, province_id),
 				"garrison": 500,
 				"breached": false,
+				"blockade_assisted": false,
 			})
 			siege["besieger_country"] = besieger_country
 			siege["side"] = besieger_side
 			var fort_level := int(siege.get("fort_level", 0))
 			var daily_progress := BASIS_POINTS / (BASE_SIEGE_DAYS + fort_level * 10)
+			var besieger_side_countries: Array = war.get("attackers", []) if besieger_side == 1 else war.get("defenders", [])
+			var assisted := BlockadeSystemScript.siege_assist_bp(world, besieger_side_countries, province_id) > 0
+			if assisted:
+				daily_progress = daily_progress * (BASIS_POINTS + BlockadeSystemScript.SIEGE_ASSIST_BONUS_BP) / BASIS_POINTS
+			if assisted != bool(siege.get("blockade_assisted", false)):
+				events.coastal_siege_support_changed.emit(war_id, province_id, assisted)
+			siege["blockade_assisted"] = assisted
 			if (world.current_day - int(siege.get("start_day", world.current_day))) % 7 == 0:
 				daily_progress += int(world.next_random_u32("siege:%s:%d" % [war_id, province_id]) % 201)
 			siege["progress_bp"] = mini(BASIS_POINTS, int(siege.get("progress_bp", 0)) + daily_progress)
@@ -429,7 +438,8 @@ static func _update_war_scores(world: CampaignWorldState, events: SimulationEven
 			var controller := world.get_province_controller(goal_id) if world.has_province(goal_id) else ""
 			var goal_side := DiplomacySystemScript.side_in_war(war, controller)
 			war["ticking_score_attacker"] = clampi(int(war.get("ticking_score_attacker", 0)) + goal_side, -25, 25)
-		var total := clampi(int(war.get("battle_score_attacker", 0)) + int(war.get("occupation_score_attacker", 0)) + int(war.get("ticking_score_attacker", 0)), -100, 100)
+		war["blockade_score_attacker"] = BlockadeSystemScript.update_war_blockade_score(world, war)
+		var total := clampi(int(war.get("battle_score_attacker", 0)) + int(war.get("occupation_score_attacker", 0)) + int(war.get("ticking_score_attacker", 0)) + int(war.get("blockade_score_attacker", 0)), -100, 100)
 		var changed := total != int(war.get("total_war_score", 0))
 		war["total_war_score"] = total
 		world.war_registry[raw_war_id] = war

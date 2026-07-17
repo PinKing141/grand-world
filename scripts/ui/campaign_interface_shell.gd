@@ -34,6 +34,7 @@ const BAD := Color("e98576")
 @export var country_depth_hud: Node
 @export var character_hud: Node
 @export var army_layer: ArmyLayer
+@export var naval_hud: Node
 @export var country_selection_screen: Control
 
 var top_left_panel: PanelContainer
@@ -364,6 +365,18 @@ func _refresh_alerts(tag: String, runtime: Dictionary) -> void:
 		alert_specs.append({"text": "Decision required", "tip": "A country event awaits a response", "action": _open_government})
 	if not (snapshot.get("rebel_factions", []) as Array).is_empty():
 		alert_specs.append({"text": "Rebel activity", "tip": "Internal factions are organizing", "action": _open_religion})
+	var unsupplied_fleets := 0
+	for fleet_id in simulation_controller.world.country_fleets(tag):
+		if not bool((simulation_controller.world.fleet_registry[fleet_id] as Dictionary).get("supplied", true)):
+			unsupplied_fleets += 1
+	if unsupplied_fleets > 0:
+		alert_specs.append({"text": "Unsupplied fleets (%d)" % unsupplied_fleets, "tip": "Fleets out of supply range are taking attrition", "action": _open_naval})
+	var transport_count := 0
+	for raw_operation_id in simulation_controller.world.transport_operation_registry:
+		if String((simulation_controller.world.transport_operation_registry[raw_operation_id] as Dictionary).get("country_tag", "")) == tag:
+			transport_count += 1
+	if transport_count > 0:
+		alert_specs.append({"text": "Transport operations (%d)" % transport_count, "tip": "Armies are embarking, sailing, or disembarking", "action": _open_naval})
 	if alert_specs.is_empty():
 		alert_specs.append({"text": "No urgent alerts", "tip": "The realm has no immediate warnings", "action": Callable()})
 	var signature := "|".join(alert_specs.map(func(spec: Dictionary) -> String: return String(spec["text"])))
@@ -403,6 +416,30 @@ func _refresh_outliner(tag: String, _force_rebuild: bool) -> void:
 			outliner_content.add_child(army_button)
 		if army_ids.size() > 12:
 			_add_outliner_empty("+%d additional armies" % (army_ids.size() - 12))
+
+	_add_outliner_heading("FLEETS")
+	var fleet_ids := simulation_controller.world.country_fleets(tag)
+	if fleet_ids.is_empty():
+		_add_outliner_empty("No fleets")
+	else:
+		for fleet_id in fleet_ids.slice(0, 12):
+			var fleet: Dictionary = simulation_controller.world.fleet_registry[fleet_id]
+			var aggregate: Dictionary = fleet.get("aggregate", {})
+			var status_text := String(fleet.get("location_status", "")).capitalize()
+			if not bool(fleet.get("supplied", true)):
+				status_text += " · unsupplied"
+			var max_hull := int(aggregate.get("total_maximum_hull", 0))
+			if max_hull > 0 and int(aggregate.get("total_hull", 0)) < max_hull:
+				status_text += " · damaged"
+			var carried := (fleet.get("transport_operation_ids", []) as Array).size()
+			if carried > 0:
+				status_text += " · carrying %d" % carried
+			var fleet_button := _outliner_button("%s · %d ships · %s" % [fleet_id, int(aggregate.get("ship_count", 0)), status_text])
+			fleet_button.tooltip_text = "Select and focus this fleet"
+			fleet_button.pressed.connect(func() -> void: _focus_fleet(String(fleet_id)))
+			outliner_content.add_child(fleet_button)
+		if fleet_ids.size() > 12:
+			_add_outliner_empty("+%d additional fleets" % (fleet_ids.size() - 12))
 
 	_add_outliner_heading("WARS")
 	var wars := _player_wars(tag)
@@ -545,6 +582,17 @@ func _focus_army(army_id: String) -> void:
 		camera_controller.focus_world_position(Vector3(anchor.x * 0.01 - 28.16, 0.0, anchor.y * 0.01 - 10.24))
 
 
+func _focus_fleet(fleet_id: String) -> void:
+	var fleet: Dictionary = simulation_controller.world.fleet_registry.get(fleet_id, {})
+	if fleet.is_empty():
+		return
+	if naval_hud != null and naval_hud.has_method("select_fleet"):
+		naval_hud.call("select_fleet", fleet_id)
+	var anchor := ProvinceGraphScript.load_default().anchor(int(fleet.get("location_id", -1)))
+	if anchor.x >= 0 and camera_controller != null:
+		camera_controller.focus_world_position(Vector3(anchor.x * 0.01 - 28.16, 0.0, anchor.y * 0.01 - 10.24))
+
+
 func _player_wars(tag: String) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for raw_war in simulation_controller.world.war_registry.values():
@@ -612,6 +660,11 @@ func _open_economy() -> void:
 func _open_military() -> void:
 	if simulation_hud != null:
 		simulation_hud.open_military_panel()
+
+
+func _open_naval() -> void:
+	if naval_hud != null and naval_hud.has_method("open_naval_panel"):
+		naval_hud.call("open_naval_panel")
 
 
 func _open_diplomacy() -> void:

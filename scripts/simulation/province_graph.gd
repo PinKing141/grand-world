@@ -15,6 +15,7 @@ var map_size := Vector2i.ZERO
 var terrain_costs: Dictionary = {}
 var _provinces: Dictionary = {}
 var _sorted_land_neighbors: Dictionary = {}
+var _sorted_sea_neighbors: Dictionary = {}
 
 
 static func load_default() -> ProvinceGraph:
@@ -94,6 +95,26 @@ func land_neighbors(province_id: int) -> PackedInt32Array:
 	neighbors.sort()
 	_sorted_land_neighbors[province_id] = neighbors
 	return neighbors
+
+
+func sea_neighbors(province_id: int) -> PackedInt32Array:
+	# Sorted ascending, same stability guarantee as land_neighbors(). A water
+	# record's sea_neighbors are other water zones; a land record's are its
+	# sea exits. The reciprocal of a land exit lives in the water record's
+	# land_neighbors, not its sea_neighbors - see tools/naval/build_naval_graph_data.py.
+	if _sorted_sea_neighbors.has(province_id):
+		return _sorted_sea_neighbors[province_id]
+	var neighbors := PackedInt32Array()
+	var stored: Dictionary = (_provinces.get(province_id, {}) as Dictionary).get("sea_neighbors", {})
+	for key in stored:
+		neighbors.append(int(key))
+	neighbors.sort()
+	_sorted_sea_neighbors[province_id] = neighbors
+	return neighbors
+
+
+func is_water(province_id: int) -> bool:
+	return classification(province_id) == "water"
 
 
 func is_strait(from_id: int, to_id: int) -> bool:

@@ -38,6 +38,8 @@ func validate(world: CampaignWorldState) -> String:
 		return "The army no longer exists."
 	if String(army.get("owner_country_id", "")) != issuing_country:
 		return "%s does not control this army." % issuing_country
+	if String(army.get("status", CampaignWorldState.ARMY_STATUS_IDLE)) == CampaignWorldState.ARMY_STATUS_EMBARKED:
+		return "The army is embarked."
 	if bool(army.get("movement_locked", false)):
 		return "The army is movement-locked."
 	if String(army.get("status", CampaignWorldState.ARMY_STATUS_IDLE)) in [CampaignWorldState.ARMY_STATUS_BATTLE, CampaignWorldState.ARMY_STATUS_RETREATING, CampaignWorldState.ARMY_STATUS_RECOVERING]:

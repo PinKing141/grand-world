@@ -16,6 +16,25 @@ const SimulationDate = preload("res://scripts/simulation/simulation_date.gd")
 const MoveArmyCommandScript = preload("res://scripts/simulation/commands/move_army_command.gd")
 const CancelArmyMovementCommandScript = preload("res://scripts/simulation/commands/cancel_army_movement_command.gd")
 const ArmyMovementSystemScript = preload("res://scripts/simulation/army_movement_system.gd")
+const FleetMovementSystemScript = preload("res://scripts/simulation/fleet_movement_system.gd")
+const FleetLogisticsSystemScript = preload("res://scripts/simulation/fleet_logistics_system.gd")
+const ConstructShipCommandScript = preload("res://scripts/simulation/commands/construct_ship_command.gd")
+const CancelShipConstructionCommandScript = preload("res://scripts/simulation/commands/cancel_ship_construction_command.gd")
+const CreateFleetCommandScript = preload("res://scripts/simulation/commands/create_fleet_command.gd")
+const SplitFleetCommandScript = preload("res://scripts/simulation/commands/split_fleet_command.gd")
+const TransferShipsCommandScript = preload("res://scripts/simulation/commands/transfer_ships_command.gd")
+const MergeFleetsCommandScript = preload("res://scripts/simulation/commands/merge_fleets_command.gd")
+const SetFleetHomePortCommandScript = preload("res://scripts/simulation/commands/set_fleet_home_port_command.gd")
+const MoveFleetCommandScript = preload("res://scripts/simulation/commands/move_fleet_command.gd")
+const CancelFleetMovementCommandScript = preload("res://scripts/simulation/commands/cancel_fleet_movement_command.gd")
+const AssignAdmiralCommandScript = preload("res://scripts/simulation/commands/assign_admiral_command.gd")
+const CreateTransportOperationCommandScript = preload("res://scripts/simulation/commands/create_transport_operation_command.gd")
+const CancelTransportOperationCommandScript = preload("res://scripts/simulation/commands/cancel_transport_operation_command.gd")
+const TransportSystemScript = preload("res://scripts/simulation/transport_system.gd")
+const NavalCombatSystemScript = preload("res://scripts/simulation/naval_combat_system.gd")
+const BlockadeSystemScript = preload("res://scripts/simulation/blockade_system.gd")
+const RequestFleetRetreatCommandScript = preload("res://scripts/simulation/commands/request_fleet_retreat_command.gd")
+const SetFleetMissionCommandScript = preload("res://scripts/simulation/commands/set_fleet_mission_command.gd")
 const ProvincePathfinderScript = preload("res://scripts/simulation/province_pathfinder.gd")
 const EconomyDefinitionsScript = preload("res://scripts/simulation/economy_definitions.gd")
 const EconomySystemScript = preload("res://scripts/simulation/economy_system.gd")
@@ -218,6 +237,62 @@ func set_army_maintenance(country_tag: String, maintenance_bp: int) -> int:
 
 func take_loan(country_tag: String) -> int:
 	return submit_command(TakeLoanCommandScript.new(country_tag))
+
+
+func construct_ship(country_tag: String, port_id: int, definition_id: String) -> int:
+	return submit_command(ConstructShipCommandScript.new(country_tag, port_id, definition_id))
+
+
+func cancel_ship_construction(country_tag: String, construction_id: String) -> int:
+	return submit_command(CancelShipConstructionCommandScript.new(country_tag, construction_id))
+
+
+func create_fleet(country_tag: String, ship_ids: Array) -> int:
+	return submit_command(CreateFleetCommandScript.new(country_tag, ship_ids))
+
+
+func split_fleet(country_tag: String, source_fleet_id: String, ship_ids: Array) -> int:
+	return submit_command(SplitFleetCommandScript.new(country_tag, source_fleet_id, ship_ids))
+
+
+func transfer_ships(country_tag: String, ship_ids: Array, target_fleet_id: String) -> int:
+	return submit_command(TransferShipsCommandScript.new(country_tag, ship_ids, target_fleet_id))
+
+
+func merge_fleets(country_tag: String, fleet_ids: Array) -> int:
+	return submit_command(MergeFleetsCommandScript.new(country_tag, fleet_ids))
+
+
+func set_fleet_home_port(country_tag: String, fleet_id: String, new_home_port_id: int) -> int:
+	return submit_command(SetFleetHomePortCommandScript.new(country_tag, fleet_id, new_home_port_id))
+
+
+func order_fleet_move(fleet_id: String, destination_id: int, issuing_country: String) -> int:
+	return submit_command(MoveFleetCommandScript.new(fleet_id, destination_id, issuing_country))
+
+
+func cancel_fleet_movement(fleet_id: String, issuing_country: String) -> int:
+	return submit_command(CancelFleetMovementCommandScript.new(fleet_id, issuing_country))
+
+
+func assign_admiral(country_tag: String, fleet_id: String, character_id: String) -> int:
+	return submit_command(AssignAdmiralCommandScript.new(country_tag, fleet_id, character_id))
+
+
+func create_transport_operation(country_tag: String, army_id: String, fleet_id: String, destination_province_id: int) -> int:
+	return submit_command(CreateTransportOperationCommandScript.new(country_tag, army_id, fleet_id, destination_province_id))
+
+
+func cancel_transport_operation(country_tag: String, operation_id: String) -> int:
+	return submit_command(CancelTransportOperationCommandScript.new(country_tag, operation_id))
+
+
+func request_fleet_retreat(country_tag: String, fleet_id: String) -> int:
+	return submit_command(RequestFleetRetreatCommandScript.new(country_tag, fleet_id))
+
+
+func set_fleet_mission(country_tag: String, fleet_id: String, mission: String) -> int:
+	return submit_command(SetFleetMissionCommandScript.new(country_tag, fleet_id, mission))
 
 
 func repay_loan(country_tag: String, loan_id: String) -> int:
@@ -677,11 +752,31 @@ func _bootstrap_scenario() -> void:
 	)
 	scheduler.daily_systems.append(
 		func(day_world: CampaignWorldState) -> void:
+			FleetMovementSystemScript.advance_day(day_world, event_bus)
+	)
+	scheduler.daily_systems.append(
+		func(day_world: CampaignWorldState) -> void:
 			WarfareSystemScript.advance_day(day_world, event_bus)
+	)
+	scheduler.daily_systems.append(
+		func(day_world: CampaignWorldState) -> void:
+			NavalCombatSystemScript.advance_day(day_world, event_bus)
+	)
+	scheduler.daily_systems.append(
+		func(day_world: CampaignWorldState) -> void:
+			BlockadeSystemScript.process_day(day_world, event_bus)
 	)
 	scheduler.start_of_day_systems.append(
 		func(day_world: CampaignWorldState) -> void:
 			EconomySystemScript.process_day(day_world, event_bus, economy_definitions)
+	)
+	scheduler.start_of_day_systems.append(
+		func(day_world: CampaignWorldState) -> void:
+			FleetLogisticsSystemScript.process_day(day_world, event_bus)
+	)
+	scheduler.start_of_day_systems.append(
+		func(day_world: CampaignWorldState) -> void:
+			TransportSystemScript.process_day(day_world, event_bus)
 	)
 	character_ai_system = CharacterAISystemScript.new(scheduler, event_bus)
 	scheduler.monthly_systems.append(
@@ -698,6 +793,10 @@ func _bootstrap_scenario() -> void:
 	scheduler.monthly_systems.append(
 		func(month_world: CampaignWorldState) -> void:
 			EconomySystemScript.process_month(month_world, event_bus, economy_definitions)
+	)
+	scheduler.monthly_systems.append(
+		func(month_world: CampaignWorldState) -> void:
+			FleetLogisticsSystemScript.process_month(month_world, event_bus)
 	)
 	ai_system = StrategicAISystemScript.new(scheduler, event_bus, ai_definitions)
 	ai_system.initialize_world(world)

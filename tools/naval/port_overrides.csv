@@ -1,0 +1,30 @@
+province_id,enabled,primary_exit,harbour_level,shipyard,repair_capacity_bp,basing_capacity,supply_range_bp,note,source,reviewer,review_date,confidence
+87,true,1269,1,false,10000,1,10000,"Calais - England Channel fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+235,true,1270,1,false,10000,1,10000,"Kent - England Channel fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+4371,true,1271,1,false,10000,1,10000,"Sussex - England Channel fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+233,true,1272,1,false,10000,1,10000,"Cornwall - England Channel fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+4373,true,1272,1,false,10000,1,10000,"Devon - England Channel fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+4374,true,1272,1,false,10000,1,10000,"Dorset - England Channel fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+4385,true,1271,1,false,10000,1,10000,"Cotentin - England-held Normandy Channel fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+167,true,1271,1,false,10000,1,10000,"Caux - England-held Normandy Channel fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+168,true,1271,1,false,10000,1,10000,"Normandie - England-held Channel fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+89,true,1271,1,false,10000,1,10000,"Picardie - Burgundy-held hostile Channel interception fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+90,true,1269,1,false,10000,1,10000,"Vlaanderen - Flanders secondary Channel interception fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+227,true,1291,1,false,10000,1,10000,"Lisboa - Portugal Iberian fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+231,true,1291,1,false,10000,1,10000,"Porto - Portugal Iberian fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+230,true,1292,1,false,10000,1,10000,"Algarve - Portugal Gibraltar-crossing fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+229,true,1292,1,false,10000,1,10000,"Beja - Portugal Iberian fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+1751,true,1293,1,false,10000,1,10000,"Ceuta - Portugal Gibraltar-crossing fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+4556,true,1291,1,false,10000,1,10000,"Aviero - Portugal Iberian fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+206,true,1278,1,false,10000,1,10000,"Galicia - Castile Iberian fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+1749,true,1293,1,false,10000,1,10000,"Cadiz - Castile Gibraltar-crossing fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+224,true,1293,1,false,10000,1,10000,"Andalucia - Castile Gibraltar-crossing fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+4548,true,1293,1,false,10000,1,10000,"Huelva - Castile Gibraltar-crossing fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+207,true,1276,1,false,10000,1,10000,"Asturias - Castile Iberian fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+209,true,1276,1,false,10000,1,10000,"Vizcaya - Castile Iberian fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+213,true,1295,1,false,10000,1,10000,"Barcelona - Aragon Mediterranean fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+220,true,1295,1,false,10000,1,10000,"Valencia - Aragon Mediterranean fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+2988,true,1295,1,false,10000,1,10000,"Tarragona - Aragon Mediterranean fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+212,true,1296,1,false,10000,1,10000,"Girona - Aragon Mediterranean fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+197,true,1296,1,false,10000,1,10000,"Roussillon - Aragon Mediterranean fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed
+333,true,1295,1,false,10000,1,10000,"The Baleares - Aragon Mediterranean island fixture port",N0.3 naval roadmap fixture,naval-roadmap-kickoff,2026-07-17,placeholder-reviewed

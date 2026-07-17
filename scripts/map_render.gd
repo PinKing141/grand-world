@@ -1,4 +1,11 @@
 extends ComputeHelper
+
+const LOW_END_ADAPTER_PATTERNS := [
+	"intel(r) uhd graphics 600",
+	"intel uhd graphics 600",
+]
+const LOW_END_SUBVIEWPORT_SIZE := Vector2i(2816, 1024)
+
 @export_group("Sub Viewports")
 @export var country_field: SubViewport
 @export var province_field: SubViewport
@@ -59,6 +66,29 @@ var _subject_presentations: Dictionary = {}
 var _realm_roots: Dictionary = {}
 var _presentation_country_colors: Dictionary = {}
 var _last_strategic_zoom := -1.0
+var _compute_resources_active := false
+
+
+func _enter_tree() -> void:
+	var adapter_name := RenderingServer.get_video_adapter_name().to_lower()
+	for pattern in LOW_END_ADAPTER_PATTERNS:
+		if pattern in adapter_name:
+			_apply_low_end_viewport_sizes()
+			return
+
+
+func _apply_low_end_viewport_sizes() -> void:
+	# These intermediate maps are four times the display's pixel count at full
+	# resolution. Halving each dimension keeps border generation sharp at the
+	# laptop's native resolution while reducing render-target memory by 75%.
+	for viewport_path in [
+		"Subviewports/ProvinceEdgeLattice",
+		"Subviewports/ColorOutput",
+		"Subviewports/CountryDistanceField",
+	]:
+		var viewport := get_node_or_null(viewport_path) as SubViewport
+		if viewport != null:
+			viewport.size = LOW_END_SUBVIEWPORT_SIZE
 
 # Presentation-only interaction state. Authoritative state arrives in Phase 2.
 var hovered_province_id := -1
@@ -452,10 +482,7 @@ func _copy_image(source: Image) -> Image:
 	
 func _ready():
 	province_selector.province_image = province_map.get_image()
-	# Initialize compute helper
-	create_rd()
-	set_output_texture_size(province_map.get_size())
-	
+
 	# Get viewport materials to update at runtime
 	var output_color: ColorRect = output.get_node("Output")
 	output_material = output_color.material
@@ -472,9 +499,11 @@ func _ready():
 	# Production uses deterministic prebaked textures; compute generation remains an
 	# opt-in editor fallback for map topology work.
 	if not use_prebaked_map_textures or not load_prebaked_map_textures():
+		_initialize_compute_resources()
 		create_lookup_texture()
 		create_color_map_texture()
 		create_political_map_mask_texture()
+		_clean_up_compute_resources()
 	if political_color_map == null and color_map != null:
 		political_color_map = _copy_image(color_map)
 
@@ -500,6 +529,33 @@ func _ready():
 	province_field.render_target_update_mode = SubViewport.UPDATE_ONCE
 	await RenderingServer.frame_post_draw
 	update_viewports_dynamic()
+
+
+func _exit_tree() -> void:
+	_clean_up_compute_resources()
+
+
+func _initialize_compute_resources() -> void:
+	if _compute_resources_active:
+		return
+	create_rd()
+	_compute_resources_active = true
+	set_output_texture_size(province_map.get_size())
+
+
+func _clean_up_compute_resources() -> void:
+	if not _compute_resources_active:
+		return
+	clean_up()
+	_compute_resources_active = false
+
+
+func debug_compute_resources_active() -> bool:
+	return _compute_resources_active
+
+
+func debug_intermediate_viewport_size() -> Vector2i:
+	return output.size
 		
 		
 
@@ -757,7 +813,6 @@ func create_lookup_texture():
 
 	if not input_image.is_valid():
 		print("Failed to create GPU input texture")
-		clean_up()
 		return
    
 
@@ -767,7 +822,6 @@ func create_lookup_texture():
 	
 	if not output_image.is_valid():
 		print("Failed to create output texture")
-		clean_up()
 		return
    
 	

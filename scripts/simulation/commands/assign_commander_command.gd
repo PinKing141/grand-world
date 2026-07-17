@@ -36,6 +36,9 @@ func validate(world: CampaignWorldState) -> String:
 	var existing := String(character.get("commander_army_id", ""))
 	if not existing.is_empty() and existing != army_id:
 		return "The character already commands another army."
+	var existing_fleet := String(character.get("admiral_fleet_id", ""))
+	if not existing_fleet.is_empty():
+		return "The character already commands a fleet."
 	return ""
 
 
