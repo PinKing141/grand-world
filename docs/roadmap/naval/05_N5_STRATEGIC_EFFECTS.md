@@ -1,6 +1,6 @@
 # 05 - N5 Strategic Naval Effects
 
-**Status:** In production - blockade eligibility/effective-power query, target resistance, contested zones, and all Events-and-Queries signals (N5.1) and economy ledger penalty/war blockade score/coastal siege assist/repair-construction port effects (N5.2, partial) complete; peace lifecycle and the trade-protection hook are all open. See [10 - Delivery sequence and checklist](10_DELIVERY_SEQUENCE_AND_CHECKLIST.md) and its evidence/ folder.  
+**Status:** Validation - blockade eligibility/power, target resistance, contested zones, transition events, economy, war score, coastal siege, repair/construction effects, peace/extinction lifecycle, HUD/map feedback, and global-coast stress checks pass. The stable trade-protection output and final release evidence remain open.
 **Depends on:** N1 ports/zones, N2 fleet missions/logistics, N4 hostile naval control  
 **Unlocks:** complete maritime war loop and stable trade-network hooks
 

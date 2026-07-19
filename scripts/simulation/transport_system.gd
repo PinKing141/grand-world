@@ -2,13 +2,19 @@ class_name TransportSystem
 extends RefCounted
 
 ## N3.1/N3.2/N3.3: capacity accounting, the reachable slice of the transport
-## state machine (embarking -> sailing -> disembarking -> completed), and the
-## failure-recovery paths reachable without combat (capacity shortfall from
-## attrition, and recovery/destruction for a fleet FleetMovementSystem has
-## already halted mid-route). See
+## state machine (embarking -> sailing -> disembarking -> completed), and
+## failure-recovery. A carrier fleet retreating elsewhere is already handled
+## by the existing "fleet settled somewhere other than the destination"
+## recovery check below - retreat drives the fleet through the same
+## FleetMovementSystem this system already watches, so nothing naval-combat-
+## specific was needed for that case. A carrier fleet destroyed outright
+## (sunk, or no legal retreat) is handled by the fleet-existence check at the
+## top of process_day()'s loop, the same "doesn't know or care why" shape as
+## the capacity-shortfall check. See
 ## docs/roadmap/naval/03_N3_MARITIME_TRANSPORT.md "Capacity Model", "State
-## Machine", and "Loss and Recovery Policy". battle_paused and combat-driven
-## losses remain out of scope until N4 exists to trigger them.
+## Machine", and "Loss and Recovery Policy". battle_paused (holding an
+## operation still mid-embark/sail while its fleet is actively fighting,
+## rather than only reacting after the fact) remains out of scope.
 
 const MaritimeGraphScript = preload("res://scripts/simulation/maritime_graph.gd")
 const NavalAccessPolicyScript = preload("res://scripts/simulation/naval_access_policy.gd")
@@ -90,6 +96,7 @@ static func _fleet_has_damaged_ship(world: CampaignWorldState, fleet_id: String)
 ## day counter has advanced, not before (see _complete_constructions).
 static func process_day(world: CampaignWorldState, events: SimulationEventBus) -> void:
 	var graph := MaritimeGraphScript.load_default()
+	_resolve_missing_carriers(world, events)
 	_resolve_capacity_shortfalls(world, events)
 	var operation_ids := world.transport_operation_registry.keys()
 	operation_ids.sort()
@@ -98,6 +105,9 @@ static func process_day(world: CampaignWorldState, events: SimulationEventBus) -
 		if not world.transport_operation_registry.has(operation_id):
 			continue
 		var operation: Dictionary = world.transport_operation_registry[operation_id]
+		if not world.fleet_registry.has(String(operation.get("fleet_id", ""))):
+			_destroy_stranded_operation(world, events, operation_id, "The fleet carrying the army was destroyed in battle.")
+			continue
 		var state := String(operation.get("state", ""))
 		if state == CampaignWorldState.TRANSPORT_STATE_EMBARKING:
 			_advance_embarking(world, events, graph, operation_id, operation)
@@ -105,6 +115,57 @@ static func process_day(world: CampaignWorldState, events: SimulationEventBus) -
 			_advance_sailing(world, events, graph, operation_id, operation)
 		elif state == CampaignWorldState.TRANSPORT_STATE_DISEMBARKING:
 			_advance_disembarking(world, events, operation_id, operation)
+
+
+## A destroyed fleet can no longer be reached by the fleet-indexed capacity
+## sweep. Resolve its operations from the authoritative operation registry
+## first so no army remains embarked against a missing carrier.
+static func _resolve_missing_carriers(world: CampaignWorldState, events: SimulationEventBus) -> void:
+	var operation_ids := world.transport_operation_registry.keys()
+	operation_ids.sort()
+	for raw_operation_id in operation_ids:
+		var operation_id := String(raw_operation_id)
+		if not world.transport_operation_registry.has(operation_id):
+			continue
+		var operation := world.get_transport_operation(operation_id)
+		if not world.fleet_registry.has(String(operation.get("fleet_id", ""))):
+			_destroy_stranded_operation(world, events, operation_id, "The fleet carrying the army was destroyed in battle.")
+
+
+static func link_fleet_operations_to_battle(world: CampaignWorldState, fleet_id: String, battle_id: String) -> void:
+	if not world.fleet_registry.has(fleet_id):
+		return
+	var operation_ids: Array = world.get_fleet(fleet_id).get("transport_operation_ids", [])
+	operation_ids.sort()
+	for raw_operation_id in operation_ids:
+		var operation_id := String(raw_operation_id)
+		if not world.transport_operation_registry.has(operation_id):
+			continue
+		var operation := world.get_transport_operation(operation_id)
+		operation["battle_pause_reference"] = battle_id
+		operation["current_location_id"] = int(world.get_fleet(fleet_id).get("location_id", operation.get("current_location_id", -1)))
+		world.transport_operation_registry[operation_id] = operation
+
+
+static func release_fleet_operations_from_battle(world: CampaignWorldState, fleet_id: String, battle_id: String) -> void:
+	if not world.fleet_registry.has(fleet_id):
+		return
+	var fleet := world.get_fleet(fleet_id)
+	var retreat_destination := int(fleet.get("destination_id", -1)) if String(fleet.get("location_status", "")) == CampaignWorldState.FLEET_LOCATION_RETREATING else -1
+	var operation_ids: Array = fleet.get("transport_operation_ids", [])
+	operation_ids.sort()
+	for raw_operation_id in operation_ids:
+		var operation_id := String(raw_operation_id)
+		if not world.transport_operation_registry.has(operation_id):
+			continue
+		var operation := world.get_transport_operation(operation_id)
+		if String(operation.get("battle_pause_reference", "")) != battle_id:
+			continue
+		operation["battle_pause_reference"] = ""
+		if retreat_destination >= 0:
+			operation["destination_province_id"] = retreat_destination
+		operation["current_location_id"] = int(fleet.get("location_id", operation.get("current_location_id", -1)))
+		world.transport_operation_registry[operation_id] = operation
 
 
 ## N3.3: "If usable capacity falls below reserved capacity, affected armies
@@ -227,6 +288,20 @@ static func _destroy_stranded_operation(world: CampaignWorldState, events: Simul
 	events.transport_operation_army_lost.emit(operation_id, army_id, reason)
 
 
+static func destroy_country_operations(world: CampaignWorldState, events: SimulationEventBus, country_tag: String, reason: String) -> void:
+	var operation_ids := world.transport_operation_registry.keys()
+	operation_ids.sort()
+	for raw_operation_id in operation_ids:
+		var operation_id := String(raw_operation_id)
+		if not world.transport_operation_registry.has(operation_id):
+			continue
+		var operation := world.get_transport_operation(operation_id)
+		var fleet_id := String(operation.get("fleet_id", ""))
+		var fleet_owner := String(world.get_fleet(fleet_id).get("owner_country_id", ""))
+		if String(operation.get("country_tag", "")) == country_tag or fleet_owner == country_tag:
+			_destroy_stranded_operation(world, events, operation_id, reason)
+
+
 ## Embark timer expires -> the army goes aboard (no longer land-present) and
 ## the operation orders the fleet to sail. Routes from the fleet's *live*
 ## location, not the operation's recorded origin: a fleet carrying more than
@@ -279,6 +354,15 @@ static func _advance_embarking(world: CampaignWorldState, events: SimulationEven
 ## revalidation) - the N3.3 recovery path.
 static func _advance_sailing(world: CampaignWorldState, events: SimulationEventBus, graph: MaritimeGraph, operation_id: String, operation: Dictionary) -> void:
 	var fleet_id := String(operation.get("fleet_id", ""))
+	if not world.fleet_registry.has(fleet_id):
+		_destroy_stranded_operation(world, events, operation_id, "The fleet carrying the army was destroyed in battle.")
+		return
+	var paused_battle_id := String(operation.get("battle_pause_reference", ""))
+	if not paused_battle_id.is_empty():
+		if world.naval_battle_registry.has(paused_battle_id) and String((world.naval_battle_registry[paused_battle_id] as Dictionary).get("status", "")) == "active":
+			return
+		operation["battle_pause_reference"] = ""
+		world.transport_operation_registry[operation_id] = operation
 	var fleet := world.get_fleet(fleet_id)
 	var destination_province_id := int(operation.get("destination_province_id", -1))
 	var location_status := String(fleet.get("location_status", ""))

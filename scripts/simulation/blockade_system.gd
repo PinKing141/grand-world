@@ -82,7 +82,7 @@ static func blockade_tier(bp: int) -> int:
 ## "Blockade Assignment"). A fleet in active battle is also excluded - "an
 ## active naval battle pauses/contests power" (05_N5 "Contested Zones") - and
 ## so is a fleet sharing its zone with an opposing at-sea fleet that hasn't
-## (yet) triggered a battle (see _zone_is_contested()): without that check,
+## (yet) triggered a battle (see zone_is_contested()): without that check,
 ## the one-tick lag between an enemy fleet arriving in a zone and
 ## NavalCombatSystem starting a battle the following day would let a
 ## blockade briefly persist as if uncontested.
@@ -96,7 +96,7 @@ static func is_fleet_eligible(world: CampaignWorldState, fleet_id: String) -> bo
 		return false
 	if not bool(fleet.get("supplied", true)):
 		return false
-	if _zone_is_contested(world, fleet_id):
+	if zone_is_contested(world, fleet_id):
 		return false
 	return true
 
@@ -110,7 +110,7 @@ static func is_fleet_eligible(world: CampaignWorldState, fleet_id: String) -> bo
 ## for. A docked opposing fleet does not contest - it is not actually
 ## present in the zone, mirroring is_fleet_eligible()'s own AT_SEA
 ## requirement for the blockading fleet itself.
-static func _zone_is_contested(world: CampaignWorldState, fleet_id: String) -> bool:
+static func zone_is_contested(world: CampaignWorldState, fleet_id: String) -> bool:
 	var fleet := world.get_fleet(fleet_id)
 	var owner := String(fleet.get("owner_country_id", ""))
 	var zone_id := int(fleet.get("location_id", -1))
@@ -180,13 +180,62 @@ static func blockaded_provinces_for_fleet(world: CampaignWorldState, fleet_id: S
 ## level..." (05_N5 "Blockade Power"). A non-port, undeveloped coastal
 ## province still has the BASE_REQUIRED_POWER floor; an established, well-
 ## harboured port needs proportionally more attacker power to fully choke.
-static func _required_power(world: CampaignWorldState, province_id: int, naval_definitions: NavalDefinitions) -> int:
+static func required_power(world: CampaignWorldState, province_id: int, naval_definitions: NavalDefinitions) -> int:
 	var economy: Dictionary = (world.province_states.get(province_id, {}) as Dictionary).get("economy", {})
 	var development := int(economy.get("base_tax", 0)) + int(economy.get("base_production", 0))
 	var harbour_level := 0
 	if naval_definitions.is_port(province_id):
 		harbour_level = int(naval_definitions.port(province_id).get("harbour_level", 0))
 	return BASE_REQUIRED_POWER + development + harbour_level * HARBOUR_LEVEL_REQUIRED_POWER
+
+
+## FL1.4 presentation query: identifies every country and fleet currently
+## contributing real effective power to a province's blockade. The result is
+## derived from the same eligibility/target/power queries as
+## province_blockade_bp(), sorted by country and fleet ID, and is never saved.
+## Multiple unrelated enemies can blockade the same coast, so returning all
+## contributors is more honest than fabricating one singular "attacker".
+static func blockade_contributors(world: CampaignWorldState, province_id: int) -> Array[Dictionary]:
+	var by_country: Dictionary = {}
+	var fleet_ids := world.fleet_registry.keys()
+	fleet_ids.sort()
+	for raw_fleet_id in fleet_ids:
+		var fleet_id := String(raw_fleet_id)
+		if not is_fleet_eligible(world, fleet_id):
+			continue
+		if not blockaded_provinces_for_fleet(world, fleet_id).has(province_id):
+			continue
+		var power := effective_power(world, fleet_id)
+		if power <= 0:
+			continue
+		var country_id := String(world.get_fleet(fleet_id).get("owner_country_id", ""))
+		var record: Dictionary = by_country.get(country_id, {
+			"country_id": country_id,
+			"effective_power": 0,
+			"fleet_ids": [],
+		})
+		record["effective_power"] = int(record["effective_power"]) + power
+		(record["fleet_ids"] as Array).append(fleet_id)
+		by_country[country_id] = record
+	var country_ids := by_country.keys()
+	country_ids.sort()
+	var result: Array[Dictionary] = []
+	for raw_country_id in country_ids:
+		result.append((by_country[raw_country_id] as Dictionary).duplicate(true))
+	return result
+
+
+## The strongest contributor is useful for compact marker metadata. Ties are
+## resolved by the already-stable country-ID order from blockade_contributors.
+static func primary_blockading_country(world: CampaignWorldState, province_id: int) -> String:
+	var best_country := ""
+	var best_power := -1
+	for contributor in blockade_contributors(world, province_id):
+		var power := int(contributor.get("effective_power", 0))
+		if power > best_power:
+			best_power = power
+			best_country = String(contributor.get("country_id", ""))
+	return best_country
 
 
 ## Sums effective power from every eligible fleet contributing to this
@@ -217,7 +266,7 @@ static func _sum_eligible_power(world: CampaignWorldState, province_id: int, cou
 ## Sums effective power from every eligible hostile fleet contributing to
 ## this province, in stable fleet-ID order, then expresses that power as a
 ## basis-point fraction of the target's own required power (see
-## _required_power()), clamped to [0, 10000] - "the result is an integer
+## required_power()), clamped to [0, 10000] - "the result is an integer
 ## blockade basis-point value... clamped" (05_N5 "Blockade Power"). Summing
 ## attacker power (rather than a diminishing-return curve) is this slice's
 ## placeholder combination rule, not approved balance.
@@ -225,7 +274,7 @@ static func province_blockade_bp(world: CampaignWorldState, province_id: int) ->
 	var total := _sum_eligible_power(world, province_id, [])
 	if total <= 0:
 		return 0
-	var required := _required_power(world, province_id, NavalDefinitionsScript.load_default())
+	var required := required_power(world, province_id, NavalDefinitionsScript.load_default())
 	return clampi(total * BASIS_POINTS / maxi(required, 1), 0, MAX_PROVINCE_BLOCKADE_BP)
 
 
@@ -239,7 +288,7 @@ static func blockade_bp_by_side(world: CampaignWorldState, contributing_countrie
 	var total := _sum_eligible_power(world, province_id, contributing_countries)
 	if total <= 0:
 		return 0
-	var required := _required_power(world, province_id, NavalDefinitionsScript.load_default())
+	var required := required_power(world, province_id, NavalDefinitionsScript.load_default())
 	return clampi(total * BASIS_POINTS / maxi(required, 1), 0, MAX_PROVINCE_BLOCKADE_BP)
 
 

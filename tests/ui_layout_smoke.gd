@@ -5,6 +5,7 @@ const WarHUDScript = preload("res://scripts/ui/war_hud.gd")
 const AIDebugHUDScript = preload("res://scripts/ui/ai_debug_hud.gd")
 const CharacterHUDScript = preload("res://scripts/ui/character_hud.gd")
 const CountryDepthHUDScript = preload("res://scripts/ui/country_depth_hud.gd")
+const NavalHUDScript = preload("res://scripts/ui/naval_hud.gd")
 
 
 func _initialize() -> void:
@@ -50,6 +51,7 @@ func _check_layout(scene: Node, viewport_size: Vector2i) -> void:
 	var ai_panel := scene.get_node("AIDebugHUD/AIPanel") as Control
 	var character_panel := scene.get_node("CharacterHUD/CharacterPanel") as Control
 	var country_depth_panel := scene.get_node("CountryDepthHUD/CountryStatePanel") as Control
+	var naval_panel := scene.get_node("NavalHUD/NavalPanel") as Control
 	_require(resource_bar.get_global_rect().position.x <= 10.0 and resource_bar.get_global_rect().position.y <= 10.0, "country HUD must remain anchored at the top-left at %s: %s" % [viewport_size, resource_bar.get_global_rect()])
 	_require(top_bar.get_global_rect().end.x >= root.get_visible_rect().size.x - 10.0 and top_bar.get_global_rect().position.y <= 10.0, "compact campaign clock must remain anchored at the top-right at %s: %s" % [viewport_size, top_bar.get_global_rect()])
 	_disjoint(top_bar, map_modes, "campaign bar and map modes at %s" % viewport_size)
@@ -99,6 +101,15 @@ func _check_layout(scene: Node, viewport_size: Vector2i) -> void:
 	if country_depth_panel.visible:
 		var depth_canvas := Rect2(Vector2.ZERO, Vector2(root.get_visible_rect().size))
 		_require(depth_canvas.encloses(country_depth_panel.get_global_rect()), "country-depth window escapes canvas at %s: %s / %s" % [viewport_size, country_depth_panel.get_global_rect(), depth_canvas])
+	if naval_panel.visible:
+		# FL6.1: the naval panel must stay fully on-screen and never overlap
+		# the always-on-top campaign bar, map-mode switcher, or search box at
+		# any of the roadmap's required resolutions.
+		var naval_canvas := Rect2(Vector2.ZERO, Vector2(root.get_visible_rect().size))
+		_require(naval_canvas.encloses(naval_panel.get_global_rect()), "naval panel escapes canvas at %s: %s / %s" % [viewport_size, naval_panel.get_global_rect(), naval_canvas])
+		_disjoint(naval_panel, top_bar, "naval panel and campaign bar at %s" % viewport_size)
+		_disjoint(naval_panel, map_modes, "naval panel and map modes at %s" % viewport_size)
+		_disjoint(naval_panel, search, "naval panel and search at %s" % viewport_size)
 
 
 func _run() -> void:
@@ -117,6 +128,7 @@ func _run() -> void:
 	var ai_hud := scene.get_node("AIDebugHUD") as AIDebugHUDScript
 	var character_hud := scene.get_node("CharacterHUD") as CharacterHUDScript
 	var country_depth_hud := scene.get_node("CountryDepthHUD") as CountryDepthHUDScript
+	var naval_hud := scene.get_node("NavalHUD") as NavalHUDScript
 	var info := {
 		"province_id": 1,
 		"province_name": "Stockholm",
@@ -155,7 +167,12 @@ func _run() -> void:
 	country_depth_hud.panel.show()
 	country_depth_hud._refresh_all()
 	economy_hud._refresh_all()
+	naval_hud.open_naval_panel()
+	_require(naval_hud.naval_panel.visible, "FL6.1 fixture assumption: the naval panel must open for the layout checks")
 	await _check_layout(scene, Vector2i(1700, 960))
 	await _check_layout(scene, Vector2i(1152, 648))
-	print("UI layout smoke test passed at 1700x960 and 1152x648.")
+	# FL6.1's own named required resolutions.
+	await _check_layout(scene, Vector2i(1366, 768))
+	await _check_layout(scene, Vector2i(1920, 1080))
+	print("UI layout smoke test passed at 1700x960, 1152x648, 1366x768, and 1920x1080.")
 	quit(0)

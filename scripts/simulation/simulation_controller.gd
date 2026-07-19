@@ -25,6 +25,7 @@ const SplitFleetCommandScript = preload("res://scripts/simulation/commands/split
 const TransferShipsCommandScript = preload("res://scripts/simulation/commands/transfer_ships_command.gd")
 const MergeFleetsCommandScript = preload("res://scripts/simulation/commands/merge_fleets_command.gd")
 const SetFleetHomePortCommandScript = preload("res://scripts/simulation/commands/set_fleet_home_port_command.gd")
+const ScuttleFleetCommandScript = preload("res://scripts/simulation/commands/scuttle_fleet_command.gd")
 const MoveFleetCommandScript = preload("res://scripts/simulation/commands/move_fleet_command.gd")
 const CancelFleetMovementCommandScript = preload("res://scripts/simulation/commands/cancel_fleet_movement_command.gd")
 const AssignAdmiralCommandScript = preload("res://scripts/simulation/commands/assign_admiral_command.gd")
@@ -35,6 +36,8 @@ const NavalCombatSystemScript = preload("res://scripts/simulation/naval_combat_s
 const BlockadeSystemScript = preload("res://scripts/simulation/blockade_system.gd")
 const RequestFleetRetreatCommandScript = preload("res://scripts/simulation/commands/request_fleet_retreat_command.gd")
 const SetFleetMissionCommandScript = preload("res://scripts/simulation/commands/set_fleet_mission_command.gd")
+const FleetMissionSystemScript = preload("res://scripts/simulation/fleet_mission_system.gd")
+const NavalAISystemScript = preload("res://scripts/simulation/naval_ai_system.gd")
 const ProvincePathfinderScript = preload("res://scripts/simulation/province_pathfinder.gd")
 const EconomyDefinitionsScript = preload("res://scripts/simulation/economy_definitions.gd")
 const EconomySystemScript = preload("res://scripts/simulation/economy_system.gd")
@@ -57,6 +60,7 @@ const OfferPeaceCommandScript = preload("res://scripts/simulation/commands/offer
 const AcceptPeaceCommandScript = preload("res://scripts/simulation/commands/accept_peace_command.gd")
 const AIDefinitionsScript = preload("res://scripts/simulation/ai_definitions.gd")
 const StrategicAISystemScript = preload("res://scripts/simulation/strategic_ai_system.gd")
+const StartingNavalForcesScript = preload("res://scripts/simulation/starting_naval_forces.gd")
 const CampaignGoalSystemScript = preload("res://scripts/simulation/campaign_goal_system.gd")
 const CharacterDefinitionsScript = preload("res://scripts/simulation/character_definitions.gd")
 const CharacterSystemScript = preload("res://scripts/simulation/character_system.gd")
@@ -112,6 +116,7 @@ var event_bus: SimulationEventBus
 var scheduler: SimulationScheduler
 var ai_definitions: AIDefinitions
 var ai_system: StrategicAISystem
+var naval_ai_system: NavalAISystem
 var character_definitions: CharacterDefinitions
 var character_ai_system: CharacterAISystem
 var country_depth_definitions: CountryDepthDefinitions
@@ -267,6 +272,10 @@ func set_fleet_home_port(country_tag: String, fleet_id: String, new_home_port_id
 	return submit_command(SetFleetHomePortCommandScript.new(country_tag, fleet_id, new_home_port_id))
 
 
+func scuttle_fleet(country_tag: String, fleet_id: String) -> int:
+	return submit_command(ScuttleFleetCommandScript.new(country_tag, fleet_id))
+
+
 func order_fleet_move(fleet_id: String, destination_id: int, issuing_country: String) -> int:
 	return submit_command(MoveFleetCommandScript.new(fleet_id, destination_id, issuing_country))
 
@@ -291,8 +300,8 @@ func request_fleet_retreat(country_tag: String, fleet_id: String) -> int:
 	return submit_command(RequestFleetRetreatCommandScript.new(country_tag, fleet_id))
 
 
-func set_fleet_mission(country_tag: String, fleet_id: String, mission: String) -> int:
-	return submit_command(SetFleetMissionCommandScript.new(country_tag, fleet_id, mission))
+func set_fleet_mission(country_tag: String, fleet_id: String, mission: String, target_ids: Array = []) -> int:
+	return submit_command(SetFleetMissionCommandScript.new(country_tag, fleet_id, mission, -1, target_ids))
 
 
 func repay_loan(country_tag: String, loan_id: String) -> int:
@@ -716,11 +725,24 @@ func _bootstrap_scenario() -> void:
 		campaign_seed
 	)
 	world.global_flags["enforce_military_access"] = true
+	# The controller below attaches every system NavalAISystem relies on. Keep
+	# this explicit so focused simulations can use StrategicAISystem without
+	# accidentally enabling fleet construction and orders in a land-only world.
+	world.global_flags["naval_ai_enabled"] = true
 	var economy_definitions = EconomyDefinitionsScript.load_default()
 	if not economy_definitions.is_valid():
 		push_error("SimulationController requires valid Phase 4 economy definitions.")
 		return
 	EconomySystemScript.initialize_world(world, economy_definitions)
+	var starting_naval_forces = StartingNavalForcesScript.load_for_scenario(scenario_id)
+	if not starting_naval_forces.is_valid():
+		push_error("SimulationController requires valid starting naval content: %s" % starting_naval_forces.error())
+		return
+	var starting_naval_error = starting_naval_forces.initialize_world(world)
+	if not starting_naval_error.is_empty():
+		push_error("SimulationController rejected starting naval content: %s" % starting_naval_error)
+		return
+	EconomySystemScript.recalculate_all(world, economy_definitions)
 	WarfareSystemScript.initialize_armies(world)
 	character_definitions = CharacterDefinitionsScript.load_default()
 	if not character_definitions.is_valid():
@@ -778,6 +800,10 @@ func _bootstrap_scenario() -> void:
 		func(day_world: CampaignWorldState) -> void:
 			TransportSystemScript.process_day(day_world, event_bus)
 	)
+	scheduler.start_of_day_systems.append(
+		func(day_world: CampaignWorldState) -> void:
+			FleetMissionSystemScript.process_day(day_world, event_bus)
+	)
 	character_ai_system = CharacterAISystemScript.new(scheduler, event_bus)
 	scheduler.monthly_systems.append(
 		func(month_world: CampaignWorldState) -> void:
@@ -801,10 +827,12 @@ func _bootstrap_scenario() -> void:
 	ai_system = StrategicAISystemScript.new(scheduler, event_bus, ai_definitions)
 	ai_system.initialize_world(world)
 	CampaignGoalSystemScript.initialize_world(world, ai_definitions)
+	naval_ai_system = NavalAISystemScript.new(scheduler, event_bus, ai_definitions)
 	scheduler.ai_hooks.append(
 		func(ai_world: CampaignWorldState) -> void:
 			CampaignGoalSystemScript.process_day(ai_world, event_bus, ai_definitions)
 			ai_system.process_day(ai_world)
+			naval_ai_system.process_day(ai_world)
 	)
 	initialized = true
 	_sync_all_owners_to_presentation()

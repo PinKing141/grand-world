@@ -57,6 +57,9 @@ GODOT_TESTS = (
     ("Map semantic lakes, routes, and screen-space hierarchy", "tests/map_semantic_visual_smoke.gd", "Map semantic visual smoke passed."),
     ("Battle and siege marker hierarchy", "tests/conflict_marker_layer_smoke.gd", "Conflict marker layer smoke passed."),
     ("Large-war marker clustering and performance", "tests/conflict_marker_stress_smoke.gd", "Conflict marker stress smoke passed."),
+    ("FL1 fleet marker layer clustering and selection", "tests/fleet_marker_layer_smoke.gd", "Fleet marker layer smoke passed."),
+    ("FL7.1 naval dense-zone presentation stress", "tests/naval_dense_zone_presentation_stress_test.gd", "Naval dense-zone presentation stress passed."),
+    ("FL1 fleet route lifecycle: cancellation, peace, and save/load reconciliation", "tests/fleet_marker_lifecycle_test.gd", "Fleet marker lifecycle test passed."),
 	("Unified campaign interface shell and minimap", "tests/campaign_interface_shell_smoke.gd", "Campaign interface shell smoke passed."),
     ("Responsive UI layout", "tests/ui_layout_smoke.gd", "UI layout smoke test passed"),
     ("Simulation core and save corruption", "tests/simulation_core_test.gd", "Simulation core test passed."),
@@ -78,23 +81,60 @@ GODOT_TESTS = (
     ("N1.3 naval access, basing rights, and supply range", "tests/naval_access_policy_test.gd", "Naval access policy test passed."),
     ("N1.4 maritime graph long-haul, reciprocity, and stress smoke", "tests/maritime_graph_stress_smoke.gd", "Maritime graph stress smoke passed."),
     ("N2.1 ship definitions", "tests/ship_definitions_test.gd", "Ship definitions test passed."),
+    ("G1 source-tracked Channel and Iberian starting naval forces", "tests/starting_naval_forces_test.gd", "Starting naval forces test passed."),
     ("N2.1 fleet/ship save state, checksum, and migration", "tests/naval_fleet_state_test.gd", "Naval fleet state test passed."),
-    ("N2.2 naval economy, sailors, and ship construction", "tests/naval_economy_test.gd", "Naval economy test passed."),
+    ("N2.2/FL3.2 naval economy, sailors, ship construction, and navy maintenance", "tests/naval_economy_test.gd", "Naval economy test passed."),
     ("N2.3 fleet organisation commands and aggregates", "tests/naval_fleet_organisation_test.gd", "Naval fleet organisation test passed."),
     ("N2.3 fleet movement, blocking, and cancellation", "tests/naval_fleet_movement_test.gd", "Naval fleet movement test passed."),
     ("N2.4 fleet supply, attrition, and repair", "tests/naval_fleet_logistics_test.gd", "Naval fleet logistics test passed."),
     ("N2.4 admiral assignment, exclusivity, and lifecycle", "tests/naval_admiral_test.gd", "Naval admiral test passed."),
     ("N2.5 naval HUD construction, fleet panel, and save integration", "tests/naval_hud_integration_smoke.gd", "Naval HUD integration smoke passed."),
+    ("FL2.2 fleet split/transfer/merge HUD integration", "tests/naval_fleet_organisation_hud_test.gd", "Naval fleet organisation HUD test passed."),
+    ("FL2.3 fleet home port and targeted return-to-port HUD integration", "tests/naval_fleet_home_port_hud_test.gd", "Naval fleet home port HUD test passed."),
+    ("FL2.5 scuttle command validation, cleanup, duplicates, save/load", "tests/naval_fleet_scuttle_test.gd", "Naval fleet scuttle test passed."),
+    ("FL2.5 scuttle armed-confirmation HUD integration", "tests/naval_fleet_scuttle_hud_test.gd", "Naval fleet scuttle HUD test passed."),
+    ("FL2.1 fleet-summary aggregate queries: class mix, crew readiness, repair, route ETA", "tests/naval_fleet_summary_test.gd", "Naval fleet summary test passed."),
+    ("FL2.1 fleet-summary panel HUD integration: resolved names, class mix, repair, route", "tests/naval_fleet_summary_hud_test.gd", "Naval fleet summary HUD test passed."),
+    ("FL2.6 transport workflow HUD integration: capacity, route, cancellation, cross-navigation", "tests/naval_transport_workflow_hud_test.gd", "Naval transport workflow HUD test passed."),
+    ("FL2.1 fleet-selection fallback on destruction/cascading destruction", "tests/naval_fleet_selection_fallback_hud_test.gd", "Naval fleet selection fallback HUD test passed."),
+    ("FL6.2 rapid double-press/duplicate-command safety across naval actions", "tests/naval_hud_duplicate_action_safety_test.gd", "Naval HUD duplicate action safety test passed."),
     ("N2.5 naval fleet-scale stress and performance smoke", "tests/naval_fleet_stress_smoke.gd", "Naval fleet stress smoke passed."),
     ("N3.1/N3.2 transport operation record, reservation, and state machine", "tests/naval_transport_operation_test.gd", "Naval transport operation test passed."),
     ("N3.3 transport capacity shortfall and blocked-fleet recovery", "tests/naval_transport_recovery_test.gd", "Naval transport recovery test passed."),
     ("N3.4 transport save boundaries and Channel repetition gate", "tests/naval_transport_gate_test.gd", "Naval transport gate test passed."),
     ("N4 naval battle engagement, damage, sinking, retreat", "tests/naval_combat_test.gd", "Naval combat test passed."),
     ("N5A blockade eligibility and power query", "tests/naval_blockade_test.gd", "Naval blockade test passed."),
+    ("N3.3/N4.3/N5.2 peace/country-extinction naval cleanup", "tests/naval_country_extinction_test.gd", "Naval country extinction test passed."),
+    ("N3.3 transport operation orphaned by combat-destroyed carrier fleet", "tests/naval_transport_combat_loss_test.gd", "Naval transport combat loss test passed."),
+    ("N4.4/N5.3 naval battle and blockade stress and global-coast smoke", "tests/naval_battle_blockade_stress_smoke.gd", "Naval battle/blockade stress smoke passed."),
+    ("FL7.2-FL7.6 global simultaneous naval headless stress", "tests/naval_global_simultaneous_stress_test.gd", "Naval global simultaneous stress passed."),
+    ("N6A fleet mission state machine (return_to_port, repair)", "tests/fleet_mission_system_test.gd", "Fleet mission system test passed."),
+    ("N6A naval AI posture, construction, organisation, tactical, determinism", "tests/naval_ai_test.gd", "Naval AI test passed."),
+    ("N6A naval AI sea-zone threat query, evasion, blockade-duty assignment", "tests/naval_ai_threat_test.gd", "Naval AI threat test passed."),
+    ("N6A naval AI transport-objective planning and land-AI handoff", "tests/naval_ai_transport_test.gd", "Naval AI transport test passed."),
+    ("N6A/FL3.3 naval AI fleet organisation, task-fleet merging, and transport-run fleet splitting", "tests/naval_ai_organisation_test.gd", "Naval AI organisation test passed."),
+    ("FL3.1 threat/opportunity cache: revision invalidation, inputs, determinism", "tests/naval_threat_map_test.gd", "Naval threat map test passed."),
+    ("FL3.2 strategic posture spectrum, ship mix, sailor reserve", "tests/naval_ai_strategic_posture_test.gd", "Naval AI strategic posture test passed."),
+    ("FL3.4 tactical missions: escort, intercept, protect_coast, patrol, stand-down", "tests/naval_ai_tactical_missions_test.gd", "Naval AI tactical missions test passed."),
+    ("FL3.3/FL3.5: reinforcement, home-port reassignment, danger-aware transport", "tests/naval_ai_reinforcement_homeport_transport_test.gd", "Naval AI reinforcement/home-port/transport test passed."),
+    ("FL3.6 explainability: structured targets/constraints/posture/next-planning-day, candidates-evaluated counter", "tests/naval_ai_explainability_test.gd", "Naval AI explainability test passed."),
+    ("FL3.2 correctness fix: ship technology gate (command contract, AI family fallback)", "tests/naval_ship_technology_gate_test.gd", "Naval ship technology gate test passed."),
+    ("FL3 verification 1/4: same-zone player/AI battle arbitration produces one authoritative battle", "tests/naval_ai_player_battle_arbitration_test.gd", "Naval AI/player battle arbitration test passed."),
+    ("FL3 verification 2/4: full AI recovery matrix (destroyed fleets, debt, sailors, peace, captured ports)", "tests/naval_ai_recovery_matrix_test.gd", "Naval AI recovery matrix test passed."),
+    ("FL3 verification 3/4: trace production does not change authoritative results", "tests/naval_ai_trace_neutrality_test.gd", "Naval AI trace neutrality test passed."),
+    ("FL3.4 event-triggered replanning: off-schedule tactical reconsideration on battle start/fleet arrival", "tests/naval_ai_event_replan_test.gd", "Naval AI event replan test passed."),
+    ("FL3.5 escort lifecycle: proactive reservation, follows-the-voyage, survives temporary separation", "tests/naval_ai_escort_lifecycle_test.gd", "Naval AI escort lifecycle test passed."),
+    ("FL3 verification 4/4: global naval AI planning performance budget across 20 countries", "tests/naval_ai_performance_smoke.gd", "Naval AI performance smoke passed."),
+    ("FL5.1 trade-protection output: eligibility, damage scaling, contested/unsupplied, pure query", "tests/naval_trade_protection_test.gd", "Naval trade protection test passed."),
+    ("FL5.2 blockade/coastal contract: same-day release on peace and on annexation", "tests/naval_blockade_peace_annexation_test.gd", "Naval blockade peace/annexation test passed."),
+    ("N6.3 naval save schema migration (7/8/full chain)", "tests/naval_save_schema_migration_test.gd", "Naval save schema migration test passed."),
+    ("G1 England-France Channel final release gate", "tests/naval_channel_release_gate_test.gd", "Naval Channel release gate passed."),
+    ("G1 destructive naval lifecycle final release gate", "tests/naval_destructive_edge_gate_test.gd", "Naval destructive edge gate passed."),
 )
 
 PYTHON_TESTS = (
     ("Canonical country registry", "tools/country_registry/build_country_registry.py", "Country registry is valid and current."),
+    ("FL4.2 starting naval content report", "tools/naval/build_naval_forces_report.py", "no unresolved starting naval content rows."),
 	("Runtime history profile cache", "tests/runtime_history_profile_cache_smoke.py", "Runtime history profile cache smoke test passed."),
     ("1444 neighbour-colour contrast analysis", "tools/country_registry/analyse_neighbour_colours.py", "Neighbour-colour analysis is valid and current."),
 	("Generated historical placeholder marker assets", "tools/marker_art/build_marker_assets.py", "Marker assets are valid and current."),
@@ -162,34 +202,42 @@ def combined_output(completed: subprocess.CompletedProcess[str]) -> str:
 
 def execute(spec: TestSpec) -> TestResult:
     started = time.perf_counter()
+    process: subprocess.Popen[str] | None = None
     try:
-        completed = subprocess.run(
+        process = subprocess.Popen(
             spec.command,
             cwd=ROOT,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=spec.timeout,
-            check=False,
         )
-        output = combined_output(completed)
+        stdout, stderr = process.communicate(timeout=spec.timeout)
+        output = "\n".join(part.strip() for part in (stdout, stderr) if part.strip())
         lowered = output.lower()
         failure_marker = next((marker for marker in FAILURE_MARKERS if marker.lower() in lowered), "")
-        passed = completed.returncode == 0 and spec.success_marker in output and not failure_marker
+        passed = process.returncode == 0 and spec.success_marker in output and not failure_marker
         reason = ""
-        if completed.returncode != 0:
-            reason = f"exit code {completed.returncode}"
+        if process.returncode != 0:
+            reason = f"exit code {process.returncode}"
         elif failure_marker:
             reason = f"output contains `{failure_marker}`"
         elif spec.success_marker not in output:
             reason = f"missing success marker `{spec.success_marker}`"
-        return TestResult(spec.name, spec.category, passed, time.perf_counter() - started, completed.returncode, output, reason)
-    except subprocess.TimeoutExpired as error:
-        output = "\n".join(
-            value.decode("utf-8", "replace") if isinstance(value, bytes) else (value or "")
-            for value in (error.stdout, error.stderr)
-        ).strip()
+        return TestResult(spec.name, spec.category, passed, time.perf_counter() - started, int(process.returncode or 0), output, reason)
+    except subprocess.TimeoutExpired:
+        # Godot's Windows console executable can launch an engine child. Kill
+        # the entire test tree so a timeout cannot contaminate later timings.
+        if process is not None:
+            if os.name == "nt":
+                subprocess.run(("taskkill", "/PID", str(process.pid), "/T", "/F"), capture_output=True, check=False)
+            else:
+                process.kill()
+            stdout, stderr = process.communicate()
+        else:
+            stdout, stderr = "", ""
+        output = "\n".join(part.strip() for part in (stdout, stderr) if part.strip())
         return TestResult(spec.name, spec.category, False, time.perf_counter() - started, 124, output, f"timed out after {spec.timeout}s")
 
 
@@ -217,6 +265,7 @@ def export_and_start(godot: Path) -> list[TestResult]:
                 "res://assets/ai_definitions.json",
                 "res://assets/character_definitions.json",
                 "res://assets/country_depth_definitions.json",
+				"res://assets/grand_world_1444_naval_forces.json",
 				"res://assets/marker_art/generated/country_shield_atlas.png",
 				"res://assets/marker_art/generated/marker_icon_atlas.png",
 				"res://assets/marker_art/generated/marker_asset_manifest.json",
@@ -391,10 +440,11 @@ def main() -> int:
 
     specs: list[TestSpec] = []
     for name, path, marker in PYTHON_TESTS:
-        extra = ("--check",) if path.endswith(("build_economy_data.py", "build_country_registry.py", "analyse_neighbour_colours.py", "build_marker_assets.py", "build_label_territory_map.py", "build_map_visual_audit.py", "build_lake_mask.py", "build_naval_graph_data.py")) else ()
+        extra = ("--check",) if path.endswith(("build_economy_data.py", "build_country_registry.py", "analyse_neighbour_colours.py", "build_marker_assets.py", "build_label_territory_map.py", "build_map_visual_audit.py", "build_lake_mask.py", "build_naval_graph_data.py", "build_naval_forces_report.py")) else ()
         specs.append(TestSpec(name, (sys.executable, str(ROOT / path), *extra), marker, timeout=60, category="Data"))
     for name, path, marker in GODOT_TESTS:
-        specs.append(TestSpec(name, (str(godot), "--headless", "--path", str(ROOT), "--script", f"res://{path}"), marker))
+        timeout = 2400 if path.endswith("naval_channel_release_gate_test.gd") else 120
+        specs.append(TestSpec(name, (str(godot), "--headless", "--path", str(ROOT), "--script", f"res://{path}"), marker, timeout=timeout))
     if args.visual:
         specs.append(TestSpec(
             "GPU-rendered country label screenshots",
@@ -430,6 +480,13 @@ def main() -> int:
             (str(godot), "--headless", "--path", str(ROOT), "--script", "res://tests/phase_2_global_soak.gd"),
             "Global Phase 5 ten-year soak passed",
             timeout=120,
+            category="Performance",
+        ))
+        specs.append(TestSpec(
+            "N6.3 100-seed England-France Channel acceptance",
+            (str(godot), "--headless", "--path", str(ROOT), "--script", "res://tests/naval_channel_100_seed_acceptance_test.gd"),
+            "Naval Channel 100-seed acceptance test passed.",
+            timeout=300,
             category="Performance",
         ))
 

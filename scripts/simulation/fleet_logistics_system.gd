@@ -65,15 +65,35 @@ static func recompute_supply(world: CampaignWorldState, events: SimulationEventB
 		events.fleet_supply_changed.emit(fleet_id, supplied, reason)
 
 
+## FL2.1 closure: the fleet panel only ever inferred repair activity from the
+## mission == "repair" tag, so a fleet passively healing without that mission
+## set (attrition sets per-ship "repairing" independently of any mission,
+## see _repair_one_ship()/_apply_attrition() below) showed nothing. This
+## reads the same authoritative per-ship flag those functions already
+## maintain, rather than the UI re-deriving it from hull/crew thresholds
+## itself.
+static func repairing_ship_count(world: CampaignWorldState, fleet_id: String) -> int:
+	var count := 0
+	for ship_id in world.fleet_ships(fleet_id):
+		if bool(world.get_ship(ship_id).get("repairing", false)):
+			count += 1
+	return count
+
+
 static func process_day(world: CampaignWorldState, events: SimulationEventBus) -> void:
 	var graph := MaritimeGraphScript.load_default()
 	var ship_definitions := ShipDefinitionsScript.load_default()
+	# A port's blockade value is identical for every friendly fleet repairing
+	# there during this tick. Computing it once per fleet made the common
+	# many-fleets-in-one-port case quadratic because BlockadeSystem must scan
+	# the fleet registry to find contributors.
+	var blockade_by_port := {}
 	var fleet_ids := world.fleet_registry.keys()
 	fleet_ids.sort()
 	for raw_fleet_id in fleet_ids:
 		var fleet_id := String(raw_fleet_id)
 		recompute_supply(world, events, fleet_id, graph)
-		_process_repair(world, events, fleet_id, ship_definitions, graph)
+		_process_repair(world, events, fleet_id, ship_definitions, graph, blockade_by_port)
 
 
 ## Repair requires a *legal repair port*, a stricter bar than "supplied" (an
@@ -81,7 +101,14 @@ static func process_day(world: CampaignWorldState, events: SimulationEventBus) -
 ## repair there) - 02_N2_FLEET_LOGISTICS.md "Requires a legal repair port and
 ## a docked fleet." Allocation walks ships in stable sorted-ID order so a
 ## treasury shortfall always favours the same ships first, run to run.
-static func _process_repair(world: CampaignWorldState, events: SimulationEventBus, fleet_id: String, ship_definitions: ShipDefinitions, graph: MaritimeGraph) -> void:
+static func _process_repair(
+	world: CampaignWorldState,
+	events: SimulationEventBus,
+	fleet_id: String,
+	ship_definitions: ShipDefinitions,
+	graph: MaritimeGraph,
+	blockade_by_port: Dictionary = {}
+) -> void:
 	var fleet: Dictionary = world.fleet_registry[fleet_id]
 	if String(fleet.get("location_status", "")) != CampaignWorldState.FLEET_LOCATION_DOCKED:
 		return
@@ -89,14 +116,27 @@ static func _process_repair(world: CampaignWorldState, events: SimulationEventBu
 	var location_id := int(fleet.get("location_id", -1))
 	if not NavalAccessPolicyScript.can_base(graph, world, owner, location_id):
 		return
+	var ship_ids := (fleet.get("ship_ids", []) as Array).duplicate()
+	ship_ids.sort()
+	var needs_repair := false
+	for raw_ship_id in ship_ids:
+		var ship_id := String(raw_ship_id)
+		if not world.ship_registry.has(ship_id):
+			continue
+		var condition: Dictionary = world.ship_registry[ship_id]
+		if int(condition.get("hull_bp", 10000)) < BASIS_POINTS or int(condition.get("crew_bp", 10000)) < BASIS_POINTS:
+			needs_repair = true
+			break
+	if not needs_repair:
+		return
 	# A docked fleet's location_id is the port's own province_id (a land
 	# province), so it is directly queryable as a blockade target - no
 	# sea-zone translation needed.
 	var rate_scale_bp := BASIS_POINTS
-	if BlockadeSystemScript.province_blockade_bp(world, location_id) >= BLOCKADE_EFFECTIVENESS_THRESHOLD_BP:
+	if not blockade_by_port.has(location_id):
+		blockade_by_port[location_id] = BlockadeSystemScript.province_blockade_bp(world, location_id)
+	if int(blockade_by_port[location_id]) >= BLOCKADE_EFFECTIVENESS_THRESHOLD_BP:
 		rate_scale_bp = BASIS_POINTS - BLOCKADE_REPAIR_PENALTY_BP
-	var ship_ids := (fleet.get("ship_ids", []) as Array).duplicate()
-	ship_ids.sort()
 	var touched := false
 	for raw_ship_id in ship_ids:
 		var ship_id := String(raw_ship_id)

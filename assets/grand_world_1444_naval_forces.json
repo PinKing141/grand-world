@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "scenario_id": "grand_world_1444",
+  "content_status": "approved_gameplay_placeholder",
+  "fleets": [
+    {
+      "fleet_id": "starting_fleet_ara_mediterranean",
+      "country_tag": "ARA",
+      "display_name": "Aragonese Mediterranean Fleet",
+      "home_port_id": 213,
+      "mission": "protect_coast",
+      "ships": ["war_galley", "war_galley", "war_galley", "transport_cog"],
+      "admiral_status": "no reviewed named naval leader assigned",
+      "provenance": {"source": "G1 capability fixture derived from the approved N0.3 Barcelona port and four-family baseline", "evidence_class": "gameplay placeholder", "confidence": "placeholder", "reviewer": "naval-roadmap-gate", "review_date": "2026-07-18", "review_status": "approved placeholder", "note": "Galley-emphasis validates Mediterranean positioning, blockade, and one-army coastal transport; it is not a claim of exact 1444 vessel counts."}
+    },
+    {
+      "fleet_id": "starting_fleet_cas_atlantic",
+      "country_tag": "CAS",
+      "display_name": "Castilian Atlantic Fleet",
+      "home_port_id": 1749,
+      "mission": "patrol",
+      "ships": ["war_galley", "war_galley", "light_caravel", "transport_cog"],
+      "admiral_status": "no reviewed named naval leader assigned",
+      "provenance": {"source": "G1 capability fixture derived from the approved N0.3 Cadiz port and four-family baseline", "evidence_class": "gameplay placeholder", "confidence": "placeholder", "reviewer": "naval-roadmap-gate", "review_date": "2026-07-18", "review_status": "approved placeholder", "note": "Mixed fleet validates Atlantic/Gibraltar movement and one-army transport; it is not a claim of exact 1444 vessel counts."}
+    },
+    {
+      "fleet_id": "starting_fleet_eng_channel",
+      "country_tag": "ENG",
+      "display_name": "English Channel Fleet",
+      "home_port_id": 235,
+      "mission": "protect_transport",
+      "ships": ["war_galley", "war_galley", "light_caravel", "transport_cog", "transport_cog"],
+      "admiral_status": "no reviewed named naval leader assigned",
+      "provenance": {"source": "G1 capability fixture derived from the approved N0.3 Kent/Channel fixture", "evidence_class": "gameplay placeholder", "confidence": "placeholder", "reviewer": "naval-roadmap-gate", "review_date": "2026-07-18", "review_status": "approved placeholder", "note": "Combat screen plus 2000 transport capacity supports the Channel acceptance loop; it is not a claim of exact 1444 vessel counts."}
+    },
+    {
+      "fleet_id": "starting_fleet_fra_atlantic",
+      "country_tag": "FRA",
+      "display_name": "French Atlantic Fleet",
+      "home_port_id": 4111,
+      "mission": "intercept",
+      "ships": ["war_galley", "war_galley", "light_caravel", "transport_cog", "transport_cog"],
+      "admiral_status": "no reviewed named naval leader assigned",
+      "provenance": {"source": "G1 capability fixture using France's enabled 1444-owned Saintonge port and four-family baseline", "evidence_class": "gameplay placeholder", "confidence": "placeholder", "reviewer": "naval-roadmap-gate", "review_date": "2026-07-18", "review_status": "approved placeholder", "note": "France has no reviewed French-owned Channel port in the current 1444 authority; this Atlantic base can reach and contest the Channel but is not an exact fleet reconstruction."}
+    },
+    {
+      "fleet_id": "starting_fleet_por_atlantic",
+      "country_tag": "POR",
+      "display_name": "Portuguese Atlantic Fleet",
+      "home_port_id": 227,
+      "mission": "trade_protection",
+      "ships": ["war_galley", "light_caravel", "light_caravel", "transport_cog"],
+      "admiral_status": "no reviewed named naval leader assigned",
+      "provenance": {"source": "G1 capability fixture derived from the approved N0.3 Lisboa port and four-family baseline", "evidence_class": "gameplay placeholder", "confidence": "placeholder", "reviewer": "naval-roadmap-gate", "review_date": "2026-07-18", "review_status": "approved placeholder", "note": "Light-ship emphasis validates future exploration/trade hooks and one-army transport; it is not a claim of exact 1444 vessel counts."}
+    }
+  ]
+}

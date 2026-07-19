@@ -63,11 +63,24 @@ func _run() -> void:
 	var camera_controller := scene.get_node("CameraController") as StrategyCameraController
 	_require(simulation != null and simulation.initialized, "simulation must initialize")
 	_require(labels != null, "CountryLabelLayer must exist")
+	# The wait cap must scale with the incremental batcher's own pace
+	# (MAX_INCREMENTAL_TAGS_PER_FRAME tags/frame) rather than a fixed frame
+	# count - a fixed 300-frame cap silently stopped waiting before the queue
+	# actually drained once the batch size shrank, and every assertion below
+	# then ran against a partially-populated `_layouts` map, producing
+	# misleading failures for whichever countries simply hadn't been
+	# processed yet (not a real per-country defect).
+	var expected_tag_count := simulation.world.country_to_provinces.keys().size()
+	var batch_size := maxi(1, CountryLabelLayerScript.MAX_INCREMENTAL_TAGS_PER_FRAME)
+	var wait_cap := ceili(float(expected_tag_count) / float(batch_size)) + 60
 	var initial_wait_frames := 0
-	while labels.debug_pending_count() > 0 and initial_wait_frames < 300:
+	while labels.debug_pending_count() > 0 and initial_wait_frames < wait_cap:
 		await process_frame
 		initial_wait_frames += 1
-	_require(labels.debug_pending_count() == 0, "initial label work must complete")
+	if labels.debug_pending_count() > 0:
+		push_error("Country label layer test failed: initial label queue did not drain after %d frames (batch_size=%d expected_tag_count=%d pending=%d layout_count=%d)" % [wait_cap, batch_size, expected_tag_count, labels.debug_pending_count(), labels.debug_layout_count()])
+		quit(1)
+		return
 	_require(labels.debug_layout_count() >= 650, "starting world must create layouts for active territorial countries")
 	_require(labels.debug_font_path() == "res://assets/fonts/LibreBaskerville-Variable.ttf", "bundled font must be authoritative")
 	_require(FileAccess.file_exists(labels.debug_font_path()), "bundled font must exist")

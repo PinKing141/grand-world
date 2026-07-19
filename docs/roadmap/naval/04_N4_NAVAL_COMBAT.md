@@ -1,6 +1,6 @@
 # 04 - N4 Naval Combat
 
-**Status:** In production - engagement start, deterministic damage, sinking, forced and voluntary retreat, reinforcement, and war score complete; full positioning breakdown, morale-based collapse, capture, peace/commander/lifecycle interaction, and the UX/gate slice are all open. See [10 - Delivery sequence and checklist](10_DELIVERY_SEQUENCE_AND_CHECKLIST.md) and its evidence/ folder.  
+**Status:** Validation - engagement, positioning, class-priority targeting, hull/crew/morale damage, morale collapse, sinking, disabled-ship capture, bounded pursuit, reinforcement, forced/voluntary retreat, transport pause/release, peace/extinction lifecycle, war score, reports, save/load, and stress checks pass. Final rendered and release-gate evidence remains open.
 **Depends on:** N1 movement/access, N2 ships/fleets/logistics, N3 carrier-loss policy  
 **Unlocks:** meaningful interception, naval war score, contested transport, blockade defence
 

@@ -36,6 +36,16 @@ const FLEET_LOCATION_MOVING := "moving"
 const FLEET_LOCATION_BATTLE := "battle"
 const FLEET_LOCATION_RETREATING := "retreating"
 
+# Duplicated from SetFleetMissionCommand.VALID_MISSIONS rather than preloaded
+# from it - commands/simulation_command.gd already preloads this very file,
+# so preloading a command script back from here would be a cycle. Keep in
+# sync with SetFleetMissionCommand.VALID_MISSIONS whenever a mission is
+# added or removed (FL2.4 closure audit).
+const VALID_FLEET_MISSIONS := [
+	"none", "idle", "patrol", "intercept", "protect_transport", "transport",
+	"blockade", "protect_coast", "return_to_port", "repair", "trade_protection",
+]
+
 var scenario_id := DEFAULT_SCENARIO_ID
 var current_day := 0
 var player_country := ""
@@ -194,6 +204,8 @@ static func make_fleet_record(fleet_id: String, owner_tag: String, home_port_id:
 		"movement_progress": 0.0,
 		"movement_locked": false,
 		"mission": "idle",
+		"mission_target_ids": [],
+		"mission_started_day": -1,
 		"maintenance_posture_bp": 10000,
 		"morale_bp": 10000,
 		"supplied": true,
@@ -228,6 +240,7 @@ static func make_ship_record(ship_id: String, owner_tag: String, fleet_id: Strin
 		"crew_bp": 10000,
 		"morale_contribution_bp": 10000,
 		"captured_from": "",
+		"captured_battle_id": "",
 		"repairing": false,
 		"disabled": false,
 	}
@@ -305,10 +318,31 @@ static func make_naval_battle_record(battle_id: String, war_id: String, zone_id:
 		"status": "active",
 		"attacker_fleets": [],
 		"defender_fleets": [],
+		"attacker_countries": [],
+		"defender_countries": [],
+		"attacker_initial_ships": 0,
+		"defender_initial_ships": 0,
+		"attacker_initial_hull": 0,
+		"defender_initial_hull": 0,
+		"attacker_positioning_bp": 10000,
+		"defender_positioning_bp": 10000,
+		"attacker_positioning_breakdown": {},
+		"defender_positioning_breakdown": {},
+		"attacker_active_ships": [],
+		"defender_active_ships": [],
+		"attacker_morale_bp": 10000,
+		"defender_morale_bp": 10000,
 		"attacker_hull_lost": 0,
 		"defender_hull_lost": 0,
 		"attacker_ships_sunk": 0,
 		"defender_ships_sunk": 0,
+		"attacker_captured_ship_ids": [],
+		"defender_captured_ship_ids": [],
+		"attacker_withdrawn_fleet_ids": [],
+		"defender_withdrawn_fleet_ids": [],
+		"reinforcement_history": [],
+		"pursuit_hull_lost": 0,
+		"end_reason": "",
 		"winner_side": "",
 		"end_day": -1,
 	}
@@ -776,7 +810,12 @@ func apply_save_dict(save_data: Dictionary) -> String:
 		if String(war.get("status", "")) not in ["active", "ended"]:
 			return "War %s has an invalid status." % raw_war_id
 		var participants: Array = (war.get("attackers", []) as Array) + (war.get("defenders", []) as Array)
-		if participants.size() < 2:
+		# An active war always keeps both sides non-empty, but an ended one
+		# does not: country-extinction cleanup below strips the extinct
+		# tag from whichever side it was on, which can empty that side
+		# outright. Same "history snapshot, not a live index" reasoning
+		# _validate_naval_battle_data already applies to completed battles.
+		if String(war.get("status", "")) == "active" and participants.size() < 2:
 			return "War %s is missing participants." % raw_war_id
 		var seen_participants := {}
 		for raw_country in participants:
@@ -925,6 +964,14 @@ func _validate_naval_data(fleets: Dictionary, ships: Dictionary, naval_construct
 				return "Fleet %s has an invalid admiral." % fleet_id
 			if String((characters[admiral] as Dictionary).get("admiral_fleet_id", "")) != fleet_id:
 				return "Fleet %s and its admiral do not agree on assignment." % fleet_id
+		if not VALID_FLEET_MISSIONS.has(String(fleet.get("mission", "idle"))):
+			return "Fleet %s has an unknown mission." % fleet_id
+		var mission_target_ids := (fleet.get("mission_target_ids", []) as Array)
+		for raw_target_id in mission_target_ids:
+			if not (raw_target_id is int or raw_target_id is float):
+				return "Fleet %s has a malformed mission target." % fleet_id
+			if not loaded_provinces.has(int(raw_target_id)):
+				return "Fleet %s has an unknown mission target." % fleet_id
 		var member_ids := (fleet.get("ship_ids", []) as Array)
 		var seen_members := {}
 		for raw_ship_id in member_ids:
@@ -1028,10 +1075,10 @@ func _validate_naval_battle_data(battles: Dictionary, fleets: Dictionary, loaded
 			return "Naval battle %s has an unknown sea zone." % battle_id
 		var attacker_fleets := (battle.get("attacker_fleets", []) as Array)
 		var defender_fleets := (battle.get("defender_fleets", []) as Array)
-		if attacker_fleets.is_empty() or defender_fleets.is_empty():
-			return "Naval battle %s must have at least one fleet on each side." % battle_id
 		if String(battle.get("status", "")) != "active":
 			continue
+		if attacker_fleets.is_empty() or defender_fleets.is_empty():
+			return "Naval battle %s must have at least one fleet on each side." % battle_id
 		for raw_fleet_id in attacker_fleets + defender_fleets:
 			var fleet_id := String(raw_fleet_id)
 			if not fleets.has(fleet_id):

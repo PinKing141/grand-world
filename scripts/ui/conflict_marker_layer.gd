@@ -7,6 +7,7 @@ extends Node3D
 signal conflict_marker_selected(marker: Dictionary)
 
 const GrandWorldSimulationController = preload("res://scripts/simulation/simulation_controller.gd")
+const BlockadeSystemScript = preload("res://scripts/simulation/blockade_system.gd")
 const MARKER_ICON_ATLAS_PATH := "res://assets/marker_art/generated/marker_icon_atlas.png"
 const MARKER_ICON_SHADER_PATH := "res://shaders/cartographic_marker_icon.gdshader"
 
@@ -20,13 +21,20 @@ const MARKER_FADE_START_HEIGHT := 4.5
 const MARKER_HIDE_HEIGHT := 6.5
 const BATTLE_LIFT := 0.19
 const SIEGE_LIFT := 0.10
+const NAVAL_BATTLE_LIFT := 0.19
+const BLOCKADE_LIFT := 0.08
 const BATTLE_PRIORITY := 2
 const SIEGE_PRIORITY := 1
+const NAVAL_BATTLE_PRIORITY := 2
+const BLOCKADE_PRIORITY := 1
+const NAVY_ICON_INDEX := 1.0
+const PORT_ICON_INDEX := 6.0
 
 @export var simulation_controller: GrandWorldSimulationController
 @export var map_render: Node
 @export var camera_controller: StrategyCameraController
 @export var war_hud: WarHUD
+@export var naval_hud: NavalHUD
 @export_range(12.0, 64.0, 1.0) var cluster_radius_pixels := 28.0
 @export_range(8.0, 48.0, 1.0) var click_radius_pixels := 20.0
 
@@ -35,6 +43,8 @@ var _height_image: Image
 var _height_scale := 0.35
 var _battle_markers := MultiMeshInstance3D.new()
 var _siege_markers := MultiMeshInstance3D.new()
+var _naval_battle_markers := MultiMeshInstance3D.new()
+var _blockade_markers := MultiMeshInstance3D.new()
 var _anchor_cache: Dictionary = {}
 var _events_connected := false
 var _dirty := true
@@ -42,6 +52,8 @@ var _last_scale := -1.0
 var _last_fade := -1.0
 var _battle_count := 0
 var _siege_count := 0
+var _naval_battle_count := 0
+var _blockade_count := 0
 var _clusters: Array[Dictionary] = []
 var _last_cluster_signature := ""
 var _last_cluster_member_index := -1
@@ -82,6 +94,24 @@ func _create_batches() -> void:
 	_siege_markers.visible = false
 	add_child(_siege_markers)
 
+	var naval_battle_icon := PlaneMesh.new()
+	naval_battle_icon.size = Vector2(0.34, 0.34)
+	naval_battle_icon.orientation = PlaneMesh.FACE_Y
+	_naval_battle_markers.name = "NavalBattleMarkers"
+	_naval_battle_markers.multimesh = _create_multimesh(naval_battle_icon)
+	_naval_battle_markers.material_override = _marker_material(NAVY_ICON_INDEX, 2)
+	_naval_battle_markers.visible = false
+	add_child(_naval_battle_markers)
+
+	var blockade_icon := PlaneMesh.new()
+	blockade_icon.size = Vector2(0.28, 0.28)
+	blockade_icon.orientation = PlaneMesh.FACE_Y
+	_blockade_markers.name = "BlockadeMarkers"
+	_blockade_markers.multimesh = _create_multimesh(blockade_icon)
+	_blockade_markers.material_override = _marker_material(PORT_ICON_INDEX, 1)
+	_blockade_markers.visible = false
+	add_child(_blockade_markers)
+
 
 func _create_multimesh(mesh: Mesh) -> MultiMesh:
 	var multimesh := MultiMesh.new()
@@ -115,6 +145,17 @@ func _connect_events() -> void:
 	events.battle_ended.connect(_mark_dirty.unbind(3))
 	events.occupation_changed.connect(_mark_dirty.unbind(3))
 	events.peace_signed.connect(_mark_dirty.unbind(4))
+	events.naval_battle_started.connect(_mark_dirty.unbind(3))
+	events.naval_battle_reinforced.connect(_mark_dirty.unbind(3))
+	events.naval_battle_round_resolved.connect(_mark_dirty.unbind(4))
+	events.naval_battle_ended.connect(_mark_dirty.unbind(3))
+	events.fleet_retreat_started.connect(_mark_dirty.unbind(2))
+	events.fleet_destroyed.connect(_mark_dirty.unbind(2))
+	events.blockade_started.connect(_mark_dirty.unbind(1))
+	events.blockade_ended.connect(_mark_dirty.unbind(1))
+	events.port_fully_blockaded.connect(_mark_dirty.unbind(1))
+	events.port_unblocked.connect(_mark_dirty.unbind(1))
+	events.blockade_level_changed.connect(_mark_dirty.unbind(2))
 	events.world_reloaded.connect(_mark_dirty.unbind(1))
 
 
@@ -169,26 +210,84 @@ func _rebuild(marker_scale: float, fade: float) -> void:
 			sieges.append(marker)
 	_battle_count = battles.size()
 	_siege_count = sieges.size()
+	var naval_battles: Array[Dictionary] = []
+	var naval_battle_ids := simulation_controller.world.naval_battle_registry.keys()
+	naval_battle_ids.sort()
+	for raw_battle_id in naval_battle_ids:
+		var battle: Dictionary = simulation_controller.world.naval_battle_registry[raw_battle_id]
+		if String(battle.get("status", "")) != "active":
+			continue
+		var marker := battle.duplicate(true)
+		marker["marker_type"] = "naval_battle"
+		marker["marker_id"] = String(raw_battle_id)
+		marker["province_id"] = int(battle.get("zone_id", -1))
+		marker["priority"] = NAVAL_BATTLE_PRIORITY
+		naval_battles.append(marker)
+	_naval_battle_count = naval_battles.size()
+
+	# FL1.4: a persistent, always-on cue (unlike NavalHUD's own manual "show
+	# blockade map" coastal overlay, which stays as a separate deeper-dive
+	## tool) - one marker per province BlockadeSystem's own authoritative
+	# query already reports as blockaded, so this can never drift from what
+	# the economy/repair/construction/siege consumers already see.
+	var blockades: Array[Dictionary] = []
+	for raw_province_id in BlockadeSystemScript.all_blockaded_provinces(simulation_controller.world):
+		var province_id := int(raw_province_id)
+		var bp := BlockadeSystemScript.province_blockade_bp(simulation_controller.world, province_id)
+		if bp <= 0:
+			continue
+		var contributors := BlockadeSystemScript.blockade_contributors(simulation_controller.world, province_id)
+		var attacker_country_ids: Array[String] = []
+		for contributor in contributors:
+			attacker_country_ids.append(String(contributor.get("country_id", "")))
+		blockades.append({
+			"marker_type": "blockade",
+			"marker_id": "blockade_%d" % province_id,
+			"province_id": province_id,
+			"blockade_bp": bp,
+			"blockade_tier": BlockadeSystemScript.blockade_tier(bp),
+			"attacker_country_ids": attacker_country_ids,
+			"primary_attacker_country_id": BlockadeSystemScript.primary_blockading_country(simulation_controller.world, province_id),
+			"contributors": contributors,
+			"priority": BLOCKADE_PRIORITY,
+		})
+	_blockade_count = blockades.size()
+
 	var battle_clusters := _cluster_records(battles)
 	var siege_clusters := _cluster_records(sieges)
+	var naval_battle_clusters := _cluster_records(naval_battles)
+	var blockade_clusters := _cluster_records(blockades)
 	_clusters.assign(battle_clusters)
 	_clusters.append_array(siege_clusters)
+	_clusters.append_array(naval_battle_clusters)
+	_clusters.append_array(blockade_clusters)
 	_rebuild_battles(battle_clusters, marker_scale, fade)
 	_rebuild_sieges(siege_clusters, marker_scale, fade)
+	_rebuild_naval_battles(naval_battle_clusters, marker_scale, fade)
+	_rebuild_blockades(blockade_clusters, marker_scale, fade)
 
 
-func _record_less(first: Dictionary, second: Dictionary) -> bool:
-	var first_key := "%08d:%s:%s" % [int(first.get("province_id", -1)), String(first.get("war_id", "")), String(first.get("marker_id", ""))]
-	var second_key := "%08d:%s:%s" % [int(second.get("province_id", -1)), String(second.get("war_id", "")), String(second.get("marker_id", ""))]
-	return first_key < second_key
+func _record_key(record: Dictionary) -> String:
+	return "%08d:%s:%s" % [int(record.get("province_id", -1)), String(record.get("war_id", "")), String(record.get("marker_id", ""))]
 
 
+## Sorting formats and compares this key at every `sort_custom` comparison -
+## O(n log n) calls into a GDScript comparator, each redoing the same string
+## format twice, dominates rebuild cost at large-war scale (FL8.3). Computing
+## each record's key exactly once and sorting the resulting [key, record]
+## pairs with the engine's native Array sort (rather than a scripted
+## comparator) keeps the same deterministic order for a fraction of the cost.
 func _cluster_records(records: Array[Dictionary]) -> Array[Dictionary]:
 	if records.is_empty():
 		return []
 	var camera := camera_controller.camera if camera_controller != null else get_viewport().get_camera_3d()
-	var ordered := records.duplicate()
-	ordered.sort_custom(_record_less)
+	var keyed: Array = []
+	for record in records:
+		keyed.append([_record_key(record), record])
+	keyed.sort()
+	var ordered: Array[Dictionary] = []
+	for pair in keyed:
+		ordered.append(pair[1])
 	# Exact co-location is the overwhelmingly common case in large wars. Fold
 	# those records before projecting or doing any spatial-neighbour work.
 	var records_by_province: Dictionary = {}
@@ -277,6 +376,52 @@ func _rebuild_sieges(clusters: Array[Dictionary], marker_scale: float, fade: flo
 	_siege_markers.visible = fade > 0.0 and not clusters.is_empty()
 
 
+## Naval battle marker "at the sea-zone anchor" (04_N4 "Player Feedback") -
+## reuses the exact same anchor/clustering/fade machinery land battles
+## already use, since a sea zone is just another province ID in the same
+## ProvinceGraph. Colour intensifies with total hull lost so far, the same
+## "damage so far" signal the siege marker's colour already gives for
+## progress_bp.
+func _rebuild_naval_battles(clusters: Array[Dictionary], marker_scale: float, fade: float) -> void:
+	var multimesh := _naval_battle_markers.multimesh
+	multimesh.instance_count = clusters.size()
+	var index := 0
+	for cluster in clusters:
+		var battle: Dictionary = cluster["members"][0]
+		var position: Vector3 = cluster["world_position"] + Vector3(0.0, NAVAL_BATTLE_LIFT * marker_scale, 0.0)
+		var basis := Basis.IDENTITY.scaled(Vector3.ONE * marker_scale)
+		var hull_lost := int(battle.get("attacker_hull_lost", 0)) + int(battle.get("defender_hull_lost", 0))
+		var color := Color(0.2, 0.55, 0.92).lerp(Color(0.96, 0.24, 0.12), clampf(float(hull_lost) / 2000.0, 0.0, 1.0))
+		color.a = fade
+		multimesh.set_instance_transform(index, Transform3D(basis, position))
+		multimesh.set_instance_color(index, color)
+		multimesh.set_instance_custom_data(index, Color(0.0, minf(float((cluster["members"] as Array).size()), 255.0) / 255.0, 0.0, 0.0))
+		index += 1
+	_naval_battle_markers.visible = fade > 0.0 and not clusters.is_empty()
+
+
+## Colour reuses NavalHUD's own "show blockade map" formula exactly (yellow
+## light -> red full), so the persistent marker and the manual coastal
+## overlay always agree rather than presenting two different colour scales
+## for the same underlying bp value.
+func _rebuild_blockades(clusters: Array[Dictionary], marker_scale: float, fade: float) -> void:
+	var multimesh := _blockade_markers.multimesh
+	multimesh.instance_count = clusters.size()
+	var index := 0
+	for cluster in clusters:
+		var blockade: Dictionary = cluster["members"][0]
+		var position: Vector3 = cluster["world_position"] + Vector3(0.0, BLOCKADE_LIFT * marker_scale, 0.0)
+		var basis := Basis.IDENTITY.scaled(Vector3.ONE * marker_scale)
+		var bp := int(blockade.get("blockade_bp", 0))
+		var color := Color(0.95, 0.78, 0.2).lerp(Color(0.85, 0.12, 0.1), clampf(float(bp) / 10000.0, 0.0, 1.0))
+		color.a = fade
+		multimesh.set_instance_transform(index, Transform3D(basis, position))
+		multimesh.set_instance_color(index, color)
+		multimesh.set_instance_custom_data(index, Color(0.0, minf(float((cluster["members"] as Array).size()), 255.0) / 255.0, 0.0, 0.0))
+		index += 1
+	_blockade_markers.visible = fade > 0.0 and not clusters.is_empty()
+
+
 func marker_at_screen_position(screen_position: Vector2) -> Dictionary:
 	if not debug_markers_visible() or _clusters.is_empty():
 		return {}
@@ -316,7 +461,14 @@ func _on_map_click_requested(screen_position: Vector2) -> void:
 	if marker.is_empty():
 		return
 	conflict_marker_selected.emit(marker)
-	if war_hud != null:
+	var marker_type := String(marker.get("marker_type", ""))
+	if marker_type == "naval_battle":
+		if naval_hud != null:
+			naval_hud.select_battle(String(marker.get("marker_id", "")))
+	elif marker_type == "blockade":
+		if naval_hud != null:
+			naval_hud.select_blockaded_province(int(marker.get("province_id", -1)))
+	elif war_hud != null:
 		war_hud.focus_conflict_marker(marker)
 
 
@@ -379,4 +531,28 @@ func debug_priority_order() -> Array[String]:
 
 
 func debug_markers_visible() -> bool:
-	return _battle_markers.visible or _siege_markers.visible
+	return _battle_markers.visible or _siege_markers.visible or _naval_battle_markers.visible or _blockade_markers.visible
+
+
+func debug_naval_battle_count() -> int:
+	return _naval_battle_count
+
+
+func debug_naval_battle_visible() -> bool:
+	return _naval_battle_markers.visible
+
+
+func debug_naval_battle_instances() -> int:
+	return _naval_battle_markers.multimesh.instance_count
+
+
+func debug_blockade_count() -> int:
+	return _blockade_count
+
+
+func debug_blockade_visible() -> bool:
+	return _blockade_markers.visible
+
+
+func debug_blockade_instances() -> int:
+	return _blockade_markers.multimesh.instance_count
