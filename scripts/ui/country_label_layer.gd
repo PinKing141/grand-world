@@ -60,6 +60,8 @@ var _height_image: Image
 var _height_scale := 0.35
 var _territory_image: Image
 var _territory_scale := 0
+var _territory_cell_province_ids: PackedInt32Array = []
+var _territory_cell_width := 0
 var _label_font: FontVariation
 var _base_font: FontFile
 var _font_ascii_ready := false
@@ -101,6 +103,11 @@ var _last_camera_projection := Camera3D.PROJECTION_PERSPECTIVE
 var _last_camera_fov := 0.0
 var _last_camera_size := 0.0
 var _last_rebuilt_tags: Array[String] = []
+var _stage_profile_enabled := false
+var _debug_batch_durations_ms: Array[float] = []
+var _debug_stage_timings: Dictionary = {}
+var _last_bbox_setup_us := 0
+var _last_scan_us := 0
 var _visibility_revision := 0
 var _label_render_scale := 1.0
 var _metrics := {
@@ -130,6 +137,7 @@ func _ready() -> void:
 	# This node is late in the scene tree and Godot readies siblings in reverse
 	# order. Defer font/atlas/territory work so authoritative simulation startup
 	# and packaged-build validation cannot be starved by presentation resources.
+	_stage_profile_enabled = OS.has_environment("LABEL_STAGE_PROFILE")
 	_initialize_label_resources.call_deferred()
 
 
@@ -293,8 +301,33 @@ func _load_territory_map() -> void:
 	if _territory_image == null or _territory_image.is_empty():
 		push_error("Country label territory map failed to decode.")
 		_territory_image = null
-	elif _territory_image.is_compressed():
-		_territory_image.decompress()
+	else:
+		if _territory_image.is_compressed():
+			_territory_image.decompress()
+		_build_territory_cell_cache()
+
+
+## The territory PNG is already baked at cell resolution (one pixel per
+## label-layout cell, per tools/map_labels/build_label_territory_map.py), so
+## `_territory_province_id()` used to call `Image.get_pixel()` and decode a
+## Color to an int on every single lookup - repeated many times over as
+## `_shape_alignment()`/`_largest_safe_rectangle()` scan each country's own
+## bounding box (FL8.2: measured 6-20ms per large country, dominated by this
+## exact call). Decoding the whole image to a flat int lookup table once, at
+## load time, turns every later lookup into a plain array index - identical
+## values, computed once instead of on every scan.
+func _build_territory_cell_cache() -> void:
+	_territory_cell_width = _territory_image.get_width()
+	var height := _territory_image.get_height()
+	_territory_cell_province_ids.resize(_territory_cell_width * height)
+	for y in height:
+		for x in _territory_cell_width:
+			var colour := _territory_image.get_pixel(x, y)
+			_territory_cell_province_ids[y * _territory_cell_width + x] = (
+				roundi(colour.r * 255.0) * 65536
+				+ roundi(colour.g * 255.0) * 256
+				+ roundi(colour.b * 255.0)
+			)
 
 
 func _load_heightmap() -> void:
@@ -408,6 +441,8 @@ func _process_incremental_layouts() -> void:
 		_rebuild_country_layout(tag)
 		_last_rebuilt_tags.append(tag)
 	var elapsed_ms := float(Time.get_ticks_usec() - started) / 1000.0
+	if _stage_profile_enabled and _initial_rebuild_active:
+		_debug_batch_durations_ms.append(elapsed_ms)
 	if _initial_rebuild_active:
 		_initial_layout_cpu_ms += elapsed_ms
 		_metrics["initial_layout_ms"] = _initial_layout_cpu_ms
@@ -425,13 +460,28 @@ func _process_incremental_layouts() -> void:
 
 
 func _rebuild_country_layout(tag: String) -> void:
+	var t0 := Time.get_ticks_usec()
 	var body := _main_land_body(tag)
+	var t1 := Time.get_ticks_usec()
 	if body.is_empty():
 		_remove_country(tag)
 		return
 	var shape := _shape_alignment(body)
+	var t2 := Time.get_ticks_usec()
 	var region := Rect2i() if not shape.is_empty() else _largest_safe_rectangle(body)
+	var t3 := Time.get_ticks_usec()
 	var layout := _make_layout(tag, body, region, shape)
+	var t4 := Time.get_ticks_usec()
+	if _stage_profile_enabled:
+		_debug_stage_timings[tag] = {
+			"land_body_ms": float(t1 - t0) * 0.001,
+			"bbox_setup_ms": float(_last_bbox_setup_us) * 0.001,
+			"shape_scan_ms": float(_last_scan_us) * 0.001,
+			"shape_total_ms": float(t2 - t1) * 0.001,
+			"rect_ms": float(t3 - t2) * 0.001,
+			"layout_ms": float(t4 - t3) * 0.001,
+			"total_ms": float(t4 - t0) * 0.001,
+		}
 	if layout.is_empty():
 		_remove_country(tag)
 		return
@@ -547,15 +597,13 @@ func _region_is_better(candidate: Rect2i, current: Rect2i) -> bool:
 
 
 func _territory_province_id(x: int, y: int) -> int:
-	var colour := _territory_image.get_pixel(x, y)
-	return (
-		roundi(colour.r * 255.0) * 65536
-		+ roundi(colour.g * 255.0) * 256
-		+ roundi(colour.b * 255.0)
-	)
+	return _territory_cell_province_ids[y * _territory_cell_width + x]
 
 
 func _shape_alignment(body: PackedInt32Array) -> Dictionary:
+	var t_bbox_start := Time.get_ticks_usec()
+	_last_bbox_setup_us = 0
+	_last_scan_us = 0
 	if _territory_image == null or _territory_scale <= 0:
 		return {}
 	var owned := {}
@@ -568,6 +616,7 @@ func _shape_alignment(body: PackedInt32Array) -> Dictionary:
 			pixel_bounds = province_bounds if not has_bounds else pixel_bounds.merge(province_bounds)
 			has_bounds = true
 	if not has_bounds:
+		_last_bbox_setup_us = Time.get_ticks_usec() - t_bbox_start
 		return {}
 	var min_cell := Vector2i(
 		clampi(pixel_bounds.position.x / _territory_scale, 0, _territory_image.get_width() - 1),
@@ -577,6 +626,8 @@ func _shape_alignment(body: PackedInt32Array) -> Dictionary:
 		clampi(ceili(float(pixel_bounds.end.x) / float(_territory_scale)), min_cell.x + 1, _territory_image.get_width()),
 		clampi(ceili(float(pixel_bounds.end.y) / float(_territory_scale)), min_cell.y + 1, _territory_image.get_height())
 	)
+	var t_scan_start := Time.get_ticks_usec()
+	_last_bbox_setup_us = t_scan_start - t_bbox_start
 	var count := 0
 	var coordinate_sum := Vector2.ZERO
 	var square_sum := Vector2.ZERO
@@ -590,6 +641,7 @@ func _shape_alignment(body: PackedInt32Array) -> Dictionary:
 			coordinate_sum += point
 			square_sum += point * point
 			cross_sum += point.x * point.y
+	_last_scan_us = Time.get_ticks_usec() - t_scan_start
 	if count < MIN_SHAPE_CELLS:
 		return {}
 	var mean := coordinate_sum / float(count)
@@ -1179,6 +1231,16 @@ func _update_render_metrics() -> void:
 func debug_metrics() -> Dictionary:
 	_update_layout_metrics()
 	return _metrics.duplicate(true)
+
+
+## FL8.2a: only populated when the LABEL_STAGE_PROFILE environment variable
+## is set at startup - avoids any always-on overhead for normal play/tests.
+func debug_batch_durations_ms() -> Array[float]:
+	return _debug_batch_durations_ms.duplicate()
+
+
+func debug_stage_timings(tag: String) -> Dictionary:
+	return (_debug_stage_timings.get(tag, {}) as Dictionary).duplicate()
 
 
 func debug_label_style() -> Dictionary:

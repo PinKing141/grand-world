@@ -45,43 +45,48 @@ theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 14
 theme_override_constants/margin_bottom = 10
 
-[node name="Column" type="VBoxContainer" parent="NavalPanel/Margin"]
+[node name="Scroll" type="ScrollContainer" parent="NavalPanel/Margin"]
 layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Column" type="VBoxContainer" parent="NavalPanel/Margin/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 7
 
-[node name="Header" type="HBoxContainer" parent="NavalPanel/Margin/Column"]
+[node name="Header" type="HBoxContainer" parent="NavalPanel/Margin/Scroll/Column"]
 layout_mode = 2
 
-[node name="NavalTitle" type="Label" parent="NavalPanel/Margin/Column/Header"]
+[node name="NavalTitle" type="Label" parent="NavalPanel/Margin/Scroll/Column/Header"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 17
 text = "Naval"
 
-[node name="CloseNavalButton" type="Button" parent="NavalPanel/Margin/Column/Header"]
+[node name="CloseNavalButton" type="Button" parent="NavalPanel/Margin/Scroll/Column/Header"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "×"
 
-[node name="FleetSummaryLabel" type="Label" parent="NavalPanel/Margin/Column"]
+[node name="FleetSummaryLabel" type="Label" parent="NavalPanel/Margin/Scroll/Column"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Fleets 0 · Unsupplied 0 · Damaged 0"
 
-[node name="FleetRow" type="HBoxContainer" parent="NavalPanel/Margin/Column"]
+[node name="FleetRow" type="HBoxContainer" parent="NavalPanel/Margin/Scroll/Column"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="FleetOption" type="OptionButton" parent="NavalPanel/Margin/Column/FleetRow"]
+[node name="FleetOption" type="OptionButton" parent="NavalPanel/Margin/Scroll/Column/FleetRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 12
 
-[node name="FleetDetailsLabel" type="Label" parent="NavalPanel/Margin/Column"]
+[node name="FleetDetailsLabel" type="Label" parent="NavalPanel/Margin/Scroll/Column"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
@@ -89,106 +94,243 @@ theme_override_font_sizes/font_size = 12
 text = "Select a fleet."
 autowrap_mode = 2
 
-[node name="FleetActionRow" type="HBoxContainer" parent="NavalPanel/Margin/Column"]
+[node name="FleetActionRow" type="HBoxContainer" parent="NavalPanel/Margin/Scroll/Column"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="MoveFleetButton" type="Button" parent="NavalPanel/Margin/Column/FleetActionRow"]
+[node name="MoveFleetButton" type="Button" parent="NavalPanel/Margin/Scroll/Column/FleetActionRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 12
 text = "Move to selected province"
 
-[node name="CancelMovementButton" type="Button" parent="NavalPanel/Margin/Column/FleetActionRow"]
+[node name="CancelMovementButton" type="Button" parent="NavalPanel/Margin/Scroll/Column/FleetActionRow"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Cancel movement"
 
-[node name="AdmiralRow" type="HBoxContainer" parent="NavalPanel/Margin/Column"]
+[node name="RetreatButton" type="Button" parent="NavalPanel/Margin/Scroll/Column/FleetActionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Retreat"
+
+[node name="SetHomePortButton" type="Button" parent="NavalPanel/Margin/Scroll/Column/FleetActionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Set home port"
+
+[node name="ScuttleFleetButton" type="Button" parent="NavalPanel/Margin/Scroll/Column/FleetActionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Scuttle"
+
+[node name="AdmiralRow" type="HBoxContainer" parent="NavalPanel/Margin/Scroll/Column"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="AdmiralOption" type="OptionButton" parent="NavalPanel/Margin/Column/AdmiralRow"]
+[node name="AdmiralOption" type="OptionButton" parent="NavalPanel/Margin/Scroll/Column/AdmiralRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 12
 
-[node name="AssignAdmiralButton" type="Button" parent="NavalPanel/Margin/Column/AdmiralRow"]
+[node name="AssignAdmiralButton" type="Button" parent="NavalPanel/Margin/Scroll/Column/AdmiralRow"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Assign admiral"
 
-[node name="PortDivider" type="HSeparator" parent="NavalPanel/Margin/Column"]
+[node name="OrganisationLabel" type="Label" parent="NavalPanel/Margin/Scroll/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Select ships (below) to split into a new fleet or transfer to the target fleet."
+autowrap_mode = 2
+
+[node name="ShipTransferList" type="ItemList" parent="NavalPanel/Margin/Scroll/Column"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 70)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+select_mode = 1
+allow_reselect = true
+
+[node name="TargetFleetRow" type="HBoxContainer" parent="NavalPanel/Margin/Scroll/Column"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="TargetFleetLabel" type="Label" parent="NavalPanel/Margin/Scroll/Column/TargetFleetRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Target:"
+
+[node name="TargetFleetOption" type="OptionButton" parent="NavalPanel/Margin/Scroll/Column/TargetFleetRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
+
+[node name="OrganisationActionRow" type="HBoxContainer" parent="NavalPanel/Margin/Scroll/Column"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="SplitFleetButton" type="Button" parent="NavalPanel/Margin/Scroll/Column/OrganisationActionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
+text = "Split selected"
+
+[node name="TransferShipsButton" type="Button" parent="NavalPanel/Margin/Scroll/Column/OrganisationActionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
+text = "Transfer selected"
+
+[node name="MergeFleetsButton" type="Button" parent="NavalPanel/Margin/Scroll/Column/OrganisationActionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
+text = "Merge with target"
+
+[node name="OrganisationDivider" type="HSeparator" parent="NavalPanel/Margin/Scroll/Column"]
 layout_mode = 2
 
-[node name="PortConstructionLabel" type="Label" parent="NavalPanel/Margin/Column"]
+[node name="MissionRow" type="HBoxContainer" parent="NavalPanel/Margin/Scroll/Column"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="MissionOption" type="OptionButton" parent="NavalPanel/Margin/Scroll/Column/MissionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
+
+[node name="SetMissionButton" type="Button" parent="NavalPanel/Margin/Scroll/Column/MissionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Set mission"
+
+[node name="PortDivider" type="HSeparator" parent="NavalPanel/Margin/Scroll/Column"]
+layout_mode = 2
+
+[node name="BlockadeLabel" type="Label" parent="NavalPanel/Margin/Scroll/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="PortConstructionLabel" type="Label" parent="NavalPanel/Margin/Scroll/Column"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Select an owned port province to construct ships."
 autowrap_mode = 2
 
-[node name="ConstructRow" type="HBoxContainer" parent="NavalPanel/Margin/Column"]
+[node name="ConstructRow" type="HBoxContainer" parent="NavalPanel/Margin/Scroll/Column"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="ShipOption" type="OptionButton" parent="NavalPanel/Margin/Column/ConstructRow"]
+[node name="ShipOption" type="OptionButton" parent="NavalPanel/Margin/Scroll/Column/ConstructRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 12
 
-[node name="ConstructShipButton" type="Button" parent="NavalPanel/Margin/Column/ConstructRow"]
+[node name="ConstructShipButton" type="Button" parent="NavalPanel/Margin/Scroll/Column/ConstructRow"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Build selected"
 
-[node name="ConstructionQueueLabel" type="Label" parent="NavalPanel/Margin/Column"]
+[node name="ConstructionQueueLabel" type="Label" parent="NavalPanel/Margin/Scroll/Column"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "No active naval construction."
 autowrap_mode = 2
 
-[node name="CancelNavalConstructionButton" type="Button" parent="NavalPanel/Margin/Column"]
+[node name="CancelNavalConstructionButton" type="Button" parent="NavalPanel/Margin/Scroll/Column"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Cancel construction"
 
-[node name="TransportDivider" type="HSeparator" parent="NavalPanel/Margin/Column"]
+[node name="TransportDivider" type="HSeparator" parent="NavalPanel/Margin/Scroll/Column"]
 layout_mode = 2
 
-[node name="TransportLabel" type="Label" parent="NavalPanel/Margin/Column"]
+[node name="TransportLabel" type="Label" parent="NavalPanel/Margin/Scroll/Column"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "No active transport for the selected fleet."
 autowrap_mode = 2
 
-[node name="EmbarkRow" type="HBoxContainer" parent="NavalPanel/Margin/Column"]
+[node name="EmbarkRow" type="HBoxContainer" parent="NavalPanel/Margin/Scroll/Column"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="ArmyOption" type="OptionButton" parent="NavalPanel/Margin/Column/EmbarkRow"]
+[node name="ArmyOption" type="OptionButton" parent="NavalPanel/Margin/Scroll/Column/EmbarkRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 12
 
-[node name="EmbarkButton" type="Button" parent="NavalPanel/Margin/Column/EmbarkRow"]
+[node name="EmbarkButton" type="Button" parent="NavalPanel/Margin/Scroll/Column/EmbarkRow"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Embark to selected province"
 
-[node name="CancelTransportButton" type="Button" parent="NavalPanel/Margin/Column"]
+[node name="CancelTransportButton" type="Button" parent="NavalPanel/Margin/Scroll/Column"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Cancel transport"
+
+[node name="FocusCarriedArmyButton" type="Button" parent="NavalPanel/Margin/Scroll/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Focus carried army on map"
+
+[node name="BattleDivider" type="HSeparator" parent="NavalPanel/Margin/Scroll/Column"]
+layout_mode = 2
+
+[node name="BattleSummaryLabel" type="Label" parent="NavalPanel/Margin/Scroll/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Naval battles 0 active"
+
+[node name="BattleOption" type="OptionButton" parent="NavalPanel/Margin/Scroll/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+
+[node name="BattleDetailsLabel" type="Label" parent="NavalPanel/Margin/Scroll/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "No active naval battles."
+autowrap_mode = 2
+
+[node name="BattleReportLabel" type="Label" parent="NavalPanel/Margin/Scroll/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="ShowBlockadeMapButton" type="Button" parent="NavalPanel/Margin/Scroll/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Show blockade map"

@@ -91,7 +91,7 @@ func _run() -> void:
 	_require(int(world.get_fleet("fleet_eng")["aggregate"]["total_blockade_power"]) == 3, "fixture assumption: three war galleys must provide 3 total blockade power")
 
 	# --- SetFleetMissionCommand ---
-	_require(not SetFleetMissionCommandScript.new("ENG", "fleet_eng", "patrol").validate(world).is_empty(), "an unknown mission must be rejected")
+	_require(not SetFleetMissionCommandScript.new("ENG", "fleet_eng", "not_a_real_mission").validate(world).is_empty(), "an unknown mission must be rejected")
 	_require(not SetFleetMissionCommandScript.new("BUR", "fleet_eng", "blockade").validate(world).is_empty(), "a country that does not own the fleet must be rejected")
 	var set_mission := SetFleetMissionCommandScript.new("ENG", "fleet_eng", "blockade")
 	_require(set_mission.validate(world).is_empty(), "a legal mission change must be accepted: %s" % set_mission.validate(world))
@@ -134,10 +134,18 @@ func _run() -> void:
 	var targets := BlockadeSystemScript.blockaded_provinces_for_fleet(world, "fleet_eng")
 	_require(targets.has(PICARDIE), "a hostile coastal province adjacent to the fleet's sea zone must be blockaded")
 	_require(not targets.has(CALAIS) and not targets.has(KENT), "the fleet's own country's provinces must never be blockaded")
+	var contributors := BlockadeSystemScript.blockade_contributors(world, PICARDIE)
+	_require(contributors.size() == 1, "one blockading country must produce one contributor record")
+	_require(String(contributors[0].get("country_id", "")) == "ENG" and int(contributors[0].get("effective_power", 0)) == 3, "the contributor query must expose the real country and damage-aware effective power")
+	_require((contributors[0].get("fleet_ids", []) as Array) == ["fleet_eng"], "the contributor query must expose stable contributing fleet IDs")
+	_require(BlockadeSystemScript.primary_blockading_country(world, PICARDIE) == "ENG", "the compact primary-attacker query must resolve the strongest contributor")
 
 	# --- Combining multiple fleets, clamped, ineligible fleets excluded ---
 	_add_fleet(world, "fleet_eng_2", "ENG", STRAITS_OF_DOVER, 2)
 	SetFleetMissionCommandScript.new("ENG", "fleet_eng_2", "blockade").apply(world, events)
+	contributors = BlockadeSystemScript.blockade_contributors(world, PICARDIE)
+	_require(contributors.size() == 1 and int(contributors[0].get("effective_power", 0)) == 5, "multiple fleets from one country must aggregate into one contributor without losing fleet identity")
+	_require((contributors[0].get("fleet_ids", []) as Array) == ["fleet_eng", "fleet_eng_2"], "contributing fleet IDs must remain sorted deterministically")
 	var picardie_required := _expected_required_power(world, PICARDIE)
 	var expected_bp_5 := clampi(5 * BlockadeSystemScript.BASIS_POINTS / picardie_required, 0, BlockadeSystemScript.BASIS_POINTS)
 	_require(BlockadeSystemScript.province_blockade_bp(world, PICARDIE) == expected_bp_5, "two eligible fleets must combine their raw power (3 + 2) before target resistance is applied as a bp fraction of required power: expected %d got %d" % [expected_bp_5, BlockadeSystemScript.province_blockade_bp(world, PICARDIE)])

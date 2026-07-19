@@ -223,12 +223,14 @@ func _refresh_economy_panel() -> void:
 	var ledger: Dictionary = runtime.get("ledger", {})
 	var country_name: String = simulation_controller.country_data.country_id_to_country_name.get(tag, "Unknown country")
 	economy_title.text = "%s economy" % country_name
-	ledger_label.text = "INCOME\n  Tax                         +%s\n  Production                  +%s\n  Other                       +%s\n  Total                       +%s\n\nEXPENSES\n  Army maintenance            -%s\n  Interest                    -%s\n  Other                       -%s\n  Total                       -%s\n\nMONTHLY BALANCE               %s%s" % [
+	ledger_label.text = "INCOME\n  Tax                         +%s\n  Production                  +%s\n  Other                       +%s\n  Blockade loss                -%s\n  Total                       +%s\n\nEXPENSES\n  Army maintenance            -%s\n  Navy maintenance             -%s\n  Interest                    -%s\n  Other                       -%s\n  Total                       -%s\n\nMONTHLY BALANCE               %s%s" % [
 		EconomySystemScript.format_money(int(ledger.get("tax", 0))),
 		EconomySystemScript.format_money(int(ledger.get("production", 0))),
 		EconomySystemScript.format_money(int(ledger.get("event_income", 0))),
+		EconomySystemScript.format_money(int(ledger.get("blockade_loss", 0))),
 		EconomySystemScript.format_money(int(ledger.get("total_income", 0))),
 		EconomySystemScript.format_money(int(ledger.get("army_maintenance", 0))),
+		EconomySystemScript.format_money(int(ledger.get("navy_maintenance", 0))),
 		EconomySystemScript.format_money(int(ledger.get("interest", 0))),
 		EconomySystemScript.format_money(int(ledger.get("event_expenses", 0))),
 		EconomySystemScript.format_money(int(ledger.get("total_expenses", 0))),

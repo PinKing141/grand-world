@@ -227,10 +227,11 @@ func _refresh_war() -> void:
 		var title: Dictionary = simulation_controller.world.title_registry.get(String(goal.get("title_id", "")), {})
 		var claimant: Dictionary = simulation_controller.world.character_registry.get(String(goal.get("claimant_id", "")), {})
 		goal_text = "Press %s's claim on %s" % [String(claimant.get("name", "claimant")), String(title.get("name", goal.get("title_id", "title")))]
-	war_summary.text = "%s vs %s  ·  War score %+d  ·  %s" % [
+	war_summary.text = "%s vs %s  ·  War score %+d (blockade %+d)  ·  %s" % [
 		_country_name(String(war["attacker_leader"])),
 		_country_name(String(war["defender_leader"])),
 		int(war.get("total_war_score", 0)),
+		int(war.get("blockade_score_attacker", 0)),
 		goal_text,
 	]
 	demand_goal_button.text = "Enforce claim" if String(goal.get("type", "")) == "press_claim" else "Demand war goal"

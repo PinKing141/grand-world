@@ -251,5 +251,57 @@ func _run() -> void:
 	_require(String(world_g.get_naval_battle(battle_id_g)["status"]) == "completed", "withdrawing the only attacker must end the battle immediately")
 	_require(String(world_g.get_naval_battle(battle_id_g)["winner_side"]) == "defender", "the side that was withdrawn from must lose, exactly as a combat defeat would")
 
+	# --- Complete battle model: positioning/active assignments are retained
+	# for the report, morale can terminate a side before total sinking, and a
+	# disabled non-transport hull can be captured atomically. ---
+	_require(int(battle.get("attacker_initial_ships", 0)) == 3, "battle reports must retain initial attacker ship totals")
+	_require(not (battle.get("attacker_positioning_breakdown", {}) as Dictionary).is_empty(), "battle reports must explain attacker positioning")
+	_require(not (battle.get("attacker_active_ships", []) as Array).is_empty(), "stable active-ship assignment must be retained")
+	_require(int(battle.get("attacker_morale_bp", 10000)) < 10000 or int(battle.get("defender_morale_bp", 10000)) < 10000, "combat must apply authoritative morale loss")
+
+	var morale_world := _make_channel_world()
+	var morale_events := SimulationEventBusScript.new()
+	root.add_child(morale_events)
+	_add_fleet(morale_world, "fleet_eng_morale", "ENG", STRAITS_OF_DOVER, 1)
+	_add_fleet(morale_world, "fleet_bur_morale", "BUR", STRAITS_OF_DOVER, 1)
+	var fragile := morale_world.get_fleet("fleet_bur_morale")
+	fragile["morale_bp"] = NavalCombatSystemScript.MORALE_COLLAPSE_BP + 50
+	morale_world.fleet_registry["fleet_bur_morale"] = fragile
+	var morale_scheduler := _make_scheduler(morale_world, morale_events)
+	morale_scheduler.advance_one_day()
+	var morale_battle_id := String(morale_world.get_fleet("fleet_eng_morale").get("battle_id", ""))
+	morale_scheduler.advance_one_day()
+	var morale_battle := morale_world.get_naval_battle(morale_battle_id)
+	_require(String(morale_battle.get("status", "")) == "completed", "a side below the morale threshold after a round must collapse")
+	_require(String(morale_battle.get("end_reason", "")) == "morale_collapse", "morale termination must be explicit in the battle report")
+
+	var capture_world := _make_channel_world()
+	var capture_events := SimulationEventBusScript.new()
+	root.add_child(capture_events)
+	_add_fleet(capture_world, "fleet_eng_capture", "ENG", STRAITS_OF_DOVER, 1)
+	_add_fleet(capture_world, "fleet_bur_capture", "BUR", STRAITS_OF_DOVER, 1)
+	var captured_ship_id := String(capture_world.fleet_ships("fleet_bur_capture")[0])
+	var disabled_ship := capture_world.get_ship(captured_ship_id)
+	disabled_ship["hull_bp"] = NavalCombatSystemScript.CAPTURE_HULL_BP
+	disabled_ship["disabled"] = true
+	capture_world.ship_registry[captured_ship_id] = disabled_ship
+	FleetSystemScript.recompute_aggregate(capture_world, "fleet_bur_capture")
+	var capture_battle_id := "naval_battle_capture"
+	var capture_battle := CampaignWorldStateScript.make_naval_battle_record(capture_battle_id, "war_1", STRAITS_OF_DOVER, 0)
+	capture_battle["attacker_fleets"] = ["fleet_eng_capture"]
+	capture_battle["defender_fleets"] = ["fleet_bur_capture"]
+	for capture_fleet_id in ["fleet_eng_capture", "fleet_bur_capture"]:
+		var capture_fleet := capture_world.get_fleet(capture_fleet_id)
+		capture_fleet["battle_id"] = capture_battle_id
+		capture_fleet["location_status"] = CampaignWorldStateScript.FLEET_LOCATION_BATTLE
+		capture_world.fleet_registry[capture_fleet_id] = capture_fleet
+	capture_world.naval_battle_registry[capture_battle_id] = capture_battle
+	NavalCombatSystemScript._finish_battle(capture_world, capture_events, capture_battle, true, preload("res://scripts/simulation/ship_definitions.gd").load_default())
+	_require(capture_world.ship_registry.has(captured_ship_id), "a captured ship must remain a stable ship record")
+	var captured_ship := capture_world.get_ship(captured_ship_id)
+	_require(String(captured_ship.get("owner_country_id", "")) == "ENG" and String(captured_ship.get("fleet_id", "")) == "fleet_eng_capture", "capture must atomically change ship owner and fleet membership")
+	_require(String(captured_ship.get("captured_from", "")) == "BUR" and String(captured_ship.get("captured_battle_id", "")) == capture_battle_id, "capture provenance must identify the old owner and battle")
+	_require((capture_world.get_naval_battle(capture_battle_id).get("attacker_captured_ship_ids", []) as Array).has(captured_ship_id), "the final report must list captured ships")
+
 	print("Naval combat test passed. battle=%s days=%d" % [battle_id, world.current_day])
 	quit(0)

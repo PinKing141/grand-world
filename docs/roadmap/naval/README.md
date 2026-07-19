@@ -1,6 +1,6 @@
 # Naval and Maritime Production Roadmap
 
-**Status:** N0 complete; N1 (maritime graph) in validation — see [10 - Delivery sequence and checklist](10_DELIVERY_SEQUENCE_AND_CHECKLIST.md)  
+**Status:** G1 finish-line work is active. Core naval simulation, deterministic AI, player fleet/map implementation, destructive lifecycle coverage, named simultaneous global headless stress, reviewed starting-force/admiral policy, downstream trade-protection contracts, the 100-seed Channel acceptance, and Windows export/startup pass in this repository. Rendered/accessibility acceptance, approved target-hardware budgets, hardware-bound soak confirmation, and the final clean project-wide gate remain open. See [G1 Finish-Line Roadmap](g1_finish_line/README.md).
 **Roadmap milestone:** P0 Global Pillar A / G1 Maritime First Playable  
 **Campaign period:** 11 November 1444 to 1 January 1700  
 **Implementation rule:** no slice enters production until its inputs, state ownership, commands, tests, and exit evidence are explicit.
@@ -41,6 +41,7 @@ The phase extends these systems. It must not create a parallel campaign clock, d
 | [08 - Starting content and historical validation](08_STARTING_CONTENT_AND_HISTORICAL_VALIDATION.md) | Ship definitions, ports, initial fleets, leaders, provenance | Is the Channel/Iberian content sufficient and reviewable? |
 | [09 - QA, determinism, performance, and release gates](09_QA_DETERMINISM_PERFORMANCE_GATES.md) | Automated/manual matrix, budgets, soak and compatibility evidence | Is the phase stable at global scale? |
 | [10 - Delivery sequence and checklist](10_DELIVERY_SEQUENCE_AND_CHECKLIST.md) | Small work packets, dependencies, evidence, sign-off | What is the next bounded batch of work? |
+| [G1 Finish-Line Roadmap](g1_finish_line/README.md) | Authoritative remaining P1 work after release-gate review | What exactly must close before G1 and C1? |
 
 ## Critical Path
 

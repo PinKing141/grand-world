@@ -49,6 +49,19 @@ func validate(world: CampaignWorldState) -> String:
 	if not ship_definitions.has_ship(definition_id):
 		return "Unknown ship definition: %s" % definition_id
 	var definition := ship_definitions.ship(definition_id)
+	# Mirrors RecruitUnitCommand.validate()'s own technology gate exactly
+	# (commands/recruit_unit_command.gd) - same country_depth_enabled guard,
+	# same country_runtime "technology" dict, same required_technology
+	# {track, level} shape ShipDefinitions already validates on every ship.
+	# Gated so a synthetic/legacy world without CountryDepthSystem (most
+	# naval-focused unit tests, and any save predating country depth) never
+	# sees this check at all - the same compatibility precedent
+	# RecruitUnitCommand already established.
+	if bool(world.global_flags.get("country_depth_enabled", false)):
+		var requirement: Dictionary = definition.get("required_technology", {})
+		var technology: Dictionary = world.country_runtime(country_tag).get("technology", {})
+		if int(technology.get(String(requirement.get("track", "military")), 0)) < int(requirement.get("level", 0)):
+			return "%s requires %s technology %d." % [definition_id, String(requirement.get("track", "military")), int(requirement.get("level", 0))]
 	if int(port_record.get("harbour_level", 0)) < int(definition.get("required_harbour_level", 0)):
 		return "This port's harbour is too small for %s." % definition_id
 	if bool(definition.get("required_shipyard", false)) and not bool(port_record.get("shipyard", false)):

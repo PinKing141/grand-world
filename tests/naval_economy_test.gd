@@ -7,6 +7,7 @@ const SimulationDateScript = preload("res://scripts/simulation/simulation_date.g
 const EconomySystemScript = preload("res://scripts/simulation/economy_system.gd")
 const ConstructShipCommandScript = preload("res://scripts/simulation/commands/construct_ship_command.gd")
 const CancelShipConstructionCommandScript = preload("res://scripts/simulation/commands/cancel_ship_construction_command.gd")
+const SetNavyMaintenanceCommandScript = preload("res://scripts/simulation/commands/set_navy_maintenance_command.gd")
 
 const CALAIS := 87
 const KENT := 235
@@ -132,6 +133,24 @@ func _run() -> void:
 		int(ledger["total_expenses"]) >= int(ledger["navy_maintenance"]),
 		"total_expenses must include navy_maintenance"
 	)
+
+	# FL3.2 closure: SetNavyMaintenanceCommand - the naval mirror of
+	# SetArmyMaintenanceCommand (see phase_4_economy_test.gd's own
+	# equivalent check), reusing the country_runtime "navy_maintenance_bp"
+	# field EconomySystem's ledger calculation already scaled navy_maintenance
+	# by, even before any command existed to actually change it.
+	_require(not SetNavyMaintenanceCommandScript.new("ENG", 3000).validate(world).is_empty(), "an off-tier maintenance value must be rejected")
+	_require(SetNavyMaintenanceCommandScript.new("ENG", 2500).validate(world).is_empty(), "25% is a valid maintenance tier")
+	var reduce := SetNavyMaintenanceCommandScript.new("ENG", 2500)
+	scheduler.submit(reduce)
+	scheduler.process_commands()
+	var reduced_ledger: Dictionary = world.country_runtime("ENG")["ledger"]
+	_require(int(reduced_ledger["navy_maintenance"]) == 50, "reducing maintenance to 25%% must scale navy_maintenance proportionally: expected 50, got %d" % int(reduced_ledger["navy_maintenance"]))
+	_require(int(world.country_runtime("ENG")["navy_maintenance_bp"]) == 2500, "the country's own navy_maintenance_bp must reflect the change")
+	scheduler.submit(SetNavyMaintenanceCommandScript.new("ENG", 10000))
+	scheduler.process_commands()
+	var restored_ledger: Dictionary = world.country_runtime("ENG")["ledger"]
+	_require(int(restored_ledger["navy_maintenance"]) == 200, "restoring maintenance to 100%% must restore the full navy_maintenance cost")
 
 	# Cancellation: refund and sailor release.
 	var second_world := _make_world()

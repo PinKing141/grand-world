@@ -8,6 +8,8 @@ extends Control
 const SimulationDateScript = preload("res://scripts/simulation/simulation_date.gd")
 const EconomySystemScript = preload("res://scripts/simulation/economy_system.gd")
 const ProvinceGraphScript = preload("res://scripts/simulation/province_graph.gd")
+const BlockadeSystemScript = preload("res://scripts/simulation/blockade_system.gd")
+const BLOCKADE_TIER_NAMES := ["None", "Light", "Moderate", "Heavy", "Severe", "Full"]
 const StrategyMinimapScript = preload("res://scripts/ui/strategy_minimap.gd")
 const UI_FONT := preload("res://assets/fonts/LibreBaskerville-Variable.ttf")
 const FLAG_DIRECTORY := "res://assets/marker_art/source_flags"
@@ -49,6 +51,7 @@ var manpower_label: Label
 var stability_label: Label
 var technology_label: Label
 var force_label: Label
+var sailors_label: Label
 var alert_row: HBoxContainer
 var date_label: Label
 var pause_button: Button
@@ -138,6 +141,7 @@ func _build_interface() -> void:
 	stability_label = _resource_label(resources, "Stability", "+0")
 	technology_label = _resource_label(resources, "Technology", "0 / 0 / 0")
 	force_label = _resource_label(resources, "Armies", "0 · 0")
+	sailors_label = _resource_label(resources, "Sailors", "0 / 0")
 
 	alert_row = HBoxContainer.new()
 	alert_row.name = "AlertRow"
@@ -152,6 +156,7 @@ func _build_interface() -> void:
 	_add_tab(tabs, "Government", _open_government, "Government, reforms, stability and decisions")
 	_add_tab(tabs, "Economy", _open_economy, "Treasury, income, expenses, loans and maintenance")
 	_add_tab(tabs, "Military", _open_military, "Armies and military orders")
+	_add_tab(tabs, "Naval", _open_naval, "Fleets, naval construction, transport and blockades")
 	_add_tab(tabs, "Diplomacy", _open_diplomacy, "Relations, subjects, claims and warfare")
 	_add_tab(tabs, "Religion", _open_religion, "Religion, culture and internal policy")
 	_add_tab(tabs, "Court", _open_characters, "Ruler, heir, dynasty and court")
@@ -316,6 +321,7 @@ func _refresh(force_rebuild: bool) -> void:
 	stability_label.modulate = GOOD if int(runtime.get("stability", 0)) >= 0 else BAD
 	technology_label.text = "%d / %d / %d" % [int(technology.get("administrative", 0)), int(technology.get("diplomatic", 0)), int(technology.get("military", 0))]
 	force_label.text = "%d armies · %d" % [armies.size(), total_strength]
+	sailors_label.text = "%d / %d" % [int(runtime.get("sailors", 0)), int(runtime.get("maximum_sailors", 0))]
 	_refresh_shield(tag)
 	_refresh_clock()
 	_refresh_alerts(tag, runtime)
@@ -377,6 +383,20 @@ func _refresh_alerts(tag: String, runtime: Dictionary) -> void:
 			transport_count += 1
 	if transport_count > 0:
 		alert_specs.append({"text": "Transport operations (%d)" % transport_count, "tip": "Armies are embarking, sailing, or disembarking", "action": _open_naval})
+	var naval_battle_count := 0
+	for raw_battle_id in simulation_controller.world.naval_battle_registry:
+		var battle: Dictionary = simulation_controller.world.naval_battle_registry[raw_battle_id]
+		if String(battle.get("status", "")) != "active":
+			continue
+		for raw_fleet_id in (battle.get("attacker_fleets", []) as Array) + (battle.get("defender_fleets", []) as Array):
+			if String((simulation_controller.world.fleet_registry.get(String(raw_fleet_id), {}) as Dictionary).get("owner_country_id", "")) == tag:
+				naval_battle_count += 1
+				break
+	if naval_battle_count > 0:
+		alert_specs.append({"text": "Naval battles (%d)" % naval_battle_count, "tip": "Fleets are engaged at sea", "action": _open_naval})
+	var blockaded_home_ports := _blockaded_home_ports(tag)
+	if not blockaded_home_ports.is_empty():
+		alert_specs.append({"text": "Blockaded ports (%d)" % blockaded_home_ports.size(), "tip": "Enemy fleets are choking your coastline", "action": _open_naval})
 	if alert_specs.is_empty():
 		alert_specs.append({"text": "No urgent alerts", "tip": "The realm has no immediate warnings", "action": Callable()})
 	var signature := "|".join(alert_specs.map(func(spec: Dictionary) -> String: return String(spec["text"])))
@@ -440,6 +460,22 @@ func _refresh_outliner(tag: String, _force_rebuild: bool) -> void:
 			outliner_content.add_child(fleet_button)
 		if fleet_ids.size() > 12:
 			_add_outliner_empty("+%d additional fleets" % (fleet_ids.size() - 12))
+
+	_add_outliner_heading("BLOCKADES")
+	var blockaded_ports := _blockaded_home_ports(tag)
+	if blockaded_ports.is_empty():
+		_add_outliner_empty("No blockaded coasts")
+	else:
+		for province_id in blockaded_ports.slice(0, 12):
+			var bp := BlockadeSystemScript.province_blockade_bp(simulation_controller.world, province_id)
+			var tier := BlockadeSystemScript.blockade_tier(bp)
+			var province_name := graph.province_name(province_id)
+			var blockade_button := _outliner_button("%s · %s (%d%%)" % [province_name if not province_name.is_empty() else "Province %d" % province_id, BLOCKADE_TIER_NAMES[tier], bp / 100])
+			blockade_button.tooltip_text = "Focus this coast and open the naval panel"
+			blockade_button.pressed.connect(func() -> void: _focus_province(province_id))
+			outliner_content.add_child(blockade_button)
+		if blockaded_ports.size() > 12:
+			_add_outliner_empty("+%d additional blockaded coasts" % (blockaded_ports.size() - 12))
 
 	_add_outliner_heading("WARS")
 	var wars := _player_wars(tag)
@@ -591,6 +627,26 @@ func _focus_fleet(fleet_id: String) -> void:
 	var anchor := ProvinceGraphScript.load_default().anchor(int(fleet.get("location_id", -1)))
 	if anchor.x >= 0 and camera_controller != null:
 		camera_controller.focus_world_position(Vector3(anchor.x * 0.01 - 28.16, 0.0, anchor.y * 0.01 - 10.24))
+
+
+## Every province the country owns that is currently blockaded above zero,
+## the same query BlockadeSystem itself already exposes for any other
+## caller - no parallel per-country index needed for a handful of coastal
+## home provinces.
+func _blockaded_home_ports(tag: String) -> Array[int]:
+	var found: Array[int] = []
+	for province_id in simulation_controller.world.get_country_provinces(tag):
+		if BlockadeSystemScript.province_blockade_bp(simulation_controller.world, int(province_id)) > 0:
+			found.append(int(province_id))
+	found.sort()
+	return found
+
+
+func _focus_province(province_id: int) -> void:
+	var anchor := ProvinceGraphScript.load_default().anchor(province_id)
+	if anchor.x >= 0 and camera_controller != null:
+		camera_controller.focus_world_position(Vector3(anchor.x * 0.01 - 28.16, 0.0, anchor.y * 0.01 - 10.24))
+	_open_naval()
 
 
 func _player_wars(tag: String) -> Array[Dictionary]:

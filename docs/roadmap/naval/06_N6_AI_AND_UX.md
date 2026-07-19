@@ -1,6 +1,6 @@
 # 06 - N6 Naval AI and UX
 
-**Status:** Not started  
+**Status:** Validation / P1 open - deterministic command-only AI passes construction, threat, organisation, basing, repair, transport handoff, interception, blockade, retreat, same-zone contention, generic fallback, stress, 100-seed acceptance, and Windows export/startup checks. Complete fleet-management/map UX, rendered accessibility/hardware acceptance, performance budgets, and final G1 sign-off remain open.
 **Depends on:** complete N1-N5 player/API loop  
 **Unlocks:** G1 Maritime First Playable and downstream global pillars
 

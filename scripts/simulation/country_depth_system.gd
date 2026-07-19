@@ -5,6 +5,8 @@ const SimulationDateScript = preload("res://scripts/simulation/simulation_date.g
 const EconomyDefinitionsScript = preload("res://scripts/simulation/economy_definitions.gd")
 const CharacterSystemScript = preload("res://scripts/simulation/character_system.gd")
 const DiplomacySystemScript = preload("res://scripts/simulation/diplomacy_system.gd")
+const TransportSystemScript = preload("res://scripts/simulation/transport_system.gd")
+const BlockadeSystemScript = preload("res://scripts/simulation/blockade_system.gd")
 
 const BASIS_POINTS := 10000
 const CLAIM_DURATION_DAYS := 3650
@@ -911,9 +913,10 @@ static func _reconcile_country_status(world: CampaignWorldState, events: Simulat
 				if String(event.get("country_tag", "")) == tag and String(event.get("status", "")) == "pending":
 					event["status"] = "cancelled"
 					world.country_event_registry[raw_id] = event
-			_cleanup_extinct_country_references(world, tag)
+			_cleanup_extinct_country_references(world, events, tag)
 			events.country_extinct.emit(tag)
 	world.global_flags["country_depth_active_countries"] = current
+
 
 
 static func _replace_country_references(world: CampaignWorldState, old_tag: String, new_tag: String) -> void:
@@ -964,7 +967,65 @@ static func _replace_country_references(world: CampaignWorldState, old_tag: Stri
 	world.diplomatic_relations = replaced_relations
 
 
-static func _cleanup_extinct_country_references(world: CampaignWorldState, extinct_tag: String) -> void:
+## Naval counterpart to the army/war cleanup below. `_reconcile_country_status`
+## already hard-erases the extinct country's armies directly from
+## `army_registry` before calling this function; without an equivalent sweep
+## here, any army mid-transport left dangling `transport_operation_registry`
+## references to that erased army, and any fleet left in `fleet_registry`
+## with a stale `owner_country_id`/battle membership, would make
+## `_validate_transport_data`/`_validate_naval_battle_data` reject the very
+## next save - not a hygiene nicety, a load-corrupting bug for any extinction
+## that catches a country mid-transport or mid-battle at sea.
+static func _cleanup_extinct_country_references(world: CampaignWorldState, events: SimulationEventBus, extinct_tag: String) -> void:
+	TransportSystemScript.destroy_country_operations(world, events, extinct_tag, "country_extinct")
+	var touched_battles := {}
+	var fleet_ids := world.country_fleets(extinct_tag)
+	for fleet_id in fleet_ids:
+		var fleet: Dictionary = world.get_fleet(fleet_id)
+		var battle_id := String(fleet.get("battle_id", ""))
+		if not battle_id.is_empty() and world.naval_battle_registry.has(battle_id):
+			var battle: Dictionary = world.naval_battle_registry[battle_id]
+			if String(battle.get("status", "")) == "active":
+				var attacker_fleets: Array = battle.get("attacker_fleets", [])
+				var defender_fleets: Array = battle.get("defender_fleets", [])
+				attacker_fleets.erase(fleet_id)
+				defender_fleets.erase(fleet_id)
+				battle["attacker_fleets"] = attacker_fleets
+				battle["defender_fleets"] = defender_fleets
+				world.naval_battle_registry[battle_id] = battle
+				touched_battles[battle_id] = true
+		var admiral_id := String(fleet.get("admiral_id", ""))
+		if not admiral_id.is_empty() and world.character_registry.has(admiral_id):
+			var admiral: Dictionary = world.character_registry[admiral_id]
+			admiral["admiral_fleet_id"] = ""
+			world.character_registry[admiral_id] = admiral
+		for ship_id in world.fleet_ships(fleet_id):
+			world.ship_registry.erase(ship_id)
+		world.fleet_registry.erase(fleet_id)
+		events.fleet_destroyed.emit(fleet_id, "country_extinct")
+	var battle_ids := touched_battles.keys()
+	battle_ids.sort()
+	for raw_battle_id in battle_ids:
+		var battle_id := String(raw_battle_id)
+		var battle: Dictionary = world.naval_battle_registry[battle_id]
+		var attacker_fleets: Array = battle.get("attacker_fleets", [])
+		var defender_fleets: Array = battle.get("defender_fleets", [])
+		if not attacker_fleets.is_empty() and not defender_fleets.is_empty():
+			continue
+		battle["status"] = "completed"
+		battle["end_day"] = world.current_day
+		battle["winner_side"] = "defender" if attacker_fleets.is_empty() else "attacker"
+		world.naval_battle_registry[battle_id] = battle
+		events.naval_battle_ended.emit(String(battle.get("war_id", "")), battle_id, String(battle["winner_side"]))
+	var construction_ids := world.naval_construction_registry.keys()
+	construction_ids.sort()
+	for raw_construction_id in construction_ids:
+		var construction_id := String(raw_construction_id)
+		var construction: Dictionary = world.naval_construction_registry[construction_id]
+		if String(construction.get("country_tag", "")) == extinct_tag:
+			world.naval_construction_registry.erase(construction_id)
+	# Reconcile persisted blockade transitions after the extinct fleets vanish.
+	BlockadeSystemScript.process_day(world, events)
 	for raw_id in world.subject_registry:
 		var subject: Dictionary = world.subject_registry[raw_id]
 		if String(subject.get("status", "active")) != "active":

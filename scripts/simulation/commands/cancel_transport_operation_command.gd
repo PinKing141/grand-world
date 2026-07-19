@@ -17,18 +17,16 @@ func command_type() -> String:
 	return "CancelTransportOperationCommand"
 
 
-## Cancellation is only penalty-free and instantaneous while "embarking" -
-## the army has never left its origin province's data field yet (see
-## CreateTransportOperationCommand). Once "sailing" begins the fleet is
-## actually underway, and unwinding that safely is N3.3's job (retreat/
-## recovery), not a plain cancel.
+## Cancellation is safe while embarking or once the carrier is docked and
+## disembarking. Sailing cancellation still requires a retreat/reroute order;
+## it cannot teleport an army from an at-sea fleet.
 func validate(world: CampaignWorldState) -> String:
 	var operation := world.get_transport_operation(operation_id)
 	if operation.is_empty():
 		return "The transport operation no longer exists."
 	if String(operation.get("country_tag", "")) != country_tag:
 		return "%s does not control this transport operation." % country_tag
-	if String(operation.get("state", "")) != CampaignWorldState.TRANSPORT_STATE_EMBARKING:
+	if String(operation.get("state", "")) not in [CampaignWorldState.TRANSPORT_STATE_EMBARKING, CampaignWorldState.TRANSPORT_STATE_DISEMBARKING]:
 		return "This transport operation cannot be cancelled in its current state."
 	return ""
 
@@ -38,6 +36,8 @@ func apply(world: CampaignWorldState, events: SimulationEventBus) -> void:
 	var army_id := String(operation.get("army_id", ""))
 	var fleet_id := String(operation.get("fleet_id", ""))
 	var army := world.get_army(army_id)
+	if String(operation.get("state", "")) == CampaignWorldState.TRANSPORT_STATE_DISEMBARKING and world.fleet_registry.has(fleet_id):
+		army["current_province_id"] = int(world.get_fleet(fleet_id).get("location_id", operation.get("destination_province_id", operation.get("origin_port_id", -1))))
 	army["transport_operation_id"] = ""
 	army["status"] = CampaignWorldState.ARMY_STATUS_IDLE
 	army["movement_locked"] = false

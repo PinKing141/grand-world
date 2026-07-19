@@ -5,6 +5,7 @@ const DiplomacySystemScript = preload("res://scripts/simulation/diplomacy_system
 const WarfareSystemScript = preload("res://scripts/simulation/warfare_system.gd")
 const EconomySystemScript = preload("res://scripts/simulation/economy_system.gd")
 const CharacterSystemScript = preload("res://scripts/simulation/character_system.gd")
+const NavalCombatSystemScript = preload("res://scripts/simulation/naval_combat_system.gd")
 
 
 static func term_cost(war: Dictionary, term: Dictionary) -> int:
@@ -171,6 +172,7 @@ static func apply_offer(world: CampaignWorldState, events: SimulationEventBus, w
 
 	WarfareSystemScript.clear_war_occupations(world, events, war)
 	_cleanup_armies(world, war)
+	NavalCombatSystemScript.end_war_battles(world, events, war_id, "peace")
 	var truce_until := -1
 	for raw_attacker in war.get("attackers", []):
 		for raw_defender in war.get("defenders", []):

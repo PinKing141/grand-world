@@ -31,6 +31,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/country_selection_screen.tscn" id="30_country_selection"]
 [ext_resource type="PackedScene" path="res://scenes/ui/campaign_interface_shell.tscn" id="31_campaign_shell"]
 [ext_resource type="PackedScene" path="res://scenes/ui/naval_hud.tscn" id="32_naval_hud"]
+[ext_resource type="Script" path="res://scripts/ui/fleet_marker_layer.gd" id="33_fleet_markers"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_eb6dy"]
 viewport_path = NodePath("Map/Subviewports/CountryDistanceField")
@@ -20868,12 +20869,20 @@ simulation_controller = NodePath("../SimulationController")
 map_render = NodePath("../Map")
 camera_controller = NodePath("../CameraController")
 
-[node name="ConflictMarkerLayer" type="Node3D" parent="." node_paths=PackedStringArray("simulation_controller", "map_render", "camera_controller", "war_hud")]
+[node name="ConflictMarkerLayer" type="Node3D" parent="." node_paths=PackedStringArray("simulation_controller", "map_render", "camera_controller", "war_hud", "naval_hud")]
 script = ExtResource("29_conflict_markers")
 simulation_controller = NodePath("../SimulationController")
 map_render = NodePath("../Map")
 camera_controller = NodePath("../CameraController")
 war_hud = NodePath("../WarHUD")
+naval_hud = NodePath("../NavalHUD")
+
+[node name="FleetMarkerLayer" type="Node3D" parent="." node_paths=PackedStringArray("simulation_controller", "map_render", "camera_controller", "naval_hud")]
+script = ExtResource("33_fleet_markers")
+simulation_controller = NodePath("../SimulationController")
+map_render = NodePath("../Map")
+camera_controller = NodePath("../CameraController")
+naval_hud = NodePath("../NavalHUD")
 
 [node name="CountryLabelLayer" type="Node3D" parent="." node_paths=PackedStringArray("simulation_controller", "map_render")]
 script = ExtResource("26_country_label")
@@ -20901,10 +20910,13 @@ province_selector = NodePath("../Map/ProvinceSelector")
 map_hud = NodePath("../MapHUD")
 notification_hud = NodePath("../SimulationHUD")
 
-[node name="NavalHUD" parent="." node_paths=PackedStringArray("simulation_controller", "province_selector", "notification_hud") instance=ExtResource("32_naval_hud")]
+[node name="NavalHUD" parent="." node_paths=PackedStringArray("simulation_controller", "province_selector", "notification_hud", "map_hud", "army_layer", "fleet_marker_layer") instance=ExtResource("32_naval_hud")]
 simulation_controller = NodePath("../SimulationController")
 province_selector = NodePath("../Map/ProvinceSelector")
 notification_hud = NodePath("../SimulationHUD")
+map_hud = NodePath("../MapHUD")
+army_layer = NodePath("../ArmyLayer")
+fleet_marker_layer = NodePath("../FleetMarkerLayer")
 
 [node name="AIDebugHUD" parent="." node_paths=PackedStringArray("simulation_controller", "map_hud", "notification_hud") instance=ExtResource("23_ai_hud")]
 simulation_controller = NodePath("../SimulationController")
